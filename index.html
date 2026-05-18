@@ -35,9 +35,9 @@
         </nav>
 
         <div class="topbar__cta">
-          <a class="phone-chip" href="tel:+79850101110">
+          <a class="phone-chip" href="tel:+79258056308">
             <span class="phone-chip__label">Позвонить</span>
-            <span class="phone-chip__value">+7 (985) 010-11-10</span>
+            <span class="phone-chip__value">+7 (925) 805-63-08</span>
           </a>
         </div>
       </div>
@@ -59,8 +59,8 @@
               <a class="btn btn--primary" href="#prices">Смотреть цены</a>
             </div>
             <div class="hero__phones" aria-label="Телефоны">
+              <a href="tel:+79258056308" class="pill pill--primary">+7 (925) 805-63-08</a>
               <a href="tel:+79850101110" class="pill">+7 (985) 010-11-10</a>
-              <a href="tel:+79258056308" class="pill">+7 (925) 805-63-08</a>
               <a href="tel:+79258387248" class="pill">+7 (925) 838-72-48</a>
             </div>
           </div>
@@ -306,7 +306,7 @@
                 Нужен расчёт под ваш объект? Позвоните — поможем выбрать размер, цвет и количество.
               </div>
               <div class="price-footer-cta__actions">
-                <a class="btn btn--primary" href="tel:+79850101110">Позвонить</a>
+                <a class="btn btn--primary" href="tel:+79258056308">Позвонить</a>
                 <a class="btn btn--ghost" href="#contacts">Контакты</a>
               </div>
             </div>
@@ -323,7 +323,7 @@
 
           <div class="gallery-grid" role="list">
             <figure class="gallery-card" role="listitem">
-              <img src="assets/bruschatka-1.png" alt="Брусчатка (пример образца)" loading="lazy" />
+              <img src="assets/bruschatka-1.png" alt="Брусчатка — образцы цветов на стенде" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Брусчатка</div>
                 <div class="gallery-card__sub">Фото образца • уточните размер/цвет при заказе</div>
@@ -331,14 +331,14 @@
             </figure>
 
             <figure class="gallery-card" role="listitem">
-              <img src="assets/lito-1.png" alt="Литьё (пример образца)" loading="lazy" />
+              <img src="assets/lito-1.png" alt="Литьё — образцы на стенде" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Литьё</div>
                 <div class="gallery-card__sub">Фото образца • уточните размер/цвет для точного прайса</div>
               </figcaption>
             </figure>
             <figure class="gallery-card" role="listitem">
-              <img src="assets/novyi-gorod-1.png" alt="«Новый город» (пример)" loading="lazy" />
+              <img src="assets/novyi-gorod-1.png" alt="«Новый город» — образцы на стенде" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">«Новый город»</div>
                 <div class="gallery-card__sub">Фото работ • размер 240×160×60</div>
@@ -388,12 +388,12 @@
                 <div class="delivery-card__title">Уточнить доставку</div>
                 <div class="delivery-card__text">Напишите/позвоните и скажите адрес или район.</div>
                 <div class="delivery-card__actions">
-                  <a class="btn btn--primary" href="tel:+79850101110">Позвонить</a>
+                  <a class="btn btn--primary" href="tel:+79258056308">Позвонить</a>
                   <a class="btn btn--ghost" href="#contacts">Контакты</a>
                 </div>
                 <div class="delivery-card__phones">
-                  <div><a href="tel:+79850101110">+7 (985) 010-11-10</a></div>
                   <div><a href="tel:+79258056308">+7 (925) 805-63-08</a></div>
+                  <div><a href="tel:+79850101110">+7 (985) 010-11-10</a></div>
                   <div><a href="tel:+79258387248">+7 (925) 838-72-48</a></div>
                 </div>
               </div>
@@ -413,8 +413,8 @@
             <div class="contact-card">
               <div class="contact-card__title">Телефоны</div>
               <div class="contact-card__phones">
+                <a class="contact-phone contact-phone--primary" href="tel:+79258056308">+7 (925) 805-63-08</a>
                 <a class="contact-phone" href="tel:+79850101110">+7 (985) 010-11-10</a>
-                <a class="contact-phone" href="tel:+79258056308">+7 (925) 805-63-08</a>
                 <a class="contact-phone" href="tel:+79258387248">+7 (925) 838-72-48</a>
               </div>
               <div class="contact-card__hint">Можно звонить и писать по любым вопросам.</div>
@@ -627,9 +627,8 @@
       window.addEventListener('touchmove', function (e) {
         if (e.touches[0]) {
           setPointer(e.touches[0].clientX, e.touches[0].clientY);
-          e.preventDefault();
         }
-      }, { passive: false });
+      }, { passive: true });
       window.addEventListener('mouseleave', function () {
         pointer.active = false;
       });

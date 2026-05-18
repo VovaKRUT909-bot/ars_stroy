@@ -194,9 +194,8 @@
     window.addEventListener('touchmove', (e) => {
       if (e.touches[0]) {
         setPointer(e.touches[0].clientX, e.touches[0].clientY);
-        e.preventDefault();
       }
-    }, { passive: false });
+    }, { passive: true });
 
     window.addEventListener('mouseleave', () => {
       pointer.active = false;
