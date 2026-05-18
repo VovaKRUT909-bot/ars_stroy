@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluid Gradient — интерактивный фон</title>
+  <style>
+    /* === Базовая вёрстка: контент поверх, фон под ним === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: #e8f0ff;
+      background: #060d18; /* запасной цвет, если canvas не загрузится */
+    }
+
+    /* Канвас на весь экран, не перехватывает клики (pointer-events: none) */
+    #fluid-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* Демо-контент: всё кликабельно, т.к. canvas не ловит события */
+    .demo-content {
+      position: relative;
+      z-index: 1;
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+
+    .demo-content h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+
+    .demo-content p {
+      line-height: 1.6;
+      opacity: 0.85;
+      margin-bottom: 1.5rem;
+    }
+
+    .demo-content a,
+    .demo-content button {
+      display: inline-block;
+      margin-right: 0.75rem;
+      margin-bottom: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .demo-content a {
+      background: rgba(30, 144, 255, 0.25);
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      color: #7dd3fc;
+    }
+
+    .demo-content a:hover {
+      background: rgba(30, 144, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .demo-content button {
+      background: #1e90ff;
+      border: none;
+      color: #060d18;
+      font-weight: 600;
+    }
+
+    .demo-content button:hover {
+      background: #00d4ff;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Фоновый слой: только отрисовка, без pointer-events -->
+  <canvas id="fluid-canvas" aria-hidden="true"></canvas>
+
+  <!-- Пример контента — переносите свою разметку поверх canvas -->
+  <main class="demo-content">
+    <h1>Fluid Gradient</h1>
+    <p>
+      Двигайте курсор по экрану — неоновые волны плавно следуют за ним
+      с инерцией. Ссылки и кнопки ниже остаются кликабельными.
+    </p>
+    <a href="https://example.com">Пример ссылки</a>
+    <button type="button" onclick="alert('Кнопка работает!')">Проверить клик</button>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ─── Настройки палитры и физики (удобно менять при переносе) ───
+    const CONFIG = {
+      bgColor: '#060d18',           // глубокий мутно-синий фон
+      blobColors: [
+        'rgba(0, 180, 255, 0.55)',
+        'rgba(30, 144, 255, 0.45)',
+        'rgba(0, 120, 255, 0.5)',
+        'rgba(0, 212, 255, 0.35)',
+        'rgba(50, 130, 255, 0.4)',
+      ],
+      blobCount: 5,
+      blurPx: 72,                   // размытие «пятен» для мягких переходов
+      spring: 0.018,                // жёсткость пружины к цели (курсор)
+      friction: 0.92,               // трение / затухание скорости (инерция)
+      ambientSpeed: 0.00035,        // фоновое переливание без движения мыши
+      mouseInfluence: 0.72,         // насколько цель смещена к курсору (0–1)
+      baseRadiusRatio: 0.28,        // размер пятна относительно min(ширина, высота)
+    };
+
+    const canvas = document.getElementById('fluid-canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let time = 0;
+    let rafId = null;
+
+    // Целевая позиция курсора (сглаженная) и «сырая» позиция
+    const pointer = {
+      x: 0,
+      y: 0,
+      tx: 0,
+      ty: 0,
+      active: false,
+    };
+
+    /** @type {Array<{x:number,y:number,vx:number,vy:number,phase:number,orbit:number,radius:number,color:string}>} */
+    let blobs = [];
+
+    // ─── Ресайз с учётом devicePixelRatio ───
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initBlobs();
+    }
+
+    function initBlobs() {
+      const minSide = Math.min(width, height);
+      const baseR = minSide * CONFIG.baseRadiusRatio;
+
+      blobs = [];
+      for (let i = 0; i < CONFIG.blobCount; i++) {
+        const angle = (i / CONFIG.blobCount) * Math.PI * 2;
+        const dist = minSide * 0.15;
+        blobs.push({
+          x: width * 0.5 + Math.cos(angle) * dist,
+          y: height * 0.5 + Math.sin(angle) * dist,
+          vx: 0,
+          vy: 0,
+          phase: angle,
+          orbit: 0.12 + (i % 3) * 0.06,
+          radius: baseR * (0.75 + (i % 3) * 0.15),
+          color: CONFIG.blobColors[i % CONFIG.blobColors.length],
+        });
+      }
+
+      pointer.x = pointer.tx = width * 0.5;
+      pointer.y = pointer.ty = height * 0.5;
+    }
+
+    // ─── Указатель: слушаем window, canvas не нужен (pointer-events: none) ───
+    function setPointer(clientX, clientY) {
+      pointer.tx = clientX;
+      pointer.ty = clientY;
+      pointer.active = true;
+    }
+
+    window.addEventListener('mousemove', (e) => setPointer(e.clientX, e.clientY));
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches[0]) {
+        setPointer(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    window.addEventListener('mouseleave', () => {
+      pointer.active = false;
+    });
+
+    window.addEventListener('touchend', () => {
+      pointer.active = false;
+    });
+
+    // ─── Физика: пружина + трение + автономное движение ───
+    function updateBlob(blob, index) {
+      const t = time * CONFIG.ambientSpeed;
+
+      // Центр экрана + орбита + влияние курсора (с инерцией у цели pointer)
+      const ambientX = width * 0.5
+        + Math.cos(t * 80 + blob.phase) * width * blob.orbit * 0.35
+        + Math.sin(t * 50 + blob.phase * 2) * width * blob.orbit * 0.2;
+
+      const ambientY = height * 0.5
+        + Math.sin(t * 70 + blob.phase) * height * blob.orbit * 0.35
+        + Math.cos(t * 45 + blob.phase) * height * blob.orbit * 0.2;
+
+      const influence = pointer.active ? CONFIG.mouseInfluence : CONFIG.mouseInfluence * 0.35;
+      const targetX = ambientX + (pointer.x - ambientX) * influence;
+      const targetY = ambientY + (pointer.y - ambientY) * influence;
+
+      // Пружинная сила к цели
+      const ax = (targetX - blob.x) * CONFIG.spring;
+      const ay = (targetY - blob.y) * CONFIG.spring;
+
+      blob.vx = (blob.vx + ax) * CONFIG.friction;
+      blob.vy = (blob.vy + ay) * CONFIG.friction;
+      blob.x += blob.vx;
+      blob.y += blob.vy;
+    }
+
+    // Плавное следование «цели» курсора (дополнительный easing)
+    function updatePointer() {
+      const ease = pointer.active ? 0.12 : 0.04;
+      pointer.x += (pointer.tx - pointer.x) * ease;
+      pointer.y += (pointer.ty - pointer.y) * ease;
+
+      // Когда мышь ушла — цель медленно возвращается к центру
+      if (!pointer.active) {
+        pointer.tx += (width * 0.5 - pointer.tx) * 0.02;
+        pointer.ty += (height * 0.5 - pointer.ty) * 0.02;
+      }
+    }
+
+    // ─── Отрисовка одного светящегося пятна ───
+    function drawBlob(blob) {
+      const g = ctx.createRadialGradient(
+        blob.x, blob.y, 0,
+        blob.x, blob.y, blob.radius
+      );
+      g.addColorStop(0, blob.color);
+      g.addColorStop(0.35, blob.color.replace(/[\d.]+\)$/, '0.15)'));
+      g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function render() {
+      time = performance.now();
+
+      updatePointer();
+      blobs.forEach((b, i) => updateBlob(b, i));
+
+      // Фон
+      ctx.filter = 'none';
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = CONFIG.bgColor;
+      ctx.fillRect(0, 0, width, height);
+
+      // Светящиеся пятна с размытием и аддитивным смешением
+      ctx.filter = `blur(${CONFIG.blurPx}px)`;
+      ctx.globalCompositeOperation = 'screen';
+
+      blobs.forEach(drawBlob);
+
+      // Лёгкая неоновая «волна» — вытянутое пятно по направлению движения курсора
+      drawTrailWave();
+
+      ctx.filter = 'none';
+      ctx.globalCompositeOperation = 'source-over';
+
+      rafId = requestAnimationFrame(render);
+    }
+
+    /** Дополнительные линии/волны в сторону движения (инерция скорости) */
+    let trailVx = 0;
+    let trailVy = 0;
+
+    function drawTrailWave() {
+      const dx = pointer.x - width * 0.5;
+      const dy = pointer.y - height * 0.5;
+      trailVx += (dx * 0.002 - trailVx) * 0.08;
+      trailVy += (dy * 0.002 - trailVy) * 0.08;
+
+      const speed = Math.hypot(trailVx, trailVy);
+      if (speed < 0.5) return;
+
+      const len = Math.min(width, height) * 0.35;
+      const nx = trailVx / speed;
+      const ny = trailVy / speed;
+      const cx = pointer.x;
+      const cy = pointer.y;
+
+      const g = ctx.createLinearGradient(
+        cx - nx * len, cy - ny * len,
+        cx + nx * len, cy + ny * len
+      );
+      g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      g.addColorStop(0.35, 'rgba(0, 212, 255, 0.25)');
+      g.addColorStop(0.5, 'rgba(30, 144, 255, 0.45)');
+      g.addColorStop(0.65, 'rgba(0, 212, 255, 0.25)');
+      g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, len * 0.5, len * 0.12, Math.atan2(ny, nx), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ─── Запуск / остановка (для переноса в SPA при необходимости) ───
+    function start() {
+      if (rafId) cancelAnimationFrame(rafId);
+      resize();
+      render();
+    }
+
+    function stop() {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop();
+      else start();
+    });
+
+    start();
+
+    // Экспорт API для встраивания на другие страницы:
+    // window.FluidBackground = { start, stop, CONFIG };
+    window.FluidBackground = { start, stop, CONFIG, canvas };
+  })();
+  </script>
+</body>
+</html>

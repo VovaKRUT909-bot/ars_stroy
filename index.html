@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="page-bg" aria-hidden="true"></div>
+
     <a class="skip-link" href="#main">Перейти к содержимому</a>
 
     <header class="topbar">
@@ -452,8 +454,312 @@
       </div>
     </footer>
 
+    <canvas id="fluid-canvas" aria-hidden="true"></canvas>
+
     <script>
       document.getElementById('year').textContent = String(new Date().getFullYear());
+
+      (function initScrollBackground() {
+        var pageBg = document.querySelector('.page-bg');
+        if (!pageBg) return;
+
+        var stops = [
+          { p: 0, bg0: [14, 16, 20], bg1: [21, 25, 32], g1: [201, 168, 108, 0.12], g2: [139, 115, 85, 0.1] },
+          { p: 0.28, bg0: [16, 19, 24], bg1: [24, 30, 38], g1: [201, 168, 108, 0.16], g2: [120, 132, 118, 0.12] },
+          { p: 0.55, bg0: [12, 17, 21], bg1: [20, 28, 34], g1: [160, 175, 168, 0.14], g2: [90, 108, 98, 0.1] },
+          { p: 0.82, bg0: [11, 14, 18], bg1: [18, 23, 30], g1: [180, 155, 110, 0.11], g2: [70, 82, 96, 0.09] },
+          { p: 1, bg0: [10, 12, 16], bg1: [16, 20, 26], g1: [201, 168, 108, 0.1], g2: [100, 110, 120, 0.08] }
+        ];
+
+        function lerp(a, b, t) {
+          return a + (b - a) * t;
+        }
+
+        function lerpRgb(a, b, t) {
+          return [
+            Math.round(lerp(a[0], b[0], t)),
+            Math.round(lerp(a[1], b[1], t)),
+            Math.round(lerp(a[2], b[2], t))
+          ];
+        }
+
+        function lerpRgba(a, b, t) {
+          return 'rgba(' +
+            Math.round(lerp(a[0], b[0], t)) + ',' +
+            Math.round(lerp(a[1], b[1], t)) + ',' +
+            Math.round(lerp(a[2], b[2], t)) + ',' +
+            lerp(a[3], b[3], t).toFixed(3) + ')';
+        }
+
+        function rgbStr(rgb) {
+          return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+        }
+
+        function apply(progress) {
+          var i = 0;
+          while (i < stops.length - 1 && progress > stops[i + 1].p) i++;
+          var a = stops[i];
+          var b = stops[Math.min(i + 1, stops.length - 1)];
+          var span = b.p - a.p || 1;
+          var t = Math.max(0, Math.min(1, (progress - a.p) / span));
+
+          var bg0 = lerpRgb(a.bg0, b.bg0, t);
+          var bg1 = lerpRgb(a.bg1, b.bg1, t);
+          var g1 = lerpRgba(a.g1, b.g1, t);
+          var g2 = lerpRgba(a.g2, b.g2, t);
+
+          document.documentElement.style.setProperty('--scroll-bg0', rgbStr(bg0));
+          document.documentElement.style.setProperty('--scroll-bg1', rgbStr(bg1));
+          document.documentElement.style.setProperty('--scroll-glow1', g1);
+          document.documentElement.style.setProperty('--scroll-glow2', g2);
+        }
+
+        function scrollProgress() {
+          var max = document.documentElement.scrollHeight - window.innerHeight;
+          if (max <= 0) return 0;
+          return Math.max(0, Math.min(1, window.scrollY / max));
+        }
+
+        var ticking = false;
+        function onScroll() {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(function () {
+            apply(scrollProgress());
+            ticking = false;
+          });
+        }
+
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reduced) {
+          window.addEventListener('scroll', onScroll, { passive: true });
+          window.addEventListener('resize', onScroll, { passive: true });
+        }
+        apply(reduced ? 0 : scrollProgress());
+      })();
+    </script>
+
+    <script>
+    (function initFluidBackground() {
+      'use strict';
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      var CONFIG = {
+        bgColor: '#060d18',
+        blobColors: [
+          'rgba(0, 180, 255, 0.55)',
+          'rgba(30, 144, 255, 0.45)',
+          'rgba(0, 120, 255, 0.5)',
+          'rgba(0, 212, 255, 0.35)',
+          'rgba(50, 130, 255, 0.4)',
+        ],
+        blobCount: 5,
+        blurPx: 72,
+        spring: 0.018,
+        friction: 0.92,
+        ambientSpeed: 0.00035,
+        mouseInfluence: 0.72,
+        baseRadiusRatio: 0.28,
+      };
+
+      var canvas = document.getElementById('fluid-canvas');
+      if (!canvas) return;
+
+      var ctx = canvas.getContext('2d', { alpha: false });
+
+      var width = 0;
+      var height = 0;
+      var dpr = 1;
+      var time = 0;
+      var rafId = null;
+
+      var pointer = { x: 0, y: 0, tx: 0, ty: 0, active: false };
+      var blobs = [];
+      var trailVx = 0;
+      var trailVy = 0;
+
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        initBlobs();
+      }
+
+      function initBlobs() {
+        var minSide = Math.min(width, height);
+        var baseR = minSide * CONFIG.baseRadiusRatio;
+
+        blobs = [];
+        for (var i = 0; i < CONFIG.blobCount; i++) {
+          var angle = (i / CONFIG.blobCount) * Math.PI * 2;
+          var dist = minSide * 0.15;
+          blobs.push({
+            x: width * 0.5 + Math.cos(angle) * dist,
+            y: height * 0.5 + Math.sin(angle) * dist,
+            vx: 0,
+            vy: 0,
+            phase: angle,
+            orbit: 0.12 + (i % 3) * 0.06,
+            radius: baseR * (0.75 + (i % 3) * 0.15),
+            color: CONFIG.blobColors[i % CONFIG.blobColors.length],
+          });
+        }
+
+        pointer.x = pointer.tx = width * 0.5;
+        pointer.y = pointer.ty = height * 0.5;
+      }
+
+      function setPointer(clientX, clientY) {
+        pointer.tx = clientX;
+        pointer.ty = clientY;
+        pointer.active = true;
+      }
+
+      window.addEventListener('mousemove', function (e) {
+        setPointer(e.clientX, e.clientY);
+      });
+      window.addEventListener('touchmove', function (e) {
+        if (e.touches[0]) {
+          setPointer(e.touches[0].clientX, e.touches[0].clientY);
+          e.preventDefault();
+        }
+      }, { passive: false });
+      window.addEventListener('mouseleave', function () {
+        pointer.active = false;
+      });
+      window.addEventListener('touchend', function () {
+        pointer.active = false;
+      });
+
+      function updateBlob(blob) {
+        var t = time * CONFIG.ambientSpeed;
+
+        var ambientX = width * 0.5
+          + Math.cos(t * 80 + blob.phase) * width * blob.orbit * 0.35
+          + Math.sin(t * 50 + blob.phase * 2) * width * blob.orbit * 0.2;
+
+        var ambientY = height * 0.5
+          + Math.sin(t * 70 + blob.phase) * height * blob.orbit * 0.35
+          + Math.cos(t * 45 + blob.phase) * height * blob.orbit * 0.2;
+
+        var influence = pointer.active ? CONFIG.mouseInfluence : CONFIG.mouseInfluence * 0.35;
+        var targetX = ambientX + (pointer.x - ambientX) * influence;
+        var targetY = ambientY + (pointer.y - ambientY) * influence;
+
+        var ax = (targetX - blob.x) * CONFIG.spring;
+        var ay = (targetY - blob.y) * CONFIG.spring;
+
+        blob.vx = (blob.vx + ax) * CONFIG.friction;
+        blob.vy = (blob.vy + ay) * CONFIG.friction;
+        blob.x += blob.vx;
+        blob.y += blob.vy;
+      }
+
+      function updatePointer() {
+        var ease = pointer.active ? 0.12 : 0.04;
+        pointer.x += (pointer.tx - pointer.x) * ease;
+        pointer.y += (pointer.ty - pointer.y) * ease;
+
+        if (!pointer.active) {
+          pointer.tx += (width * 0.5 - pointer.tx) * 0.02;
+          pointer.ty += (height * 0.5 - pointer.ty) * 0.02;
+        }
+      }
+
+      function drawBlob(blob) {
+        var g = ctx.createRadialGradient(blob.x, blob.y, 0, blob.x, blob.y, blob.radius);
+        g.addColorStop(0, blob.color);
+        g.addColorStop(0.35, blob.color.replace(/[\d.]+\)$/, '0.15)'));
+        g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawTrailWave() {
+        var dx = pointer.x - width * 0.5;
+        var dy = pointer.y - height * 0.5;
+        trailVx += (dx * 0.002 - trailVx) * 0.08;
+        trailVy += (dy * 0.002 - trailVy) * 0.08;
+
+        var speed = Math.hypot(trailVx, trailVy);
+        if (speed < 0.5) return;
+
+        var len = Math.min(width, height) * 0.35;
+        var nx = trailVx / speed;
+        var ny = trailVy / speed;
+        var cx = pointer.x;
+        var cy = pointer.y;
+
+        var g = ctx.createLinearGradient(
+          cx - nx * len, cy - ny * len,
+          cx + nx * len, cy + ny * len
+        );
+        g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        g.addColorStop(0.35, 'rgba(0, 212, 255, 0.25)');
+        g.addColorStop(0.5, 'rgba(30, 144, 255, 0.45)');
+        g.addColorStop(0.65, 'rgba(0, 212, 255, 0.25)');
+        g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, len * 0.5, len * 0.12, Math.atan2(ny, nx), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function render() {
+        time = performance.now();
+
+        updatePointer();
+        for (var i = 0; i < blobs.length; i++) updateBlob(blobs[i]);
+
+        ctx.filter = 'none';
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = CONFIG.bgColor;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.filter = 'blur(' + CONFIG.blurPx + 'px)';
+        ctx.globalCompositeOperation = 'screen';
+
+        for (var j = 0; j < blobs.length; j++) drawBlob(blobs[j]);
+        drawTrailWave();
+
+        ctx.filter = 'none';
+        ctx.globalCompositeOperation = 'source-over';
+
+        rafId = requestAnimationFrame(render);
+      }
+
+      function start() {
+        if (rafId) cancelAnimationFrame(rafId);
+        resize();
+        render();
+      }
+
+      function stop() {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      }
+
+      window.addEventListener('resize', resize);
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stop();
+        else start();
+      });
+
+      start();
+      window.FluidBackground = { start: start, stop: stop, CONFIG: CONFIG, canvas: canvas };
+    })();
     </script>
   </body>
 </html>
