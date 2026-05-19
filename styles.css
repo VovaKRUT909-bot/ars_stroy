@@ -401,7 +401,7 @@ body{
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.04);
   padding: 18px;
-  overflow:hidden;
+  overflow: visible;
 }
 .price-block__title{
   margin: 0;
@@ -420,6 +420,15 @@ body{
   gap: 10px;
 }
 .price-grid--compact{ grid-template-columns: 1fr 1fr; }
+.subprices--cast{
+  grid-template-columns: 1fr;
+}
+.subprices--cast .subprices__card{
+  overflow: visible;
+}
+.subprices--cast .price-grid--compact{
+  grid-template-columns: 1fr;
+}
 .price-cell{
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.10);
@@ -428,8 +437,10 @@ body{
   font-weight:800;
   display:flex;
   align-items:center;
+  flex-wrap: wrap;
   gap:10px;
   color: var(--text);
+  min-width: 0;
 }
 .unit{
   color: var(--muted2);
@@ -618,6 +629,21 @@ body{
 }
 .delivery-card__phones a:hover{ color: var(--text); }
 
+.delivery__photo{
+  margin: 16px 0 0;
+  border-radius: var(--radius2);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow);
+}
+.delivery__photo img{
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: cover;
+}
+
 .contacts-grid{
   display:grid;
   grid-template-columns: 1fr 1fr;
@@ -715,6 +741,7 @@ body{
   .hero__inner{ grid-template-columns: 1fr; }
   .cards-grid{ grid-template-columns: 1fr 1fr; }
   .price-grid{ grid-template-columns: 1fr; }
+  .price-grid--compact{ grid-template-columns: 1fr; }
   .subprices{ grid-template-columns: 1fr; }
   .gallery-grid{ grid-template-columns: 1fr; }
   .delivery{ grid-template-columns: 1fr; }
