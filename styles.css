@@ -420,14 +420,35 @@ body{
   gap: 10px;
 }
 .price-grid--compact{ grid-template-columns: 1fr 1fr; }
-.subprices--cast{
+
+/* Важно: .subprices.subprices--cast — выше специфичность, чем у .subprices ниже */
+.subprices.subprices--cast{
   grid-template-columns: 1fr;
+  gap: 14px;
 }
-.subprices--cast .subprices__card{
+.subprices.subprices--cast .subprices__card{
   overflow: visible;
+  min-width: 0;
 }
-.subprices--cast .price-grid--compact{
-  grid-template-columns: 1fr;
+.subprices.subprices--cast .subprices__title{
+  font-size: clamp(14px, 3.5vw, 16px);
+  line-height: 1.35;
+  word-break: break-word;
+}
+.subprices.subprices--cast .price-grid--compact{
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.price-block--cast,
+#prices-cast{
+  overflow: visible;
+  scroll-margin-top: 88px;
+}
+.price-block--cast .price-cell{
+  width: 100%;
+  box-sizing: border-box;
+  line-height: 1.45;
+  padding: 14px;
 }
 .price-cell{
   border-radius: 16px;
@@ -743,6 +764,9 @@ body{
   .price-grid{ grid-template-columns: 1fr; }
   .price-grid--compact{ grid-template-columns: 1fr; }
   .subprices{ grid-template-columns: 1fr; }
+  .subprices.subprices--cast .price-grid--compact{
+    grid-template-columns: minmax(0, 1fr);
+  }
   .gallery-grid{ grid-template-columns: 1fr; }
   .delivery{ grid-template-columns: 1fr; }
   .contacts-grid{ grid-template-columns: 1fr; }
