@@ -19,11 +19,20 @@
 
     <header class="topbar">
       <div class="container topbar__inner">
-        <div class="brand">
+        <div class="brand" itemscope itemtype="https://schema.org/Organization">
+          <meta itemprop="url" content="https://oooarsstroy.ru" />
           <div class="brand__mark" aria-hidden="true">АРС</div>
           <div class="brand__text">
-            <div class="brand__title">АРССТРОЙ</div>
-            <div class="brand__subtitle">Тротуарная плитка • Брусчатка • Бордюр • Московская обл., Одинцовский г.о., М-1 Беларусь, 68-й километр, вл1с3</div>
+            <div class="brand__title" itemprop="name">АРССТРОЙ</div>
+            <div class="brand__subtitle">
+              Тротуарная плитка • Брусчатка • Бордюр •
+              <span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+                <meta itemprop="addressCountry" content="RU" />
+                <span itemprop="addressRegion">Московская обл., Одинцовский г.о.</span>,
+                <span itemprop="streetAddress">М-1 Беларусь, 68-й километр, вл1с3</span>,
+                <span itemprop="addressLocality">Кубинка</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -441,9 +450,18 @@
 
     <footer class="footer">
       <div class="container footer__inner">
-        <div class="footer__brand">
-          <div class="footer__title">АРССТРОЙ</div>
-          <div class="footer__sub">Тротуарная плитка и брусчатка • Московская обл., Одинцовский г.о., М-1 Беларусь, 68-й километр, вл1с3</div>
+        <div class="footer__brand" itemscope itemtype="https://schema.org/Organization">
+          <meta itemprop="url" content="https://oooarsstroy.ru" />
+          <div class="footer__title" itemprop="name">АРССТРОЙ</div>
+          <div class="footer__sub">
+            Тротуарная плитка и брусчатка •
+            <span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+              <meta itemprop="addressCountry" content="RU" />
+              <span itemprop="addressRegion">Московская обл., Одинцовский г.о.</span>,
+              <span itemprop="streetAddress">М-1 Беларусь, 68-й километр, вл1с3</span>,
+              <span itemprop="addressLocality">Кубинка</span>
+            </span>
+          </div>
         </div>
         <div class="footer__links">
           <a href="#prices">Цены</a>
