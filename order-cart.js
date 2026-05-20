@@ -4,7 +4,7 @@
   var TELEGRAM_API_BASE =
     'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
   var TELEGRAM_CHAT_ID = '7667524051';
-  var ALLORIGINS_PROXY = 'https://api.allorigins.win/raw?url=';
+  var CODETABS_PROXY = 'https://api.codetabs.com/v1/proxy?quest=';
 
   var TILE_IMG_BASE = 'img/tiles';
   var TILE_FALLBACK = 'assets/bruschatka-1.png';
@@ -111,7 +111,7 @@
 
   function postToTelegramBot(text) {
     var telegramUrl = buildTelegramGetUrl(text);
-    var url = ALLORIGINS_PROXY + encodeURIComponent(telegramUrl);
+    var url = CODETABS_PROXY + encodeURIComponent(telegramUrl);
 
     return fetch(url, { method: 'GET' })
       .then(function (res) {
