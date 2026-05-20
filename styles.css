@@ -25,15 +25,21 @@
 }
 
 *{ box-sizing:border-box; }
-html{ min-height:100%; }
+html{
+  min-height:100%;
+  overflow-x:clip;
+  max-width:100%;
+}
 body{
   margin:0;
   min-height:100%;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
   background: transparent;
   color:var(--text);
-  overflow-x:hidden;
+  overflow-x:clip;
+  max-width:100%;
   -webkit-overflow-scrolling: touch;
+  touch-action:pan-y;
 }
 
 /* Интерактивный fluid-фон (canvas), под оверлеем .page-bg */
@@ -41,8 +47,9 @@ body{
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  max-width:100%;
   z-index: -2;
   display: block;
   pointer-events: none;
@@ -82,11 +89,16 @@ body{
 main{
   position: relative;
   z-index: 0;
+  max-width:100%;
+  overflow-x:clip;
 }
 
 .container{
-  width: min(1160px, calc(100% - 32px));
+  width:100%;
+  max-width:1160px;
   margin-inline:auto;
+  padding-inline:16px;
+  box-sizing:border-box;
 }
 
 .topbar{
@@ -533,13 +545,16 @@ main{
 }
 .cart-item{
   display:grid;
-  grid-template-columns:128px 1fr auto;
+  grid-template-columns:128px minmax(0, 1fr) auto;
   gap:12px;
   align-items:start;
   padding:12px;
   border-radius:16px;
   border:1px solid rgba(255,255,255,.10);
   background:rgba(0,0,0,.12);
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
 }
 .cart-item__img{
   width:128px;
@@ -1270,9 +1285,22 @@ main{
 }
 
 @media (max-width: 980px){
+  .brand{
+    min-width:0;
+    flex:1 1 auto;
+    max-width:100%;
+  }
   .brand__logo{
     height: 40px;
     max-width: 110px;
+  }
+  .brand__subtitle{
+    font-size:11px;
+    line-height:1.35;
+  }
+  .topbar__inner{
+    flex-wrap:wrap;
+    gap:10px;
   }
   .order-form__grid{
     grid-template-columns:1fr;
@@ -1282,16 +1310,26 @@ main{
     bottom:12px;
   }
   .topbar__cta{
-    flex-direction:column;
-    align-items:flex-end;
+    flex-direction:row;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    max-width:100%;
   }
   .cart-chip{
-    min-width:76px;
+    min-width:0;
     padding:8px 10px;
+  }
+  .phone-chip{
+    max-width:100%;
+  }
+  .phone-chip__value{
+    white-space:normal;
   }
   .topnav{ display:none; }
   .hero__inner{ grid-template-columns: 1fr; }
-  .cards-grid{ grid-template-columns: 1fr 1fr; }
+  .cards-grid{ grid-template-columns: 1fr; }
   .price-grid{ grid-template-columns: 1fr; }
   .price-grid--compact{ grid-template-columns: 1fr; }
   .subprices{ grid-template-columns: 1fr; }
@@ -1304,12 +1342,87 @@ main{
   .gallery-grid{ grid-template-columns: 1fr; }
   .delivery{ grid-template-columns: 1fr; }
   .contacts-grid{ grid-template-columns: 1fr; }
+  .subprices__row-main{
+    flex-direction:column;
+    align-items:stretch;
+    gap:12px;
+  }
+  #prices-curb .subprices__row-main .tile-preview,
+  .subprices__row-main .tile-preview{
+    margin-left:0;
+    align-self:center;
+    max-width:min(180px, 100%);
+  }
+  .subprices__row-main .tile-preview{
+    width:96px;
+    height:96px;
+  }
   .tile-preview{
-    width:108px;
-    height:108px;
+    width:96px;
+    height:96px;
+  }
+  .price-block--cast .price-cell b{
+    margin-left:0;
+    white-space:normal;
+  }
+  .price-block--cast .unit{
+    margin-left:0;
+    flex:none;
+  }
+  .price-footer-cta{
+    flex-direction:column;
+    align-items:stretch;
   }
   .cart-item{
-    grid-template-columns:96px 1fr auto;
+    grid-template-columns:88px minmax(0, 1fr) auto;
+    gap:10px;
+    padding:10px;
+  }
+  .cart-item__spec{
+    grid-template-columns:minmax(90px, 42%) minmax(0, 1fr);
+  }
+  .cart-item__spec dt{
+    white-space:normal;
+  }
+  .qty-control{
+    max-width:100%;
+  }
+  .qty-control__input{
+    width:100%;
+    max-width:120px;
+    min-width:0;
+  }
+  .order-cart,
+  .order-layout,
+  .prices,
+  .section{
+    max-width:100%;
+    overflow-x:clip;
+  }
+  .topbar__inner > *{
+    min-width:0;
+  }
+  .brand__text{
+    min-width:0;
+  }
+}
+
+@media (max-width: 480px){
+  .cart-item{
+    grid-template-columns:1fr;
+    padding-right:44px;
+    position:relative;
+  }
+  .cart-item__img{
+    width:100%;
+    max-width:140px;
+    height:auto;
+    aspect-ratio:1;
+  }
+  .cart-item__remove{
+    position:absolute;
+    top:10px;
+    right:10px;
   }
 }
 
