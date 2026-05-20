@@ -1,13 +1,9 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_API_BASE =
+  var TELEGRAM_SEND_URL =
     'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
   var TELEGRAM_CHAT_ID = '7667524051';
-  var TELEGRAM_PROXY_PREFIXES = [
-    'https://corsproxy.io/?url=',
-    'https://api.allorigins.win/raw?url='
-  ];
 
   var TILE_IMG_BASE = 'img/tiles';
   var TILE_FALLBACK = 'assets/bruschatka-1.png';
@@ -100,44 +96,22 @@
       .replace(/>/g, '&gt;');
   }
 
-  function buildTelegramGetUrl(text) {
-    return (
-      TELEGRAM_API_BASE +
-      '?chat_id=' +
-      encodeURIComponent(TELEGRAM_CHAT_ID) +
-      '&text=' +
-      encodeURIComponent(text) +
-      '&parse_mode=' +
-      encodeURIComponent('HTML')
-    );
-  }
+  function postToTelegramBot(text) {
+    var formData = new FormData();
+    formData.append('chat_id', TELEGRAM_CHAT_ID);
+    formData.append('text', text);
+    formData.append('parse_mode', 'HTML');
 
-  function postToTelegramBot(text, proxyIndex) {
-    var index = proxyIndex || 0;
-    var proxyPrefix = TELEGRAM_PROXY_PREFIXES[index];
-    if (!proxyPrefix) {
-      return Promise.reject(new Error('telegram_proxy_exhausted'));
-    }
-
-    var telegramUrl = buildTelegramGetUrl(text);
-    var url = proxyPrefix + encodeURIComponent(telegramUrl);
-
-    return fetch(url, { method: 'GET' })
-      .then(function (res) {
-        return res.json().then(function (data) {
-          if (!res.ok || !data.ok) {
-            var err = new Error(data.description || 'telegram_error');
-            console.error('Telegram API:', err, data);
-            throw err;
-          }
-          return data;
-        });
+    return fetch(TELEGRAM_SEND_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: formData
+    })
+      .then(function () {
+        return { ok: true };
       })
       .catch(function (error) {
-        console.error('Прокси ' + index + ' не сработал:', error);
-        if (index + 1 < TELEGRAM_PROXY_PREFIXES.length) {
-          return postToTelegramBot(text, index + 1);
-        }
+        console.error(error);
         throw error;
       });
   }
