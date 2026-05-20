@@ -31,9 +31,9 @@
       <div class="container topbar__inner">
         <div class="brand" itemscope itemtype="https://schema.org/Organization">
           <meta itemprop="url" content="https://oooarsstroy.ru" />
-          <img class="brand__logo" src="favicon.png" width="52" height="52" alt="АРССТРОЙ" itemprop="logo" />
+          <img class="brand__logo" src="favicon.png" width="52" height="52" alt="Арс Строй" itemprop="logo" />
           <div class="brand__text">
-            <div class="brand__title" itemprop="name">АРССТРОЙ</div>
+            <div class="brand__title" itemprop="name">Арс Строй</div>
             <div class="brand__subtitle">
               Тротуарная плитка • Брусчатка • Бордюр •
               <span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
@@ -48,15 +48,21 @@
 
         <nav class="topnav" aria-label="Навигация">
           <a href="#catalog">Каталог</a>
+          <a href="#prices">Прайс</a>
           <a href="#gallery">Фото</a>
+          <a href="#order">Заказ</a>
           <a href="#delivery">Доставка</a>
           <a href="#contacts">Контакты</a>
         </nav>
 
         <div class="topbar__cta">
+          <a class="cart-chip" href="#order" id="cart-chip" aria-label="Корзина">
+            <span class="cart-chip__label">Корзина</span>
+            <span class="cart-chip__count" id="cart-count">0</span>
+          </a>
           <a class="phone-chip" href="tel:+79258056308">
             <span class="phone-chip__label">Позвонить</span>
-            <span class="phone-chip__value">+7 (925) 805-63-08</span>
+            <span class="phone-chip__value"><span class="phone-chip__value-main">+7 (925) 805-63-</span><span class="phone-chip__value-end">08</span></span>
           </a>
         </div>
       </div>
@@ -72,10 +78,10 @@
               <span class="hero__title-accent">по честным ценам</span>
             </h1>
             <p class="hero__lead">
-              Изготавливаем тротуарную плитку, брусчатку, «Новый город», бордюр, вибропрессованное литьё. Работаем в Кубинке и по Одинцовскому району. Доставка осуществляется своим манипулятором.
+              Изготавливаем тротуарную плитку, брусчатку, «Новый город», бордюр, вибропрессованное литьё, строительный блок (полнотельный и пустотельный). Работаем в Кубинке и по Одинцовскому району. Доставка осуществляется своим манипулятором.
             </p>
             <div class="hero__actions">
-              <a class="btn btn--primary" href="#prices">Смотреть цены</a>
+              <a class="btn btn--primary" href="#prices">Прайс</a>
             </div>
             <div class="hero__phones" aria-label="Телефоны">
               <a href="tel:+79258056308" class="pill pill--primary">+7 (925) 805-63-08</a>
@@ -107,7 +113,7 @@
               </div>
               <div class="stat">
                 <div class="stat__value">Вибропрессованное литьё</div>
-                <div class="stat__label">50×50, 40×40, 35×35, 30×30</div>
+                <div class="stat__label">500×500×50, 400×400×50, 350×350×50, 300×300×30</div>
               </div>
             </div>
           </div>
@@ -118,33 +124,33 @@
         <div class="container">
           <div class="section__head">
             <h2 class="section__title">Каталог</h2>
-            <p class="section__subtitle">Выберите направление: Брусчатка, Бордюр, «Новый город», вибропрессованное литьё — и сразу переходите к ценам.</p>
+            <p class="section__subtitle">Выберите направление — размеры и цены смотрите в разделе «Прайс».</p>
           </div>
 
           <div class="cards-grid">
-            <a class="cat-card" href="#prices-b1" aria-label="Цены на брусчатку 200×100×60">
-              <div class="cat-card__title">Брусчатка 200×100×60</div>
+            <a class="cat-card" href="#prices" aria-label="Прайс на брусчатку">
+              <div class="cat-card__title">Брусчатка</div>
               <div class="cat-card__meta">Оттенки • цена за м²</div>
               <div class="cat-card__arrow" aria-hidden="true">→</div>
             </a>
-            <a class="cat-card" href="#prices-b2" aria-label="Цены на брусчатку 200×100×40">
-              <div class="cat-card__title">Брусчатка 200×100×40</div>
-              <div class="cat-card__meta">Оттенки • цена за м²</div>
+            <a class="cat-card" href="#prices-curb" aria-label="Прайс на бордюр">
+              <div class="cat-card__title">Бордюр</div>
+              <div class="cat-card__meta">Цена за штуку</div>
               <div class="cat-card__arrow" aria-hidden="true">→</div>
             </a>
-            <a class="cat-card" href="#prices-curb" aria-label="Цены на бордюр">
-              <div class="cat-card__title">Бордюр дорожный 1000×300×150</div>
-              <div class="cat-card__meta">Серый 480 руб./шт</div>
-              <div class="cat-card__arrow" aria-hidden="true">→</div>
-            </a>
-            <a class="cat-card" href="#prices-cast" aria-label="Цены на вибропрессованное литьё">
+            <a class="cat-card" href="#prices-cast" aria-label="Прайс на вибропрессованное литьё">
               <div class="cat-card__title">Вибропрессованное литьё</div>
-              <div class="cat-card__meta">50×50 • 40×40 • 35×35 • 30×30</div>
+              <div class="cat-card__meta">Цена за м²</div>
               <div class="cat-card__arrow" aria-hidden="true">→</div>
             </a>
-            <a class="cat-card" href="#prices-city" aria-label="Цены на Новый город">
+            <a class="cat-card" href="#prices-city" aria-label="Прайс на Новый город">
               <div class="cat-card__title">«Новый город»</div>
-              <div class="cat-card__meta">240×160×60</div>
+              <div class="cat-card__meta">Цена за м²</div>
+              <div class="cat-card__arrow" aria-hidden="true">→</div>
+            </a>
+            <a class="cat-card" href="#prices-block" aria-label="Прайс на строительный блок">
+              <div class="cat-card__title">Строительный блок</div>
+              <div class="cat-card__meta">Полнотельный и пустотельный</div>
               <div class="cat-card__arrow" aria-hidden="true">→</div>
             </a>
             <a class="cat-card" href="#gallery" aria-label="Перейти к фото">
@@ -159,8 +165,8 @@
       <section class="section section--soft" id="prices">
         <div class="container">
           <div class="section__head">
-            <h2 class="section__title">Цены и веса</h2>
-            <p class="section__subtitle">Для расчёта количества звоните по телефонам.</p>
+            <h2 class="section__title">Прайс</h2>
+            <p class="section__subtitle">У каждого цвета и размера — своя кнопка «В корзину». Можно добавить, например, 50 м² красной и 25 м² чёрной брусчатки отдельными позициями.</p>
           </div>
 
           <div class="prices">
@@ -178,7 +184,7 @@
                   <span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневая <b>850</b> <span class="unit">руб./м²</span>
                 </div>
                 <div class="price-cell" role="row">
-                  <span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая (обычный цемент) <b>950</b> <span class="unit">руб./м²</span>
+                  <span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на обычном цементе <b>950</b> <span class="unit">руб./м²</span>
                 </div>
                 <div class="price-cell" role="row">
                   <span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на белом цементе <b>1300</b> <span class="unit">руб./м²</span>
@@ -206,10 +212,10 @@
                   <span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневая <b>800</b> <span class="unit">руб./м²</span>
                 </div>
                 <div class="price-cell" role="row">
-                  <span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая (обычный цемент) <b>800</b> <span class="unit">руб./м²</span>
+                  <span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на обычном цементе <b>800</b> <span class="unit">руб./м²</span>
                 </div>
                 <div class="price-cell" role="row">
-                  <span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на белом цементе <b>1100</b> <span class="unit">руб./м²</span>
+                  <span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на белом цементе <b>1200</b> <span class="unit">руб./м²</span>
                 </div>
                 <div class="price-cell" role="row">
                   <span class="color-dot color-dot--black" aria-hidden="true"></span> Чёрная <b>800</b> <span class="unit">руб./м²</span>
@@ -230,7 +236,13 @@
                     <span class="color-dot color-dot--gray" aria-hidden="true"></span> Серый <b>250</b> <span class="unit">руб./шт</span>
                   </div>
                   <div class="subprices__row">
-                    <span class="color-dot color-dot--colorful" aria-hidden="true"></span> Цветной <b>300</b> <span class="unit">руб./шт</span>
+                    <span class="color-dot color-dot--dark-gray" aria-hidden="true"></span> Тёмно-серый <b>300</b> <span class="unit">руб./шт</span>
+                  </div>
+                  <div class="subprices__row">
+                    <span class="color-dot color-dot--red" aria-hidden="true"></span> Красный <b>300</b> <span class="unit">руб./шт</span>
+                  </div>
+                  <div class="subprices__row">
+                    <span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневый <b>300</b> <span class="unit">руб./шт</span>
                   </div>
                   <div class="subprices__meta">Вес: 38–40 кг</div>
                 </div>
@@ -239,7 +251,7 @@
                   <div class="subprices__row">
                     <span class="color-dot color-dot--gray" aria-hidden="true"></span> Серый <b>480</b> <span class="unit">руб./шт</span>
                   </div>
-                  <div class="subprices__meta">Вес: 105–110 кг</div>
+                  <div class="subprices__meta">Только серый • вес: 105–110 кг</div>
                 </div>
                 <div class="subprices__card">
                   <div class="subprices__title">Бордюр 500×200×60 мм</div>
@@ -247,7 +259,13 @@
                     <span class="color-dot color-dot--gray" aria-hidden="true"></span> Серый <b>120</b> <span class="unit">руб./шт</span>
                   </div>
                   <div class="subprices__row">
-                    <span class="color-dot color-dot--colorful" aria-hidden="true"></span> Цветной <b>150</b> <span class="unit">руб./шт</span>
+                    <span class="color-dot color-dot--dark-gray" aria-hidden="true"></span> Тёмно-серый <b>150</b> <span class="unit">руб./шт</span>
+                  </div>
+                  <div class="subprices__row">
+                    <span class="color-dot color-dot--red" aria-hidden="true"></span> Красный <b>150</b> <span class="unit">руб./шт</span>
+                  </div>
+                  <div class="subprices__row">
+                    <span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневый <b>150</b> <span class="unit">руб./шт</span>
                   </div>
                   <div class="subprices__meta">Вес: 14–16 кг</div>
                 </div>
@@ -260,42 +278,46 @@
 
               <div class="subprices subprices--cast">
                 <div class="subprices__card">
-                  <div class="subprices__title">50×50</div>
+                  <div class="subprices__title">500×500×50 мм</div>
                   <div class="price-grid price-grid--compact">
                     <div class="price-cell"><span class="color-dot color-dot--gray" aria-hidden="true"></span> Серая <b>800</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--red" aria-hidden="true"></span> Красная <b>900</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневая <b>900</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая <b>1000</b> <span class="unit">руб./м²</span></div>
+                    <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на белом цементе <b>1400</b> <span class="unit">руб./м²</span></div>
                   </div>
                   <div class="subprices__meta">Вес: 28–30 кг</div>
                 </div>
                 <div class="subprices__card">
-                  <div class="subprices__title">40×40</div>
+                  <div class="subprices__title">400×400×50 мм</div>
                   <div class="price-grid price-grid--compact">
                     <div class="price-cell"><span class="color-dot color-dot--gray" aria-hidden="true"></span> Серая <b>800</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--red" aria-hidden="true"></span> Красная <b>900</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневая <b>900</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая <b>1000</b> <span class="unit">руб./м²</span></div>
+                    <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на белом цементе <b>1400</b> <span class="unit">руб./м²</span></div>
                   </div>
                   <div class="subprices__meta">Вес: 18–20 кг</div>
                 </div>
                 <div class="subprices__card">
-                  <div class="subprices__title">35×35</div>
+                  <div class="subprices__title">350×350×50 мм</div>
                   <div class="price-grid price-grid--compact">
                     <div class="price-cell"><span class="color-dot color-dot--gray" aria-hidden="true"></span> Серая <b>800</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--red" aria-hidden="true"></span> Красная <b>900</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневая <b>900</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая <b>1000</b> <span class="unit">руб./м²</span></div>
+                    <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на белом цементе <b>1400</b> <span class="unit">руб./м²</span></div>
                   </div>
                   <div class="subprices__meta">Вес: 14–15 кг</div>
                 </div>
                 <div class="subprices__card">
-                  <div class="subprices__title">30×30</div>
+                  <div class="subprices__title">300×300×30 мм</div>
                   <div class="price-grid price-grid--compact">
                     <div class="price-cell"><span class="color-dot color-dot--gray" aria-hidden="true"></span> Серая <b>650</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--red" aria-hidden="true"></span> Красная <b>750</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневая <b>800</b> <span class="unit">руб./м²</span></div>
                     <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая <b>900</b> <span class="unit">руб./м²</span></div>
+                    <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтая на белом цементе <b>1200</b> <span class="unit">руб./м²</span></div>
                   </div>
                   <div class="subprices__meta">Вес: 5,5–6 кг</div>
                 </div>
@@ -307,17 +329,38 @@
               <div class="price-block__hint">240×160×60 мм • Вес: 28–30 кг</div>
               <div class="price-grid" role="table" aria-label="Цены на «Новый город»">
                 <div class="price-cell"><span class="color-dot color-dot--gray" aria-hidden="true"></span> Серый <b>750</b> <span class="unit">руб./м²</span></div>
+                <div class="price-cell"><span class="color-dot color-dot--dark-gray" aria-hidden="true"></span> Тёмно-серый <b>850</b> <span class="unit">руб./м²</span></div>
                 <div class="price-cell"><span class="color-dot color-dot--red" aria-hidden="true"></span> Красный <b>850</b> <span class="unit">руб./м²</span></div>
                 <div class="price-cell"><span class="color-dot color-dot--black" aria-hidden="true"></span> Чёрный <b>850</b> <span class="unit">руб./м²</span></div>
                 <div class="price-cell"><span class="color-dot color-dot--brown" aria-hidden="true"></span> Коричневый <b>850</b> <span class="unit">руб./м²</span></div>
-                <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтый <b>950</b> <span class="unit">руб./м²</span></div>
+                <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтый на обычном цементе <b>950</b> <span class="unit">руб./м²</span></div>
+                <div class="price-cell"><span class="color-dot color-dot--yellow" aria-hidden="true"></span> Жёлтый на белом цементе <b>1300</b> <span class="unit">руб./м²</span></div>
               </div>
             </article>
 
-            <article class="price-block">
-              <h3 class="price-block__title">Блок</h3>
-              <div class="price-block__hint">Цена: 120 руб.</div>
-              <div class="note-card">Уточните единицу измерения при заказе (у нас уточняется в зависимости от комплектации).</div>
+            <article class="price-block" id="prices-block">
+              <h3 class="price-block__title">Строительный блок</h3>
+              <div class="price-block__hint">Цены указаны за штуку</div>
+              <div class="subprices subprices--blocks">
+                <div class="subprices__card subprices__card--photo" data-block-type="solid">
+                  <img class="subprices__photo" src="assets/blok-polnotelnyi.png" alt="Блок полнотельный 390×190×188 мм, серый" width="480" height="360" loading="lazy" />
+                  <div class="subprices__title">Блок полнотельный</div>
+                  <div class="subprices__dims">390×190×188 мм</div>
+                  <div class="subprices__row">
+                    <span class="color-dot color-dot--gray" aria-hidden="true"></span> Серый <b>150</b> <span class="unit">руб./шт</span>
+                  </div>
+                  <div class="subprices__meta">Только серый</div>
+                </div>
+                <div class="subprices__card subprices__card--photo" data-block-type="hollow">
+                  <img class="subprices__photo" src="assets/blok-pustotelniy.png" alt="Блок пустотельный 390×188×190 мм, серый" width="480" height="360" loading="lazy" />
+                  <div class="subprices__title">Блок пустотельный</div>
+                  <div class="subprices__dims">390×188×190 мм</div>
+                  <div class="subprices__row">
+                    <span class="color-dot color-dot--gray" aria-hidden="true"></span> Серый <b>120</b> <span class="unit">руб./шт</span>
+                  </div>
+                  <div class="subprices__meta">Только серый</div>
+                </div>
+              </div>
             </article>
 
             <div class="price-footer-cta">
@@ -337,53 +380,69 @@
         <div class="container">
           <div class="section__head">
             <h2 class="section__title">Фотогалерея</h2>
-            <p class="section__subtitle">По вашим фото пополняем разделы каталога.</p>
+            <p class="section__subtitle">Фото для ориентира. Цены и «В корзину» — в разделе «Прайс».</p>
           </div>
 
           <div class="gallery-grid" role="list">
-            <figure class="gallery-card" role="listitem">
+            <figure class="gallery-card gallery-card--catalog" role="listitem">
               <img src="assets/bruschatka-1.png" alt="Брусчатка — образцы цветов на стенде" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Брусчатка</div>
-                <div class="gallery-card__sub">Фото образца • уточните размер/цвет при заказе</div>
+                <a class="btn btn--primary gallery-card__buy" href="#prices">Прайс</a>
               </figcaption>
             </figure>
 
-            <figure class="gallery-card" role="listitem">
+            <figure class="gallery-card gallery-card--catalog" role="listitem">
               <img src="assets/lito-1.png" alt="Вибропрессованное литьё — образцы на стенде" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Вибропрессованное литьё</div>
-                <div class="gallery-card__sub">Фото образца • уточните размер/цвет для точного прайса</div>
+                <a class="btn btn--primary gallery-card__buy" href="#prices-cast">Прайс</a>
               </figcaption>
             </figure>
-            <figure class="gallery-card" role="listitem">
+            <figure class="gallery-card gallery-card--catalog" role="listitem">
               <img src="assets/novyi-gorod-1.png" alt="«Новый город» — образцы на стенде" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">«Новый город»</div>
-                <div class="gallery-card__sub">Фото работ • размер 240×160×60</div>
+                <a class="btn btn--primary gallery-card__buy" href="#prices-city">Прайс</a>
               </figcaption>
             </figure>
-            <figure class="gallery-card" role="listitem">
+            <figure class="gallery-card gallery-card--catalog" role="listitem">
               <img src="assets/bordyur-1.png" alt="Бордюр (пример образца)" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Бордюр</div>
-                <div class="gallery-card__sub">Фото образца • уточните размер/тип при заказе</div>
+                <a class="btn btn--primary gallery-card__buy" href="#prices-curb">Прайс</a>
               </figcaption>
             </figure>
-            <figure class="gallery-card" role="listitem">
+            <figure class="gallery-card gallery-card--no-buy" role="listitem">
               <img src="assets/zavod-1.png" alt="Наш завод (пример)" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Наш завод</div>
-                <div class="gallery-card__sub">Производим плитку и брусчатку</div>
               </figcaption>
             </figure>
-            <figure class="gallery-card" role="listitem">
+            <figure class="gallery-card gallery-card--ukladka" role="listitem">
               <img src="assets/ukladka-1.png" alt="Укладка покрытия (пример)" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Укладка</div>
-                <div class="gallery-card__sub">Фото готовой площадки • уточните материал для подписи</div>
+                <button type="button" class="btn btn--primary btn--buy gallery-card__buy" data-ukladka-scroll>Заявка на замер</button>
               </figcaption>
             </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--soft ukladka-request" id="ukladka-request" aria-labelledby="ukladka-request-title">
+        <div class="container">
+          <div class="ukladka-request__card">
+            <h2 class="section__title ukladka-request__title" id="ukladka-request-title">Вызовите специалиста бесплатно и он сделает замер</h2>
+            <p class="section__subtitle ukladka-request__text">
+            Хотите красивую зону вокруг дома? А может быть дорожки интересной формы? Рады предложить Вам свои услуги.
+            Наш инженер приедет к Вам, произведёт все необходимые замеры, сделает расчёт.
+          </p>
+          <form class="ukladka-request__form" id="ukladka-form" novalidate>
+            <input class="order-field__input ukladka-request__input" type="text" name="name" id="ukladka-name" placeholder="Ваше имя" required autocomplete="name" />
+            <input class="order-field__input ukladka-request__input" type="tel" name="phone" id="ukladka-phone" placeholder="Телефонный номер" required autocomplete="tel" />
+            <button type="submit" class="btn btn--primary ukladka-request__submit">Отправить заявку</button>
+          </form>
           </div>
         </div>
       </section>
@@ -420,6 +479,63 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--soft" id="order">
+        <div class="container">
+          <div class="section__head">
+            <h2 class="section__title">Оформление заказа</h2>
+            <p class="section__subtitle">В корзину добавляйте из раздела «Прайс» — там указаны размер, цвет и цена. Проверьте количество (м² или шт.) и отправьте заявку.</p>
+          </div>
+
+          <div class="order-layout">
+            <div class="order-selected" id="order-selected" aria-live="polite">
+              <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
+            </div>
+
+            <form class="order-form" id="order-form" novalidate>
+              <div class="order-cart" id="order-cart" hidden>
+                <div class="order-cart__head">
+                  <div class="order-cart__title">Ваш заказ</div>
+                  <button type="button" class="order-cart__clear" id="cart-clear">Очистить</button>
+                </div>
+                <div class="order-cart__items" id="cart-items"></div>
+                <div class="order-cart__grand">
+                  Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
+                </div>
+              </div>
+
+              <div class="order-form__grid">
+                <label class="order-field">
+                  <span class="order-field__label">ФИО</span>
+                  <input class="order-field__input" type="text" name="name" id="order-name" required autocomplete="name" />
+                </label>
+                <label class="order-field">
+                  <span class="order-field__label">Компания</span>
+                  <input class="order-field__input" type="text" name="company" id="order-company" autocomplete="organization" />
+                </label>
+                <label class="order-field">
+                  <span class="order-field__label">Телефон</span>
+                  <input class="order-field__input" type="tel" name="phone" id="order-phone" required autocomplete="tel" />
+                </label>
+                <label class="order-field">
+                  <span class="order-field__label">E-mail</span>
+                  <input class="order-field__input" type="email" name="email" id="order-email" autocomplete="email" />
+                </label>
+                <label class="order-field order-field--full">
+                  <span class="order-field__label">Адрес доставки</span>
+                  <input class="order-field__input" type="text" name="address" id="order-address" required />
+                </label>
+                <label class="order-field order-field--full">
+                  <span class="order-field__label">Дополнительная информация</span>
+                  <textarea class="order-field__input order-field__textarea" name="comment" id="order-comment" rows="3"></textarea>
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn--primary order-form__submit">Отправить заказ</button>
+            </form>
           </div>
         </div>
       </section>
@@ -474,8 +590,9 @@
           </div>
         </div>
         <div class="footer__links">
-          <a href="#prices">Цены</a>
+          <a href="#prices">Прайс</a>
           <a href="#gallery">Фото</a>
+          <a href="#order">Заказ</a>
           <a href="#delivery">Доставка</a>
           <a href="#contacts">Контакты</a>
         </div>
@@ -484,6 +601,19 @@
         © <span id="year"></span> АРССТРОЙ. Все цены предварительные.
       </div>
     </footer>
+
+    <div class="float-social" aria-label="Связь в мессенджерах">
+      <a href="#" class="float-social__btn float-social__btn--wa" aria-label="WhatsApp" title="WhatsApp">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.881 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+      </a>
+      <a href="#" class="float-social__btn float-social__btn--tg" aria-label="Telegram" title="Telegram">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+        </svg>
+      </a>
+    </div>
 
     <canvas id="fluid-canvas" aria-hidden="true"></canvas>
 
@@ -791,6 +921,8 @@
       window.FluidBackground = { start: start, stop: stop, CONFIG: CONFIG, canvas: canvas };
     })();
     </script>
+
+    <script src="order-cart.js" defer></script>
 
     <!-- Yandex.Metrika counter -->
     <script>
