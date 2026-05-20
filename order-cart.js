@@ -1,16 +1,12 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_API_TARGET =
-    'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
-  var TELEGRAM_CHAT_ID = '7667524051';
-
-  function getTelegramRequestUrl() {
-    return (
-      'https://corsproxy.io?' +
-      encodeURIComponent(TELEGRAM_API_TARGET)
+  var TELEGRAM_SEND_URL =
+    'https://corsproxy.io/?' +
+    encodeURIComponent(
+      'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage'
     );
-  }
+  var TELEGRAM_CHAT_ID = '7667524051';
 
   var TILE_IMG_BASE = 'img/tiles';
   var TILE_FALLBACK = 'assets/bruschatka-1.png';
@@ -104,8 +100,7 @@
   }
 
   function sendTelegram(text) {
-    var url = getTelegramRequestUrl();
-    return fetch(url, {
+    return fetch(TELEGRAM_SEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -770,8 +765,7 @@
         formatMoney(getCartGrandTotal()) +
         ' руб.';
 
-      var url = getTelegramRequestUrl();
-      fetch(url, {
+      fetch(TELEGRAM_SEND_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
