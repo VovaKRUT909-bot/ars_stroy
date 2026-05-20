@@ -1,8 +1,11 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_BOT_TOKEN = '8967383901:AAEU6pX1-hEnpa_qq_uxfNLqfp3dR19ZKAY';
-  var TELEGRAM_CHAT_ID = '805708017';
+  var TELEGRAM_API_PART1 = 'https://';
+  var TELEGRAM_API_PART2 = 'api.telegram.org/bot';
+  var TELEGRAM_API_PART3 =
+    '8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
+  var TELEGRAM_CHAT_ID = '7667524051';
 
   var TILE_IMG_BASE = 'img/tiles';
   var TILE_FALLBACK = 'assets/bruschatka-1.png';
@@ -88,13 +91,22 @@
     return n.toLocaleString('ru-RU');
   }
 
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   function sendTelegram(text) {
-    return fetch('https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage', {
+    var url = TELEGRAM_API_PART1 + TELEGRAM_API_PART2 + TELEGRAM_API_PART3;
+    return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
-        text: text
+        text: text,
+        parse_mode: 'HTML'
       })
     }).then(function (res) {
       return res.json().then(function (data) {
@@ -679,51 +691,71 @@
         return;
       }
 
+      var name = document.getElementById('order-name').value.trim();
+      var company = document.getElementById('order-company').value.trim();
+      var phone = document.getElementById('order-phone').value.trim();
+      var email = document.getElementById('order-email').value.trim();
+      var address = document.getElementById('order-address').value.trim();
+      var comment = document.getElementById('order-comment').value.trim();
+
       var lines = cart.map(function (item, i) {
         var measure = item.qtyMeasure || 'шт.';
         return (
-          (i + 1) + '. ' + item.productName +
-          '\n   Цвет: ' + (item.colorRu || item.color) +
-          '\n   Размер: ' + item.size +
-          '\n   Артикул: ' + item.article +
-          '\n   Кол-во: ' + item.qty + ' ' + measure +
-          '\n   Цена: ' + formatMoney(item.price) + ' ' + item.unit +
-          '\n   Сумма: ' + formatMoney(item.price * item.qty) + ' руб.'
+          '<b>' +
+          (i + 1) +
+          '. ' +
+          escapeHtml(item.productName) +
+          '</b>\n' +
+          'Цвет: ' +
+          escapeHtml(item.colorRu || item.color) +
+          '\nРазмер: ' +
+          escapeHtml(item.size) +
+          '\nАртикул: <code>' +
+          escapeHtml(item.article) +
+          '</code>\n' +
+          'Количество: ' +
+          item.qty +
+          ' ' +
+          escapeHtml(measure) +
+          '\nЦена: ' +
+          formatMoney(item.price) +
+          ' ' +
+          escapeHtml(item.unit) +
+          '\nСумма: <b>' +
+          formatMoney(item.price * item.qty) +
+          ' руб.</b>'
         );
       });
 
       var message =
-        '🔔 Новый заказ камня!\n' +
-        '📦 Товары:\n' +
-        lines.join('\n') +
-        '\n' +
-        '💰 Итого: ' +
+        '<b>🔔 Новый заказ с сайта</b>\n\n' +
+        '<b>Данные клиента</b>\n' +
+        'ФИО: ' +
+        escapeHtml(name || '—') +
+        '\nТелефон: ' +
+        escapeHtml(phone || '—') +
+        '\nАдрес: ' +
+        escapeHtml(address || '—') +
+        '\nКомпания: ' +
+        escapeHtml(company || '—') +
+        '\nE-mail: ' +
+        escapeHtml(email || '—') +
+        '\nКомментарий: ' +
+        escapeHtml(comment || '—') +
+        '\n\n' +
+        '<b>Товары в корзине</b>\n\n' +
+        lines.join('\n\n') +
+        '\n\n' +
+        '<b>Итого к оплате:</b> ' +
         formatMoney(getCartGrandTotal()) +
-        ' руб.\n' +
-        '👤 Клиент: ' +
-        (document.getElementById('order-name').value || '—') +
-        '\n' +
-        '🏢 Компания: ' +
-        (document.getElementById('order-company').value || '—') +
-        '\n' +
-        '📞 Телефон: ' +
-        (document.getElementById('order-phone').value || '—') +
-        '\n' +
-        '📧 E-mail: ' +
-        (document.getElementById('order-email').value || '—') +
-        '\n' +
-        '📍 Адрес доставки: ' +
-        (document.getElementById('order-address').value || '—') +
-        '\n' +
-        '📝 Комментарий: ' +
-        (document.getElementById('order-comment').value || '—');
+        ' руб.';
 
       sendTelegram(message)
         .then(function () {
           orderForm.reset();
           cart = [];
           renderCart();
-          alert('Спасибо за заказ! Мы свяжемся с вами в ближайшее время.');
+          alert('Спасибо! Ваш заказ успешно отправлен в обработку');
         })
         .catch(function () {
           alert('Ошибка отправки. Пожалуйста, попробуйте еще раз.');
@@ -735,12 +767,11 @@
     ukladkaForm.addEventListener('submit', function (e) {
       e.preventDefault();
       var message =
-        '🔔 Заявка на укладку / бесплатный замер!\n' +
-        '👤 Имя: ' +
-        (document.getElementById('ukladka-name').value || '—') +
-        '\n' +
-        '📞 Телефон: ' +
-        (document.getElementById('ukladka-phone').value || '—');
+        '<b>🔔 Заявка на укладку / бесплатный замер</b>\n\n' +
+        'Имя: ' +
+        escapeHtml(document.getElementById('ukladka-name').value.trim() || '—') +
+        '\nТелефон: ' +
+        escapeHtml(document.getElementById('ukladka-phone').value.trim() || '—');
 
       sendTelegram(message)
         .then(function () {
