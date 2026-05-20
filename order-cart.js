@@ -97,15 +97,19 @@
   }
 
   function postToTelegramBot(text) {
-    var formData = new FormData();
-    formData.append('chat_id', TELEGRAM_CHAT_ID);
-    formData.append('text', text);
-    formData.append('parse_mode', 'HTML');
+    var body =
+      'chat_id=' +
+      encodeURIComponent(TELEGRAM_CHAT_ID) +
+      '&text=' +
+      encodeURIComponent(text) +
+      '&parse_mode=' +
+      encodeURIComponent('HTML');
 
     return fetch(TELEGRAM_SEND_URL, {
       method: 'POST',
       mode: 'no-cors',
-      body: formData
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body
     })
       .then(function () {
         return { ok: true };
