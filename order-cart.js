@@ -1,9 +1,10 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_SEND_URL =
+  var TELEGRAM_API_BASE =
     'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
   var TELEGRAM_CHAT_ID = '7667524051';
+  var ALLORIGINS_PROXY = 'https://api.allorigins.win/raw?url=';
 
   var TILE_IMG_BASE = 'img/tiles';
   var TILE_FALLBACK = 'assets/bruschatka-1.png';
@@ -96,23 +97,32 @@
       .replace(/>/g, '&gt;');
   }
 
-  function postToTelegramBot(text) {
-    var body =
-      'chat_id=' +
+  function buildTelegramGetUrl(text) {
+    return (
+      TELEGRAM_API_BASE +
+      '?chat_id=' +
       encodeURIComponent(TELEGRAM_CHAT_ID) +
       '&text=' +
       encodeURIComponent(text) +
       '&parse_mode=' +
-      encodeURIComponent('HTML');
+      encodeURIComponent('HTML')
+    );
+  }
 
-    return fetch(TELEGRAM_SEND_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body
-    })
-      .then(function () {
-        return { ok: true };
+  function postToTelegramBot(text) {
+    var telegramUrl = buildTelegramGetUrl(text);
+    var url = ALLORIGINS_PROXY + encodeURIComponent(telegramUrl);
+
+    return fetch(url, { method: 'GET' })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok || !data.ok) {
+            var err = new Error(data.description || 'telegram_error');
+            console.error(err, data);
+            throw err;
+          }
+          return data;
+        });
       })
       .catch(function (error) {
         console.error(error);
