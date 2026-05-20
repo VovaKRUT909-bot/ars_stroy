@@ -500,6 +500,23 @@ main{
   transform:translateY(-2px);
   box-shadow:0 14px 32px rgba(0,0,0,.42);
 }
+.float-social__btn--max{
+  width:auto;
+  min-width:56px;
+  max-width:min(220px, calc(100vw - 36px));
+  height:auto;
+  min-height:56px;
+  padding:10px 14px;
+  background:linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
+.float-social__btn--max .float-social__label{
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.02em;
+  line-height:1.25;
+  text-align:center;
+  white-space:nowrap;
+}
 .float-social__btn--wa{
   background:#25D366;
 }
