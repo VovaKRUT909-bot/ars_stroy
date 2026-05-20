@@ -1,12 +1,12 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_API_URL =
+  var TELEGRAM_API_BASE =
     'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
   var TELEGRAM_CHAT_ID = '7667524051';
-  var TELEGRAM_PROXY_URLS = [
-    'https://corsproxy.io/?url=' + encodeURIComponent(TELEGRAM_API_URL),
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent(TELEGRAM_API_URL)
+  var TELEGRAM_PROXY_PREFIXES = [
+    'https://corsproxy.io/?url=',
+    'https://api.allorigins.win/raw?url='
   ];
 
   var TILE_IMG_BASE = 'img/tiles';
@@ -100,18 +100,29 @@
       .replace(/>/g, '&gt;');
   }
 
-  function postToTelegramBot(payload, proxyIndex) {
+  function buildTelegramGetUrl(text) {
+    return (
+      TELEGRAM_API_BASE +
+      '?chat_id=' +
+      encodeURIComponent(TELEGRAM_CHAT_ID) +
+      '&text=' +
+      encodeURIComponent(text) +
+      '&parse_mode=' +
+      encodeURIComponent('HTML')
+    );
+  }
+
+  function postToTelegramBot(text, proxyIndex) {
     var index = proxyIndex || 0;
-    var url = TELEGRAM_PROXY_URLS[index];
-    if (!url) {
+    var proxyPrefix = TELEGRAM_PROXY_PREFIXES[index];
+    if (!proxyPrefix) {
       return Promise.reject(new Error('telegram_proxy_exhausted'));
     }
 
-    return fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
+    var telegramUrl = buildTelegramGetUrl(text);
+    var url = proxyPrefix + encodeURIComponent(telegramUrl);
+
+    return fetch(url, { method: 'GET' })
       .then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok || !data.ok) {
@@ -124,19 +135,15 @@
       })
       .catch(function (error) {
         console.error('Прокси ' + index + ' не сработал:', error);
-        if (index + 1 < TELEGRAM_PROXY_URLS.length) {
-          return postToTelegramBot(payload, index + 1);
+        if (index + 1 < TELEGRAM_PROXY_PREFIXES.length) {
+          return postToTelegramBot(text, index + 1);
         }
         throw error;
       });
   }
 
   function sendTelegram(text) {
-    return postToTelegramBot({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: text,
-      parse_mode: 'HTML'
-    });
+    return postToTelegramBot(text);
   }
 
   function slugifyAscii(text) {
