@@ -1,10 +1,8 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_API_PART1 = 'https://';
-  var TELEGRAM_API_PART2 = 'api.telegram.org/bot';
-  var TELEGRAM_API_PART3 =
-    '8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
+  var TELEGRAM_SEND_URL =
+    'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
   var TELEGRAM_CHAT_ID = '7667524051';
 
   var TILE_IMG_BASE = 'img/tiles';
@@ -99,8 +97,7 @@
   }
 
   function sendTelegram(text) {
-    var url = TELEGRAM_API_PART1 + TELEGRAM_API_PART2 + TELEGRAM_API_PART3;
-    return fetch(url, {
+    return fetch(TELEGRAM_SEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -108,12 +105,21 @@
         text: text,
         parse_mode: 'HTML'
       })
-    }).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok || !data.ok) throw new Error('telegram_error');
-        return data;
+    })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok || !data.ok) {
+            var err = new Error(data.description || 'telegram_error');
+            console.error(err, data);
+            throw err;
+          }
+          return data;
+        });
+      })
+      .catch(function (error) {
+        console.error(error);
+        throw error;
       });
-    });
   }
 
   function slugifyAscii(text) {
@@ -682,6 +688,7 @@
   if (orderForm) {
     orderForm.addEventListener('submit', function (e) {
       e.preventDefault();
+
       if (cart.length === 0) {
         alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
         return;
@@ -691,18 +698,25 @@
         return;
       }
 
-      var name = document.getElementById('order-name').value.trim();
-      var company = document.getElementById('order-company').value.trim();
-      var phone = document.getElementById('order-phone').value.trim();
-      var email = document.getElementById('order-email').value.trim();
-      var address = document.getElementById('order-address').value.trim();
-      var comment = document.getElementById('order-comment').value.trim();
+      var nameEl = document.getElementById('order-name');
+      var phoneEl = document.getElementById('order-phone');
+      var addressEl = document.getElementById('order-address');
+      var companyEl = document.getElementById('order-company');
+      var emailEl = document.getElementById('order-email');
+      var commentEl = document.getElementById('order-comment');
 
-      var lines = cart.map(function (item, i) {
+      var name = nameEl ? nameEl.value.trim() : '';
+      var phone = phoneEl ? phoneEl.value.trim() : '';
+      var address = addressEl ? addressEl.value.trim() : '';
+      var company = companyEl ? companyEl.value.trim() : '';
+      var email = emailEl ? emailEl.value.trim() : '';
+      var comment = commentEl ? commentEl.value.trim() : '';
+
+      var productLines = cart.map(function (item, index) {
         var measure = item.qtyMeasure || 'шт.';
         return (
           '<b>' +
-          (i + 1) +
+          (index + 1) +
           '. ' +
           escapeHtml(item.productName) +
           '</b>\n' +
@@ -710,10 +724,9 @@
           escapeHtml(item.colorRu || item.color) +
           '\nРазмер: ' +
           escapeHtml(item.size) +
-          '\nАртикул: <code>' +
+          '\nАртикул: ' +
           escapeHtml(item.article) +
-          '</code>\n' +
-          'Количество: ' +
+          '\nКоличество: ' +
           item.qty +
           ' ' +
           escapeHtml(measure) +
@@ -728,7 +741,7 @@
       });
 
       var message =
-        '<b>🔔 Новый заказ с сайта</b>\n\n' +
+        '<b>Новый заказ с сайта</b>\n\n' +
         '<b>Данные клиента</b>\n' +
         'ФИО: ' +
         escapeHtml(name || '—') +
@@ -738,26 +751,44 @@
         escapeHtml(address || '—') +
         '\nКомпания: ' +
         escapeHtml(company || '—') +
-        '\nE-mail: ' +
+        '\nEmail: ' +
         escapeHtml(email || '—') +
         '\nКомментарий: ' +
         escapeHtml(comment || '—') +
         '\n\n' +
-        '<b>Товары в корзине</b>\n\n' +
-        lines.join('\n\n') +
-        '\n\n' +
-        '<b>Итого к оплате:</b> ' +
+        '<b>Товары</b>\n\n' +
+        productLines.join('\n\n') +
+        '\n\n<b>Итого:</b> ' +
         formatMoney(getCartGrandTotal()) +
         ' руб.';
 
-      sendTelegram(message)
+      fetch(TELEGRAM_SEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'HTML'
+        })
+      })
+        .then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok || !data.ok) {
+              var apiError = new Error(data.description || 'telegram_error');
+              console.error(apiError, data);
+              throw apiError;
+            }
+            return data;
+          });
+        })
         .then(function () {
           orderForm.reset();
           cart = [];
           renderCart();
           alert('Спасибо! Ваш заказ успешно отправлен в обработку');
         })
-        .catch(function () {
+        .catch(function (error) {
+          console.error(error);
           alert('Ошибка отправки. Пожалуйста, попробуйте еще раз.');
         });
     });
@@ -778,7 +809,8 @@
           ukladkaForm.reset();
           alert('Спасибо за заявку! Мы свяжемся с вами в ближайшее время.');
         })
-        .catch(function () {
+        .catch(function (error) {
+          console.error(error);
           alert('Ошибка отправки. Пожалуйста, попробуйте еще раз.');
         });
     });
