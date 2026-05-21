@@ -20,6 +20,36 @@
   var cartDeliveryKmEl = document.getElementById('cart-delivery-km');
   var cartDeliveryTariffEl = document.getElementById('cart-delivery-tariff');
 
+  // Прямая отправка данных через fetch на Telegram Bot API (замерщик)
+  function sendTelegramMessage(message, cb) {
+    // Токен бота из диалога выше
+    var TELEGRAM_BOT_TOKEN = '8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k';
+    // chat_id рабочего каталога:
+    var TELEGRAM_CHAT_ID = '-1001841949265';
+
+    var url = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
+    var body = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML'
+    };
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+      .then(function (resp) { return resp.json(); })
+      .then(function (data) {
+        if (cb) cb(data);
+      })
+      .catch(function (err) {
+        if (cb) cb(null, err);
+      });
+  }
+
   var cart = [];
 
   /**
@@ -557,17 +587,23 @@
       .replace(/>/g, '&gt;');
   }
 
-  var TELEGRAM_SEND_URL = 'telegram-send.php';
+  var TELEGRAM_BOT_TOKEN = '8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k';
+  var TELEGRAM_CHAT_ID = '7667524051';
+  var TELEGRAM_API_URL =
+    'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
   var TELEGRAM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  /** Каталог и замер: один POST на telegram-send.php (сервер шлёт в Telegram). */
+  /** Каталог и замер: прямой POST в API Telegram (без telegram-send.php). */
   function sendTelegram(text) {
-    return fetch(TELEGRAM_SEND_URL, {
+    return fetch(TELEGRAM_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ text: text })
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: 'HTML'
+      })
     }).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok || !data.ok) {
@@ -1412,7 +1448,6 @@
         '\n📍 Адрес: ' +
         escapeHtml(address);
 
-      /* Тот же sendTelegram → telegram-send.php, что и заказ из каталога */
       submitTelegramForm(message, {
         onSuccess: function () {
           ukladkaForm.reset();
