@@ -557,16 +557,16 @@
       .replace(/>/g, '&gt;');
   }
 
-  var FORM_GATEWAY_ENDPOINT = 'https://formspree.io/f/mvzyakro';
-  var TELEGRAM_SEND_FAIL_MSG =
+  var WEB3FORMS_SUBMIT_URL = 'https://api.web3forms.com/submit';
+  var WEB3FORMS_ACCESS_KEY = '411809c1-ac7f-4bb1-88d5-7eca267d88b7';
+  var FORM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  function getFormGatewayEndpoint() {
-    if (typeof window !== 'undefined' && window.ARS_STROY_FORM_ENDPOINT) {
-      var fromPage = String(window.ARS_STROY_FORM_ENDPOINT).trim();
-      if (fromPage) return fromPage;
+  function getWeb3FormsAccessKey() {
+    if (typeof window !== 'undefined' && window.ARS_STROY_WEB3FORMS_KEY) {
+      return String(window.ARS_STROY_WEB3FORMS_KEY).trim();
     }
-    return FORM_GATEWAY_ENDPOINT;
+    return WEB3FORMS_ACCESS_KEY;
   }
 
   function plainFormText(html) {
@@ -578,50 +578,10 @@
       .replace(/&gt;/g, '>');
   }
 
-  function postToFormGateway(body) {
-    var endpoint = getFormGatewayEndpoint();
-    if (!endpoint) {
-      return Promise.reject(new Error('form_endpoint_not_configured'));
-    }
+  function postToWeb3Forms(fields) {
+    var payload = Object.assign({ access_key: getWeb3FormsAccessKey() }, fields);
 
-    return fetch(endpoint, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-      body: body
-    }).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok) {
-          throw new Error(
-            (data && (data.error || data.errors)) || 'form_send_http_' + res.status
-          );
-        }
-        return { ok: true, data: data };
-      });
-    });
-  }
-
-  /** Замер: только три поля (Имя, Телефон, Адрес), без служебных полей Formspree. */
-  function sendUkladkaForm(name, phone, address) {
-    var body = new FormData();
-    body.append('Имя', name || '—');
-    body.append('Телефон', phone);
-    body.append('Адрес', address);
-    return postToFormGateway(body);
-  }
-
-  /** Заказ из каталога: одно поле message + тема. */
-  function sendTelegram(text, options) {
-    options = options || {};
-    var payload = {
-      message: plainFormText(text),
-      _subject: options.subject || 'Заявка с сайта oooarsstroy.ru',
-      _format: 'plain'
-    };
-    if (options.replyTo) {
-      payload._replyto = options.replyTo;
-    }
-
-    return fetch(getFormGatewayEndpoint(), {
+    return fetch(WEB3FORMS_SUBMIT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -630,19 +590,40 @@
       body: JSON.stringify(payload)
     }).then(function (res) {
       return res.json().then(function (data) {
-        if (!res.ok) {
-          throw new Error(
-            (data && (data.error || data.errors)) || 'form_send_http_' + res.status
-          );
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'web3forms_send_failed');
         }
         return { ok: true, data: data };
       });
     });
   }
 
+  /** Замер: Web3Forms — три поля Имя, Телефон, Адрес. */
+  function sendUkladkaForm(name, phone, address) {
+    return postToWeb3Forms({
+      subject: 'Заявка на замер',
+      Имя: name || '—',
+      Телефон: phone,
+      Адрес: address
+    });
+  }
+
+  /** Заказ из каталога: Web3Forms, текст заявки в message. */
+  function sendTelegram(text, options) {
+    options = options || {};
+    var payload = {
+      subject: options.subject || 'Заявка с сайта oooarsstroy.ru',
+      message: plainFormText(text)
+    };
+    if (options.replyTo) {
+      payload.email = options.replyTo;
+    }
+    return postToWeb3Forms(payload);
+  }
+
   function handleFormSendError(error, callbacks) {
     console.error(error);
-    alert(TELEGRAM_SEND_FAIL_MSG);
+    alert(FORM_SEND_FAIL_MSG);
     if (callbacks.onError) callbacks.onError(error);
   }
 
