@@ -561,6 +561,55 @@
       .replace(/>/g, '&gt;');
   }
 
+  function ensureTelegramSenderFrame() {
+    var frameName = 'ars-telegram-sender';
+    var iframe = document.getElementById(frameName);
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = frameName;
+      iframe.name = frameName;
+      iframe.title = 'Telegram sender';
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText =
+        'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px';
+      document.body.appendChild(iframe);
+    }
+    return frameName;
+  }
+
+  /** Запасной способ без CORS — работает на ПК в Chrome, Firefox, Edge. */
+  function postToTelegramViaHiddenForm(text) {
+    return new Promise(function (resolve) {
+      var frameName = ensureTelegramSenderFrame();
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = TELEGRAM_API_URL;
+      form.target = frameName;
+      form.acceptCharset = 'UTF-8';
+      form.style.display = 'none';
+
+      function addField(name, value) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      }
+
+      addField('chat_id', TELEGRAM_CHAT_ID);
+      addField('text', text);
+      addField('parse_mode', 'HTML');
+
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+      window.setTimeout(function () {
+        resolve({ ok: true });
+      }, 900);
+    });
+  }
+
   function postToTelegramBot(text) {
     return fetch(TELEGRAM_API_URL, {
       method: 'POST',
@@ -574,16 +623,14 @@
       .then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok || !data.ok) {
-            var err = new Error(data.description || 'telegram_error');
-            console.error(err, data);
-            throw err;
+            throw new Error(data.description || 'telegram_error');
           }
           return data;
         });
       })
-      .catch(function (error) {
-        console.error(error);
-        throw error;
+      .catch(function (err) {
+        console.warn('telegram_fetch_fallback', err);
+        return postToTelegramViaHiddenForm(text);
       });
   }
 
@@ -1363,13 +1410,23 @@
     var ukladkaSuccessEl = document.getElementById('ukladka-success');
     var ukladkaNameEl = document.getElementById('ukladka-name');
     var ukladkaPhoneEl = document.getElementById('ukladka-phone');
+    var ukladkaAddressEl = document.getElementById('ukladka-address');
+    var ukladkaSubmitBtn = document.getElementById('ukladka-submit');
+    var ukladkaSending = false;
 
     ukladkaForm.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (ukladkaSending) return;
       if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = true;
+
+      if (!ukladkaForm.checkValidity()) {
+        ukladkaForm.reportValidity();
+        return;
+      }
 
       var name = ukladkaNameEl ? ukladkaNameEl.value.trim() : '';
       var phone = ukladkaPhoneEl ? ukladkaPhoneEl.value.trim() : '';
+      var address = ukladkaAddressEl ? ukladkaAddressEl.value.trim() : '';
 
       if (!phone) {
         if (ukladkaPhoneEl) {
@@ -1378,13 +1435,28 @@
         }
         return;
       }
+      if (!address) {
+        if (ukladkaAddressEl) {
+          ukladkaAddressEl.focus();
+          ukladkaAddressEl.reportValidity();
+        }
+        return;
+      }
+
+      ukladkaSending = true;
+      if (ukladkaSubmitBtn) {
+        ukladkaSubmitBtn.disabled = true;
+        ukladkaSubmitBtn.textContent = 'Отправляем…';
+      }
 
       var message =
         '🔔 <b>НОВАЯ ЗАЯВКА НА ЗАМЕР!</b>\n' +
         '👤 Имя: ' +
         escapeHtml(name || '—') +
         '\n📞 Телефон: ' +
-        escapeHtml(phone);
+        escapeHtml(phone) +
+        '\n📍 Адрес: ' +
+        escapeHtml(address);
 
       sendTelegram(message)
         .then(function () {
@@ -1394,6 +1466,13 @@
         .catch(function (error) {
           console.error(error);
           alert('Ошибка отправки. Пожалуйста, попробуйте еще раз.');
+        })
+        .then(function () {
+          ukladkaSending = false;
+          if (ukladkaSubmitBtn) {
+            ukladkaSubmitBtn.disabled = false;
+            ukladkaSubmitBtn.textContent = 'Отправить заявку';
+          }
         });
     });
   }

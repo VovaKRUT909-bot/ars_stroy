@@ -441,10 +441,11 @@
             <p class="ukladka-request__note">
               Выезд замерщика бесплатно на расстоянии до 10&nbsp;км. При выезде дальше 10&nbsp;км — от 2&nbsp;999&nbsp;₽.
             </p>
-          <form class="ukladka-request__form" id="ukladka-form">
+          <form class="ukladka-request__form" id="ukladka-form" action="#" method="post">
             <input class="order-field__input ukladka-request__input" type="text" name="name" id="ukladka-name" placeholder="Ваше имя" required autocomplete="name" />
             <input class="order-field__input ukladka-request__input" type="tel" name="phone" id="ukladka-phone" placeholder="Телефонный номер" required autocomplete="tel" inputmode="tel" />
-            <button type="submit" class="btn btn--primary ukladka-request__submit">Отправить заявку</button>
+            <input class="order-field__input ukladka-request__input" type="text" name="address" id="ukladka-address" placeholder="Адрес объекта (город, улица, дом)" required autocomplete="street-address" />
+            <button type="submit" class="btn btn--primary ukladka-request__submit" id="ukladka-submit">Отправить заявку</button>
             <p class="ukladka-request__success" id="ukladka-success" role="status" aria-live="polite" hidden>
               Спасибо! Заявка принята, наш инженер свяжется с вами в течение 15 минут.
             </p>
@@ -950,7 +951,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=telegram-direct" defer></script>
+    <script src="order-cart.js?v=telegram-reliable" defer></script>
 
     <!-- Yandex.Metrika counter -->
     <script>

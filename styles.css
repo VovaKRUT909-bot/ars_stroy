@@ -720,7 +720,11 @@ main{
   display:flex;
   flex-direction:column;
   gap:12px;
-  max-width:420px;
+  max-width:480px;
+}
+.ukladka-request__submit:disabled{
+  opacity:.7;
+  cursor:wait;
 }
 .ukladka-request__submit{
   align-self:flex-start;
