@@ -561,76 +561,109 @@
       .replace(/>/g, '&gt;');
   }
 
-  function ensureTelegramSenderFrame() {
-    var frameName = 'ars-telegram-sender';
-    var iframe = document.getElementById(frameName);
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.id = frameName;
-      iframe.name = frameName;
-      iframe.title = 'Telegram sender';
-      iframe.setAttribute('aria-hidden', 'true');
-      iframe.style.cssText =
-        'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px';
-      document.body.appendChild(iframe);
+  var TELEGRAM_PHP_URL = 'telegram-send.php';
+  var TELEGRAM_SEND_FAIL_MSG =
+    'Не удалось отправить заявку автоматически (сеть блокирует Telegram). Позвоните: +7 (925) 805-63-08';
+
+  function fetchWithTimeout(url, options, timeoutMs) {
+    var controller =
+      typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var opts = options || {};
+    if (controller) {
+      opts.signal = controller.signal;
     }
-    return frameName;
-  }
-
-  /** Запасной способ без CORS — работает на ПК в Chrome, Firefox, Edge. */
-  function postToTelegramViaHiddenForm(text) {
-    return new Promise(function (resolve) {
-      var frameName = ensureTelegramSenderFrame();
-      var form = document.createElement('form');
-      form.method = 'POST';
-      form.action = TELEGRAM_API_URL;
-      form.target = frameName;
-      form.acceptCharset = 'UTF-8';
-      form.style.display = 'none';
-
-      function addField(name, value) {
-        var input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-      }
-
-      addField('chat_id', TELEGRAM_CHAT_ID);
-      addField('text', text);
-      addField('parse_mode', 'HTML');
-
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-
-      window.setTimeout(function () {
-        resolve({ ok: true });
-      }, 900);
+    var timer = window.setTimeout(function () {
+      if (controller) controller.abort();
+    }, timeoutMs);
+    return fetch(url, opts).finally(function () {
+      window.clearTimeout(timer);
     });
   }
 
-  function postToTelegramBot(text) {
-    return fetch(TELEGRAM_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: text,
-        parse_mode: 'HTML'
-      })
-    })
+  function parseTelegramResponse(res) {
+    return res.json().then(function (data) {
+      if (!res.ok || !data.ok) {
+        throw new Error(data.description || 'telegram_error');
+      }
+      return data;
+    });
+  }
+
+  function buildTelegramGetUrl(text) {
+    return (
+      TELEGRAM_API_URL +
+      '?chat_id=' +
+      encodeURIComponent(TELEGRAM_CHAT_ID) +
+      '&text=' +
+      encodeURIComponent(text) +
+      '&parse_mode=' +
+      encodeURIComponent('HTML')
+    );
+  }
+
+  /** Свой сервер (PHP) — обходит блокировку api.telegram.org в браузере. */
+  function postToTelegramViaPhp(text) {
+    return fetchWithTimeout(
+      TELEGRAM_PHP_URL,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+      },
+      8000
+    ).then(parseTelegramResponse);
+  }
+
+  /** Прокси — браузер не ходит напрямую в Telegram (часто таймаут в РФ). */
+  function postToTelegramViaCorsProxy(text) {
+    return fetchWithTimeout(
+      'https://corsproxy.io/?' + encodeURIComponent(TELEGRAM_API_URL),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: text,
+          parse_mode: 'HTML'
+        })
+      },
+      15000
+    ).then(parseTelegramResponse);
+  }
+
+  function postToTelegramViaAllOrigins(text) {
+    if (text.length > 2800) {
+      return Promise.reject(new Error('message_too_long'));
+    }
+    return fetchWithTimeout(
+      'https://api.allorigins.win/raw?url=' + encodeURIComponent(buildTelegramGetUrl(text)),
+      { method: 'GET' },
+      15000
+    )
       .then(function (res) {
-        return res.json().then(function (data) {
-          if (!res.ok || !data.ok) {
-            throw new Error(data.description || 'telegram_error');
-          }
-          return data;
-        });
+        return res.json();
+      })
+      .then(function (wrapper) {
+        var data =
+          wrapper && typeof wrapper.contents === 'string'
+            ? JSON.parse(wrapper.contents)
+            : wrapper;
+        if (!data.ok) {
+          throw new Error(data.description || 'telegram_error');
+        }
+        return data;
+      });
+  }
+
+  function postToTelegramBot(text) {
+    return postToTelegramViaPhp(text)
+      .catch(function (err) {
+        console.warn('telegram_php', err);
+        return postToTelegramViaCorsProxy(text);
       })
       .catch(function (err) {
-        console.warn('telegram_fetch_fallback', err);
-        return postToTelegramViaHiddenForm(text);
+        console.warn('telegram_corsproxy', err);
+        return postToTelegramViaAllOrigins(text);
       });
   }
 
@@ -1401,7 +1434,7 @@
         })
         .catch(function (error) {
           console.error(error);
-          alert('Ошибка отправки. Пожалуйста, попробуйте еще раз.');
+          alert(TELEGRAM_SEND_FAIL_MSG);
         });
     });
   }
@@ -1465,7 +1498,7 @@
         })
         .catch(function (error) {
           console.error(error);
-          alert('Ошибка отправки. Пожалуйста, попробуйте еще раз.');
+          alert(TELEGRAM_SEND_FAIL_MSG);
         })
         .then(function () {
           ukladkaSending = false;
