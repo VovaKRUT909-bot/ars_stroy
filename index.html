@@ -507,9 +507,13 @@
                     Товары: <b id="cart-subtotal">0</b> <span class="unit">руб.</span>
                   </div>
                   <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
-                    Доставка: <b id="cart-delivery-total">0</b> <span class="unit">руб.</span>
+                    Доставка: <b id="cart-delivery-total">0</b> ₽
                     <span class="order-cart__delivery-km" id="cart-delivery-km"></span>
                   </div>
+                  <p class="order-cart__delivery-breakdown" id="cart-delivery-breakdown" hidden></p>
+                  <p class="order-cart__delivery-tariff" id="cart-delivery-tariff" hidden>
+                    Тариф: доставка компактным манипулятором (до 4 тонн). По Кубинке и району (до 10&nbsp;км) — 5&nbsp;000&nbsp;₽. Далее — 100&nbsp;₽ за каждый 1&nbsp;км в одну сторону. Сумму можно пересчитать сами — формула показана выше, без скрытых наценок.
+                  </p>
                   <div class="order-cart__grand">
                     Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
                   </div>
@@ -542,8 +546,9 @@
                     id="order-address"
                     required
                     autocomplete="street-address"
-                    placeholder="Город, улица, дом"
+                    placeholder="Например: Одинцово, Можайское шоссе, 15"
                   />
+                  <p class="order-field__hint">Стоимость доставки считается автоматически. Укажите адрес в точности (город, улица, дом) — так мы посчитаем правильную сумму в блоке «Итого».</p>
                 </label>
                 <label class="order-field order-field--full">
                   <span class="order-field__label">Дополнительная информация</span>
@@ -940,7 +945,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=delivery-ui-clean" defer></script>
+    <script src="order-cart.js?v=delivery-breakdown" defer></script>
 
     <!-- Yandex.Metrika counter -->
     <script>

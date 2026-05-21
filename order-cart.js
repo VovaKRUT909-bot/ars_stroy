@@ -23,12 +23,14 @@
   var cartDeliveryLine = document.getElementById('cart-delivery-line');
   var cartDeliveryTotalEl = document.getElementById('cart-delivery-total');
   var cartDeliveryKmEl = document.getElementById('cart-delivery-km');
+  var cartDeliveryTariffEl = document.getElementById('cart-delivery-tariff');
+  var cartDeliveryBreakdownEl = document.getElementById('cart-delivery-breakdown');
 
   var cart = [];
 
   /**
    * Производство (координаты Яндекс.Карт): М-1 Беларусь, 68-й км, вл1с3.
-   * Тариф: 500 ₽/км до объекта (10 км туда + 10 км обратно = 5 000 ₽).
+   * Тариф: до 10 км в одну сторону — 5 000 ₽; далее +100 ₽/км (манипулятор до 4 т).
    * Ключ в index.html → ARS_STROY_YANDEX_MAPS_KEY (маршрут как в навигаторе).
    */
   var YANDEX_MAPS_API_KEY =
@@ -60,7 +62,9 @@
     },
     true
   );
-  var DELIVERY_RUB_PER_KM_ONE_WAY = 500;
+  var DELIVERY_INCLUDED_KM = 10;
+  var DELIVERY_BASE_RUB = 5000;
+  var DELIVERY_EXTRA_RUB_PER_KM = 100;
   var DELIVERY_GEO_HEADERS = {
     Accept: 'application/json',
     'Accept-Language': 'ru',
@@ -150,26 +154,59 @@
     return Math.round(km).toLocaleString('ru-RU');
   }
 
+  function deliveryKmRounded(oneWayKm) {
+    if (oneWayKm == null || isNaN(oneWayKm)) return null;
+    return Math.round(oneWayKm);
+  }
+
   function cartDeliveryKmLabel() {
     if (deliveryState.km == null) return '';
-    return (
-      ' (' +
-      formatKm(deliveryState.km) +
-      ' км до объекта, ' +
-      formatKm(deliveryRoundTripKm(deliveryState.km)) +
-      ' км туда-обратно)'
-    );
+    return '(' + formatKm(deliveryState.km) + ' км до объекта)';
   }
 
-  function deliveryRoundTripKm(oneWayKm) {
-    if (oneWayKm == null || isNaN(oneWayKm)) return null;
-    return oneWayKm * 2;
-  }
-
-  /** Стоимость по км до объекта (обратный путь включён в тариф). */
+  /** До 10 км в одну сторону — 5 000 ₽; каждый км сверх — +100 ₽ (км округляются). */
   function deliveryCostFromKm(oneWayKm) {
-    if (oneWayKm == null || isNaN(oneWayKm) || oneWayKm <= 0) return 0;
-    return Math.ceil(oneWayKm) * DELIVERY_RUB_PER_KM_ONE_WAY;
+    var km = deliveryKmRounded(oneWayKm);
+    if (km == null || km <= 0) return 0;
+    if (km <= DELIVERY_INCLUDED_KM) return DELIVERY_BASE_RUB;
+    return DELIVERY_BASE_RUB + (km - DELIVERY_INCLUDED_KM) * DELIVERY_EXTRA_RUB_PER_KM;
+  }
+
+  /** Расшифровка для клиента — можно пересчитать в калькуляторе. */
+  function deliveryCostBreakdownText(oneWayKm) {
+    var km = deliveryKmRounded(oneWayKm);
+    if (km == null) return '';
+    var total = deliveryCostFromKm(oneWayKm);
+    if (km <= DELIVERY_INCLUDED_KM) {
+      return (
+        'Как мы посчитали: ' +
+        formatKm(km) +
+        ' км до объекта → ' +
+        formatMoney(DELIVERY_BASE_RUB) +
+        ' ₽ (фиксированно до ' +
+        DELIVERY_INCLUDED_KM +
+        ' км включительно). Итого доставка: ' +
+        formatMoney(total) +
+        ' ₽ — пересчитайте сами, цифры совпадут.'
+      );
+    }
+    var extraKm = km - DELIVERY_INCLUDED_KM;
+    var extraRub = extraKm * DELIVERY_EXTRA_RUB_PER_KM;
+    return (
+      'Как мы посчитали: ' +
+      formatMoney(DELIVERY_BASE_RUB) +
+      ' ₽ (первые ' +
+      DELIVERY_INCLUDED_KM +
+      ' км) + ' +
+      extraKm +
+      ' км × ' +
+      formatMoney(DELIVERY_EXTRA_RUB_PER_KM) +
+      ' ₽ = ' +
+      formatMoney(extraRub) +
+      ' ₽ → всего ' +
+      formatMoney(total) +
+      ' ₽. Откройте калькулятор и сложите — сумма будет такой же, без сюрпризов.'
+    );
   }
 
   function haversineKm(from, to) {
@@ -426,6 +463,11 @@
       if (cartDeliveryKmEl) {
         cartDeliveryKmEl.textContent = cartDeliveryKmLabel();
       }
+      if (cartDeliveryBreakdownEl) {
+        cartDeliveryBreakdownEl.textContent = deliveryCostBreakdownText(deliveryState.km);
+        cartDeliveryBreakdownEl.hidden = false;
+      }
+      if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = false;
       return;
     }
 
@@ -435,11 +477,18 @@
       if (cartDeliveryKmEl) {
         cartDeliveryKmEl.textContent = ' (считаем доставку)';
       }
+      if (cartDeliveryBreakdownEl) cartDeliveryBreakdownEl.hidden = true;
+      if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
       return;
     }
 
     cartDeliveryLine.hidden = true;
     if (cartDeliveryKmEl) cartDeliveryKmEl.textContent = '';
+    if (cartDeliveryBreakdownEl) {
+      cartDeliveryBreakdownEl.textContent = '';
+      cartDeliveryBreakdownEl.hidden = true;
+    }
+    if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
   }
 
   function getCartProductsTotal() {
@@ -1281,12 +1330,11 @@
           'До объекта: ' +
           formatKm(deliveryState.km) +
           ' км\n' +
-          'Туда и обратно: ' +
-          formatKm(deliveryRoundTripKm(deliveryState.km)) +
-          ' км\n' +
           'Стоимость: <b>' +
           formatMoney(deliveryState.cost) +
-          ' руб.</b> (500 руб./км до объекта; маршрут от М-1, 68-й км)';
+          ' руб.</b>\n' +
+          deliveryCostBreakdownText(deliveryState.km) +
+          '\nТариф: манипулятор до 4 т, до 10 км — 5 000 ₽, далее +100 ₽/км в одну сторону';
       } else if (address) {
         deliveryBlock =
           '\n\n<b>Доставка</b>\nАдрес указан, автоматический расчёт не выполнен — уточните у менеджера.';
