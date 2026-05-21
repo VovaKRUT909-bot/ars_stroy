@@ -561,10 +561,7 @@
   var TELEGRAM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  /**
-   * Единая отправка для каталога (заказ) и формы замера — только POST на наш PHP.
-   * Без corsproxy.io и без прямых запросов к api.telegram.org (нет CORS).
-   */
+  /** Каталог и замер: один POST на telegram-send.php (сервер шлёт в Telegram). */
   function sendTelegram(text) {
     return fetch(TELEGRAM_SEND_URL, {
       method: 'POST',
@@ -1415,6 +1412,7 @@
         '\n📍 Адрес: ' +
         escapeHtml(address);
 
+      /* Тот же sendTelegram → telegram-send.php, что и заказ из каталога */
       submitTelegramForm(message, {
         onSuccess: function () {
           ukladkaForm.reset();
