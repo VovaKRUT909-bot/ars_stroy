@@ -1376,19 +1376,36 @@
   }
 
   if (ukladkaForm) {
+    var ukladkaSuccessEl = document.getElementById('ukladka-success');
+    var ukladkaNameEl = document.getElementById('ukladka-name');
+    var ukladkaPhoneEl = document.getElementById('ukladka-phone');
+
     ukladkaForm.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = true;
+
+      var name = ukladkaNameEl ? ukladkaNameEl.value.trim() : '';
+      var phone = ukladkaPhoneEl ? ukladkaPhoneEl.value.trim() : '';
+
+      if (!phone) {
+        if (ukladkaPhoneEl) {
+          ukladkaPhoneEl.focus();
+          ukladkaPhoneEl.reportValidity();
+        }
+        return;
+      }
+
       var message =
-        '<b>🔔 Заявка на укладку / бесплатный замер</b>\n\n' +
-        'Имя: ' +
-        escapeHtml(document.getElementById('ukladka-name').value.trim() || '—') +
-        '\nТелефон: ' +
-        escapeHtml(document.getElementById('ukladka-phone').value.trim() || '—');
+        '🔔 <b>НОВАЯ ЗАЯВКА НА ЗАМЕР!</b>\n' +
+        '👤 Имя: ' +
+        escapeHtml(name || '—') +
+        '\n📞 Телефон: ' +
+        escapeHtml(phone);
 
       sendTelegram(message)
         .then(function () {
           ukladkaForm.reset();
-          alert('Спасибо за заявку! Мы свяжемся с вами в ближайшее время.');
+          if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = false;
         })
         .catch(function (error) {
           console.error(error);

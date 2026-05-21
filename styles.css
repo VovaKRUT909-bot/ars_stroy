@@ -708,6 +708,13 @@ main{
 .ukladka-request__text{
   margin-top:8px;
 }
+.ukladka-request__note{
+  margin:10px 0 0;
+  font-size:13px;
+  line-height:1.45;
+  color:var(--muted);
+  font-weight:600;
+}
 .ukladka-request__form{
   margin-top:18px;
   display:flex;
@@ -718,6 +725,17 @@ main{
 .ukladka-request__submit{
   align-self:flex-start;
   margin-top:4px;
+}
+.ukladka-request__success{
+  margin:4px 0 0;
+  padding:12px 14px;
+  border-radius:12px;
+  border:1px solid rgba(216, 188, 130, 0.35);
+  background:rgba(216, 188, 130, 0.12);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.45;
+  font-weight:700;
 }
 .small-link{
   color: var(--muted2);
