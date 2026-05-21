@@ -591,22 +591,33 @@
   var TELEGRAM_CHAT_ID = '7667524051';
   var TELEGRAM_API_URL =
     'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
+  /** CORS-прокси: обход блокировки api.telegram.org на ПК (allOrigins — только GET). */
+  var TELEGRAM_CORS_PROXY = 'https://api.allorigins.win/raw?url=';
   var TELEGRAM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  /** Каталог и замер: прямой POST в API Telegram (без telegram-send.php). */
+  function buildTelegramSendUrl(text) {
+    return (
+      TELEGRAM_API_URL +
+      '?chat_id=' +
+      encodeURIComponent(TELEGRAM_CHAT_ID) +
+      '&text=' +
+      encodeURIComponent(text) +
+      '&parse_mode=HTML'
+    );
+  }
+
+  /** Каталог и замер: Telegram через allorigins (без прямого доступа к api.telegram.org). */
   function sendTelegram(text) {
-    return fetch(TELEGRAM_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: text,
-        parse_mode: 'HTML'
-      })
-    }).then(function (res) {
+    var proxyUrl =
+      TELEGRAM_CORS_PROXY + encodeURIComponent(buildTelegramSendUrl(text));
+
+    return fetch(proxyUrl).then(function (res) {
+      if (!res.ok) {
+        throw new Error('proxy_http_' + res.status);
+      }
       return res.json().then(function (data) {
-        if (!res.ok || !data.ok) {
+        if (!data.ok) {
           throw new Error(data.description || 'telegram_send_failed');
         }
         return data;
