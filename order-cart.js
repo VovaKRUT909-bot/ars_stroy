@@ -190,9 +190,21 @@
     return TILE_IMG_BASE + '/bordyur-' + sizeCode + '-' + colorVariantKey + '.jpg';
   }
 
-  function blokTileSrc(sizeCode) {
-    if (sizeCode === 'solid') return 'assets/blok-polnotelnyi.png';
-    if (sizeCode === 'hollow') return 'assets/blok-pustotelniy.png';
+  function blokTileSrc(kindOrSizeCode) {
+    if (
+      kindOrSizeCode === 'solid' ||
+      kindOrSizeCode === '390-190-188' ||
+      /полнотел/i.test(kindOrSizeCode || '')
+    ) {
+      return 'assets/blok-polnotelnyi.png';
+    }
+    if (
+      kindOrSizeCode === 'hollow' ||
+      kindOrSizeCode === '390-188-190' ||
+      /пустотел/i.test(kindOrSizeCode || '')
+    ) {
+      return 'assets/blok-pustotelniy.png';
+    }
     return TILE_FALLBACK;
   }
 
@@ -340,7 +352,14 @@
     } else if (meta.blockId === 'prices-curb') {
       image = bordyurTileSrc(sizeCode, colorVariantKey);
     } else if (meta.blockId === 'prices-block') {
-      image = blokTileSrc(sizeCode);
+      var blockCard = el.closest('.subprices__card');
+      var blockPhoto = blockCard ? blockCard.querySelector('.subprices__photo') : null;
+      var blockKindForImg =
+        meta.blockType || blockTypeFromCard(el) || blockTypeCode(meta.subTitle || '');
+      image =
+        blockPhoto && blockPhoto.src
+          ? blockPhoto.src
+          : blokTileSrc(blockKindForImg || sizeCode);
     } else {
       image = TILE_IMG_BASE + '/' + productKey + '-' + colorVariantKey + '.jpg';
     }
@@ -390,6 +409,10 @@
         return;
       }
       img.removeEventListener('error', onTileError);
+      if (/blok-(polnotelnyi|pustotelniy)\.png/i.test(src)) {
+        img.src = src;
+        return;
+      }
       img.src = el ? tileFallback(el) : TILE_FALLBACK;
     });
   }
