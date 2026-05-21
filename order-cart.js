@@ -20,36 +20,6 @@
   var cartDeliveryKmEl = document.getElementById('cart-delivery-km');
   var cartDeliveryTariffEl = document.getElementById('cart-delivery-tariff');
 
-  // Прямая отправка данных через fetch на Telegram Bot API (замерщик)
-  function sendTelegramMessage(message, cb) {
-    // Токен бота из диалога выше
-    var TELEGRAM_BOT_TOKEN = '8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k';
-    // chat_id рабочего каталога:
-    var TELEGRAM_CHAT_ID = '-1001841949265';
-
-    var url = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
-    var body = {
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: 'HTML'
-    };
-
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-      .then(function (resp) { return resp.json(); })
-      .then(function (data) {
-        if (cb) cb(data);
-      })
-      .catch(function (err) {
-        if (cb) cb(null, err);
-      });
-  }
-
   var cart = [];
 
   /**
@@ -587,47 +557,67 @@
       .replace(/>/g, '&gt;');
   }
 
-  var TELEGRAM_BOT_TOKEN = '8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k';
-  var TELEGRAM_CHAT_ID = '7667524051';
-  var TELEGRAM_API_URL =
-    'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
-  /** CORS-прокси: обход блокировки api.telegram.org на ПК (allOrigins — только GET). */
-  var TELEGRAM_CORS_PROXY = 'https://api.allorigins.win/raw?url=';
   var TELEGRAM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  function buildTelegramSendUrl(text) {
-    return (
-      TELEGRAM_API_URL +
-      '?chat_id=' +
-      encodeURIComponent(TELEGRAM_CHAT_ID) +
-      '&text=' +
-      encodeURIComponent(text) +
-      '&parse_mode=HTML'
-    );
+  function getFormGatewayEndpoint() {
+    if (typeof window !== 'undefined' && window.ARS_STROY_FORM_ENDPOINT) {
+      return String(window.ARS_STROY_FORM_ENDPOINT).trim();
+    }
+    return '';
   }
 
-  /** Каталог и замер: Telegram через allorigins (без прямого доступа к api.telegram.org). */
-  function sendTelegram(text) {
-    var proxyUrl =
-      TELEGRAM_CORS_PROXY + encodeURIComponent(buildTelegramSendUrl(text));
+  function plainFormText(html) {
+    return String(html)
+      .replace(/<b>/gi, '')
+      .replace(/<\/b>/gi, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+  }
 
-    return fetch(proxyUrl).then(function (res) {
-      if (!res.ok) {
-        throw new Error('proxy_http_' + res.status);
-      }
+  /** Каталог и замер: POST на Formspree / Formbold (см. ARS_STROY_FORM_ENDPOINT в index.html). */
+  function sendTelegram(text, options) {
+    options = options || {};
+    var endpoint = getFormGatewayEndpoint();
+    if (!endpoint) {
+      return Promise.reject(new Error('form_endpoint_not_configured'));
+    }
+
+    var payload = {
+      message: plainFormText(text),
+      _subject: options.subject || 'Заявка с сайта oooarsstroy.ru',
+      _format: 'plain'
+    };
+    if (options.replyTo) {
+      payload._replyto = options.replyTo;
+    }
+
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }).then(function (res) {
       return res.json().then(function (data) {
-        if (!data.ok) {
-          throw new Error(data.description || 'telegram_send_failed');
+        if (!res.ok) {
+          throw new Error(
+            (data && (data.error || data.errors)) || 'form_send_http_' + res.status
+          );
         }
-        return data;
+        return { ok: true, data: data };
       });
     });
   }
 
   function submitTelegramForm(text, callbacks) {
     callbacks = callbacks || {};
-    return sendTelegram(text)
+    return sendTelegram(text, {
+      subject: callbacks.subject,
+      replyTo: callbacks.replyTo
+    })
       .then(function (data) {
         if (callbacks.onSuccess) callbacks.onSuccess(data);
         return data;
@@ -1395,6 +1385,8 @@
         ' руб.';
 
       submitTelegramForm(message, {
+        subject: 'Новый заказ с сайта',
+        replyTo: email || undefined,
         onSuccess: function () {
           orderForm.reset();
           cart = [];
@@ -1460,6 +1452,7 @@
         escapeHtml(address);
 
       submitTelegramForm(message, {
+        subject: 'Заявка на замер',
         onSuccess: function () {
           ukladkaForm.reset();
           if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = false;
