@@ -578,14 +578,40 @@
       .replace(/&gt;/g, '>');
   }
 
-  /** Каталог и замер: POST на Formspree / Formbold (см. ARS_STROY_FORM_ENDPOINT в index.html). */
-  function sendTelegram(text, options) {
-    options = options || {};
+  function postToFormGateway(body) {
     var endpoint = getFormGatewayEndpoint();
     if (!endpoint) {
       return Promise.reject(new Error('form_endpoint_not_configured'));
     }
 
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: body
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok) {
+          throw new Error(
+            (data && (data.error || data.errors)) || 'form_send_http_' + res.status
+          );
+        }
+        return { ok: true, data: data };
+      });
+    });
+  }
+
+  /** Замер: только три поля (Имя, Телефон, Адрес), без служебных полей Formspree. */
+  function sendUkladkaForm(name, phone, address) {
+    var body = new FormData();
+    body.append('Имя', name || '—');
+    body.append('Телефон', phone);
+    body.append('Адрес', address);
+    return postToFormGateway(body);
+  }
+
+  /** Заказ из каталога: одно поле message + тема. */
+  function sendTelegram(text, options) {
+    options = options || {};
     var payload = {
       message: plainFormText(text),
       _subject: options.subject || 'Заявка с сайта oooarsstroy.ru',
@@ -595,7 +621,7 @@
       payload._replyto = options.replyTo;
     }
 
-    return fetch(endpoint, {
+    return fetch(getFormGatewayEndpoint(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -614,6 +640,12 @@
     });
   }
 
+  function handleFormSendError(error, callbacks) {
+    console.error(error);
+    alert(TELEGRAM_SEND_FAIL_MSG);
+    if (callbacks.onError) callbacks.onError(error);
+  }
+
   function submitTelegramForm(text, callbacks) {
     callbacks = callbacks || {};
     return sendTelegram(text, {
@@ -625,9 +657,22 @@
         return data;
       })
       .catch(function (error) {
-        console.error(error);
-        alert(TELEGRAM_SEND_FAIL_MSG);
-        if (callbacks.onError) callbacks.onError(error);
+        handleFormSendError(error, callbacks);
+      })
+      .then(function () {
+        if (callbacks.onFinally) callbacks.onFinally();
+      });
+  }
+
+  function submitUkladkaForm(name, phone, address, callbacks) {
+    callbacks = callbacks || {};
+    return sendUkladkaForm(name, phone, address)
+      .then(function (data) {
+        if (callbacks.onSuccess) callbacks.onSuccess(data);
+        return data;
+      })
+      .catch(function (error) {
+        handleFormSendError(error, callbacks);
       })
       .then(function () {
         if (callbacks.onFinally) callbacks.onFinally();
@@ -1444,17 +1489,7 @@
         ukladkaSubmitBtn.textContent = 'Отправляем…';
       }
 
-      var message =
-        '🔔 <b>НОВАЯ ЗАЯВКА НА ЗАМЕР!</b>\n' +
-        '👤 Имя: ' +
-        escapeHtml(name || '—') +
-        '\n📞 Телефон: ' +
-        escapeHtml(phone) +
-        '\n📍 Адрес: ' +
-        escapeHtml(address);
-
-      submitTelegramForm(message, {
-        subject: 'Заявка на замер',
+      submitUkladkaForm(name, phone, address, {
         onSuccess: function () {
           ukladkaForm.reset();
           if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = false;
