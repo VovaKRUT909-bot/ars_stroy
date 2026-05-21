@@ -557,14 +557,16 @@
       .replace(/>/g, '&gt;');
   }
 
+  var FORM_GATEWAY_ENDPOINT = 'https://formspree.io/f/mvzyakro';
   var TELEGRAM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
   function getFormGatewayEndpoint() {
     if (typeof window !== 'undefined' && window.ARS_STROY_FORM_ENDPOINT) {
-      return String(window.ARS_STROY_FORM_ENDPOINT).trim();
+      var fromPage = String(window.ARS_STROY_FORM_ENDPOINT).trim();
+      if (fromPage) return fromPage;
     }
-    return '';
+    return FORM_GATEWAY_ENDPOINT;
   }
 
   function plainFormText(html) {
