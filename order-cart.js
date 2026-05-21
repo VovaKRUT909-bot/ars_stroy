@@ -24,7 +24,6 @@
   var cartDeliveryTotalEl = document.getElementById('cart-delivery-total');
   var cartDeliveryKmEl = document.getElementById('cart-delivery-km');
   var cartDeliveryTariffEl = document.getElementById('cart-delivery-tariff');
-  var cartDeliveryBreakdownEl = document.getElementById('cart-delivery-breakdown');
 
   var cart = [];
 
@@ -463,10 +462,6 @@
       if (cartDeliveryKmEl) {
         cartDeliveryKmEl.textContent = cartDeliveryKmLabel();
       }
-      if (cartDeliveryBreakdownEl) {
-        cartDeliveryBreakdownEl.textContent = deliveryCostBreakdownText(deliveryState.km);
-        cartDeliveryBreakdownEl.hidden = false;
-      }
       if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = false;
       return;
     }
@@ -477,17 +472,12 @@
       if (cartDeliveryKmEl) {
         cartDeliveryKmEl.textContent = ' (считаем доставку)';
       }
-      if (cartDeliveryBreakdownEl) cartDeliveryBreakdownEl.hidden = true;
       if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
       return;
     }
 
     cartDeliveryLine.hidden = true;
     if (cartDeliveryKmEl) cartDeliveryKmEl.textContent = '';
-    if (cartDeliveryBreakdownEl) {
-      cartDeliveryBreakdownEl.textContent = '';
-      cartDeliveryBreakdownEl.hidden = true;
-    }
     if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
   }
 
