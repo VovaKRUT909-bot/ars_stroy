@@ -1,12 +1,9 @@
 <?php
 /**
- * Отправка сообщений в Telegram (для форм заказа и замера).
- * Работает на хостинге с PHP. Статический GitHub Pages — сайт использует запасной JS-метод.
+ * Отправка заявок в Telegram (заказ, замер).
+ * Токен только на сервере: скопируйте telegram-secrets.example.php → telegram-secrets.php
  */
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -16,6 +13,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['ok' => false, 'description' => 'method_not_allowed']);
+    exit;
+}
+
+$secretsFile = __DIR__ . '/telegram-secrets.php';
+if (!is_file($secretsFile)) {
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false,
+        'description' => 'server_not_configured',
+    ]);
+    exit;
+}
+
+$config = require $secretsFile;
+$botToken = isset($config['bot_token']) ? trim((string) $config['bot_token']) : '';
+$chatId = isset($config['chat_id']) ? trim((string) $config['chat_id']) : '';
+
+if ($botToken === '' || $chatId === '') {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'description' => 'invalid_secrets']);
     exit;
 }
 
@@ -32,11 +49,9 @@ if ($text === '') {
     exit;
 }
 
-$botToken = '8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k';
-$chatId = '7667524051';
 $apiUrl = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
 
-$payload = http_build_query(
+$postFields = http_build_query(
     [
         'chat_id' => $chatId,
         'text' => $text,
@@ -48,37 +63,39 @@ $payload = http_build_query(
 );
 
 $response = false;
+$curlError = '';
 
 if (function_exists('curl_init')) {
     $ch = curl_init($apiUrl);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_POSTFIELDS => $postFields,
         CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 20,
-        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 25,
+        CURLOPT_CONNECTTIMEOUT => 12,
+        CURLOPT_SSL_VERIFYPEER => true,
     ]);
     $response = curl_exec($ch);
+    if ($response === false) {
+        $curlError = curl_error($ch);
+    }
     curl_close($ch);
 }
 
 if ($response === false) {
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
-            'content' => $payload,
-            'timeout' => 20,
-            'ignore_errors' => true,
-        ],
+    http_response_code(502);
+    echo json_encode([
+        'ok' => false,
+        'description' => $curlError !== '' ? $curlError : 'telegram_unreachable',
     ]);
-    $response = @file_get_contents($apiUrl, false, $context);
+    exit;
 }
 
-if ($response === false) {
+$data = json_decode($response, true);
+if (!is_array($data) || empty($data['ok'])) {
     http_response_code(502);
-    echo json_encode(['ok' => false, 'description' => 'telegram_unreachable']);
+    echo $response;
     exit;
 }
 

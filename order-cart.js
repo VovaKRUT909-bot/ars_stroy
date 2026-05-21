@@ -1,10 +1,6 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_API_URL =
-    'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
-  var TELEGRAM_CHAT_ID = '7667524051';
-
   var TILE_IMG_BASE = 'img/tiles';
   var TILE_FALLBACK = 'assets/bruschatka-1.png';
 
@@ -561,114 +557,45 @@
       .replace(/>/g, '&gt;');
   }
 
-  var TELEGRAM_PHP_URL = 'telegram-send.php';
+  var TELEGRAM_SEND_URL = 'telegram-send.php';
   var TELEGRAM_SEND_FAIL_MSG =
-    'Не удалось отправить заявку автоматически (сеть блокирует Telegram). Позвоните: +7 (925) 805-63-08';
+    'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  function fetchWithTimeout(url, options, timeoutMs) {
-    var controller =
-      typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var opts = options || {};
-    if (controller) {
-      opts.signal = controller.signal;
-    }
-    var timer = window.setTimeout(function () {
-      if (controller) controller.abort();
-    }, timeoutMs);
-    return fetch(url, opts).finally(function () {
-      window.clearTimeout(timer);
-    });
-  }
-
-  function parseTelegramResponse(res) {
-    return res.json().then(function (data) {
-      if (!res.ok || !data.ok) {
-        throw new Error(data.description || 'telegram_error');
-      }
-      return data;
-    });
-  }
-
-  function buildTelegramGetUrl(text) {
-    return (
-      TELEGRAM_API_URL +
-      '?chat_id=' +
-      encodeURIComponent(TELEGRAM_CHAT_ID) +
-      '&text=' +
-      encodeURIComponent(text) +
-      '&parse_mode=' +
-      encodeURIComponent('HTML')
-    );
-  }
-
-  /** Свой сервер (PHP) — обходит блокировку api.telegram.org в браузере. */
-  function postToTelegramViaPhp(text) {
-    return fetchWithTimeout(
-      TELEGRAM_PHP_URL,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text })
-      },
-      8000
-    ).then(parseTelegramResponse);
-  }
-
-  /** Прокси — браузер не ходит напрямую в Telegram (часто таймаут в РФ). */
-  function postToTelegramViaCorsProxy(text) {
-    return fetchWithTimeout(
-      'https://corsproxy.io/?' + encodeURIComponent(TELEGRAM_API_URL),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: text,
-          parse_mode: 'HTML'
-        })
-      },
-      15000
-    ).then(parseTelegramResponse);
-  }
-
-  function postToTelegramViaAllOrigins(text) {
-    if (text.length > 2800) {
-      return Promise.reject(new Error('message_too_long'));
-    }
-    return fetchWithTimeout(
-      'https://api.allorigins.win/raw?url=' + encodeURIComponent(buildTelegramGetUrl(text)),
-      { method: 'GET' },
-      15000
-    )
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (wrapper) {
-        var data =
-          wrapper && typeof wrapper.contents === 'string'
-            ? JSON.parse(wrapper.contents)
-            : wrapper;
-        if (!data.ok) {
-          throw new Error(data.description || 'telegram_error');
+  /**
+   * Единая отправка для каталога (заказ) и формы замера — только POST на наш PHP.
+   * Без corsproxy.io и без прямых запросов к api.telegram.org (нет CORS).
+   */
+  function sendTelegram(text) {
+    return fetch(TELEGRAM_SEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ text: text })
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok || !data.ok) {
+          throw new Error(data.description || 'telegram_send_failed');
         }
         return data;
       });
+    });
   }
 
-  function postToTelegramBot(text) {
-    return postToTelegramViaPhp(text)
-      .catch(function (err) {
-        console.warn('telegram_php', err);
-        return postToTelegramViaCorsProxy(text);
+  function submitTelegramForm(text, callbacks) {
+    callbacks = callbacks || {};
+    return sendTelegram(text)
+      .then(function (data) {
+        if (callbacks.onSuccess) callbacks.onSuccess(data);
+        return data;
       })
-      .catch(function (err) {
-        console.warn('telegram_corsproxy', err);
-        return postToTelegramViaAllOrigins(text);
+      .catch(function (error) {
+        console.error(error);
+        alert(TELEGRAM_SEND_FAIL_MSG);
+        if (callbacks.onError) callbacks.onError(error);
+      })
+      .then(function () {
+        if (callbacks.onFinally) callbacks.onFinally();
       });
-  }
-
-  function sendTelegram(text) {
-    return postToTelegramBot(text);
   }
 
   function slugifyAscii(text) {
@@ -1423,19 +1350,16 @@
         formatMoney(getCartGrandTotal()) +
         ' руб.';
 
-      sendTelegram(message)
-        .then(function () {
+      submitTelegramForm(message, {
+        onSuccess: function () {
           orderForm.reset();
           cart = [];
           deliveryCalcToken++;
           resetDeliveryState();
           renderCart();
           alert('Спасибо! Ваш заказ успешно отправлен в обработку');
-        })
-        .catch(function (error) {
-          console.error(error);
-          alert(TELEGRAM_SEND_FAIL_MSG);
-        });
+        }
+      });
     });
   }
 
@@ -1491,22 +1415,19 @@
         '\n📍 Адрес: ' +
         escapeHtml(address);
 
-      sendTelegram(message)
-        .then(function () {
+      submitTelegramForm(message, {
+        onSuccess: function () {
           ukladkaForm.reset();
           if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = false;
-        })
-        .catch(function (error) {
-          console.error(error);
-          alert(TELEGRAM_SEND_FAIL_MSG);
-        })
-        .then(function () {
+        },
+        onFinally: function () {
           ukladkaSending = false;
           if (ukladkaSubmitBtn) {
             ukladkaSubmitBtn.disabled = false;
             ukladkaSubmitBtn.textContent = 'Отправить заявку';
           }
-        });
+        }
+      });
     });
   }
 
