@@ -142,10 +142,12 @@
   }
 
   function getLabelFromEl(el) {
-    var clone = el.cloneNode(true);
-    clone.querySelectorAll(
-      'b, .unit, .btn--buy, .price-cell__row, .subprices__row-main, .tile-preview'
-    ).forEach(function (n) {
+    var labelRoot =
+      el.querySelector('.price-cell__row') ||
+      el.querySelector('.subprices__row-main') ||
+      el;
+    var clone = labelRoot.cloneNode(true);
+    clone.querySelectorAll('b, .unit, .btn--buy, .tile-preview').forEach(function (n) {
       n.remove();
     });
     return clone.textContent.replace(/\s+/g, ' ').trim();
@@ -159,10 +161,11 @@
   }
 
   function getColorVariantKey(el, colorLabel) {
-    if (/белом цементе/i.test(colorLabel)) return 'yellow-white';
-    if (/обычн\w*\s+цемент/i.test(colorLabel)) return 'yellow-cement';
+    var label = (colorLabel || '').toLowerCase();
+    if (/белом\s+цемент/i.test(label)) return 'yellow-white';
+    if (/обычн\w*\s+цемент/i.test(label)) return 'yellow-cement';
     var slug = getColorDotSlug(el);
-    if (slug === 'yellow') return 'yellow-cement';
+    if (slug === 'yellow' && !/белом/i.test(label)) return 'yellow-cement';
     return slug;
   }
 
