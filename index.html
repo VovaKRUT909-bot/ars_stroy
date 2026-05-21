@@ -561,7 +561,7 @@
                       <span class="order-delivery__value"><b id="order-delivery-cost">—</b> руб.</span>
                     </div>
                   </div>
-                  <p class="order-delivery__hint">Тариф: 5&nbsp;000&nbsp;₽, если до заказчика 10&nbsp;км и столько же обратно до Кубинки (500&nbsp;₽ за каждый км пути до объекта).</p>
+                  <p class="order-delivery__hint">Тариф: 5&nbsp;000&nbsp;₽, если до заказчика 10&nbsp;км и столько же обратно (500&nbsp;₽/км). Отсчёт от производства: М-1, 68-й&nbsp;км, вл1с3. Километраж — по маршруту, как в навигаторе.</p>
                 </div>
                 <label class="order-field order-field--full">
                   <span class="order-field__label">Дополнительная информация</span>
@@ -956,7 +956,9 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=delivery-roundtrip" defer></script>
+    <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
+    <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
+    <script src="order-cart.js?v=yandex-route" defer></script>
 
     <!-- Yandex.Metrika counter -->
     <script>

@@ -31,8 +31,21 @@
 
   var cart = [];
 
-  /** Производство: Кубинка, М-1 68 км. Тариф: 500 ₽ за км до объекта (10 км туда + 10 км обратно = 5 000 ₽). */
-  var DELIVERY_ORIGIN = { lat: 55.5797, lon: 36.825, label: 'Арс Строй, Кубинка' };
+  /**
+   * Производство (координаты Яндекс.Карт): М-1 Беларусь, 68-й км, вл1с3.
+   * Тариф: 500 ₽/км до объекта (10 км туда + 10 км обратно = 5 000 ₽).
+   * Ключ в index.html → ARS_STROY_YANDEX_MAPS_KEY (маршрут как в навигаторе).
+   */
+  var YANDEX_MAPS_API_KEY =
+    typeof window !== 'undefined' && window.ARS_STROY_YANDEX_MAPS_KEY
+      ? String(window.ARS_STROY_YANDEX_MAPS_KEY).trim()
+      : '';
+  var DELIVERY_ORIGIN = {
+    lat: 55.565621,
+    lon: 36.635938,
+    label: 'М-1 Беларусь, 68-й км, вл1с3 (Арс Строй)'
+  };
+  var NOMINATIM_VIEWBOX = '34.8,56.2,39.8,54.8';
   var DELIVERY_RUB_PER_KM_ONE_WAY = 500;
   var DELIVERY_GEO_HEADERS = {
     Accept: 'application/json',
@@ -161,15 +174,54 @@
       });
   }
 
-  function geocodeAddress(address) {
-    var q =
-      address +
-      ', Московская область, Россия';
+  function yandexGeocode(address, apiKey) {
+    var url =
+      'https://geocode-maps.yandex.ru/1.x/?apikey=' +
+      encodeURIComponent(apiKey) +
+      '&format=json&results=1&geocode=' +
+      encodeURIComponent(address + ', Московская область, Россия');
+    return fetchGeoJson(url).then(function (data) {
+      var member =
+        data.response &&
+        data.response.GeoObjectCollection &&
+        data.response.GeoObjectCollection.featureMember;
+      if (!member || !member[0]) throw new Error('not_found');
+      var pos = member[0].GeoObject.Point.pos.split(' ');
+      return { lon: parseFloat(pos[0]), lat: parseFloat(pos[1]) };
+    });
+  }
+
+  function yandexRouteDistanceKm(from, to, apiKey) {
+    var waypoints =
+      from.lat + ',' + from.lon + '|' + to.lat + ',' + to.lon;
+    var url =
+      'https://api.routing.yandex.net/v2/route?apikey=' +
+      encodeURIComponent(apiKey) +
+      '&waypoints=' +
+      encodeURIComponent(waypoints) +
+      '&mode=driving&traffic=enabled';
+    return fetchGeoJson(url).then(function (data) {
+      var leg = data.route && data.route.legs && data.route.legs[0];
+      if (!leg || leg.status !== 'OK') throw new Error('no_route');
+      var meters = 0;
+      (leg.steps || []).forEach(function (step) {
+        meters += step.length || 0;
+      });
+      if (!meters) throw new Error('no_length');
+      return meters / 1000;
+    });
+  }
+
+  function geocodeAddressOsm(address) {
+    var q = address + ', Московская область, Россия';
     var nominatim =
-      'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ru&q=' +
+      'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ru&viewbox=' +
+      NOMINATIM_VIEWBOX +
+      '&bounded=0&q=' +
       encodeURIComponent(q);
     var photon =
-      'https://photon.komoot.io/api/?limit=1&lang=ru&q=' + encodeURIComponent(q);
+      'https://photon.komoot.io/api/?limit=1&lang=ru&lat=55.565621&lon=36.635938&q=' +
+      encodeURIComponent(q);
 
     return fetchGeoJson(nominatim).then(function (data) {
       if (data && data[0]) {
@@ -186,7 +238,16 @@
     });
   }
 
-  function routeDistanceKm(from, to) {
+  function geocodeAddress(address) {
+    if (YANDEX_MAPS_API_KEY) {
+      return yandexGeocode(address, YANDEX_MAPS_API_KEY).catch(function () {
+        return geocodeAddressOsm(address);
+      });
+    }
+    return geocodeAddressOsm(address);
+  }
+
+  function routeDistanceKmOsrm(from, to) {
     var url =
       'https://router.project-osrm.org/route/v1/driving/' +
       from.lon +
@@ -206,8 +267,11 @@
   }
 
   function estimateDistanceKm(dest) {
-    return routeDistanceKm(DELIVERY_ORIGIN, dest).catch(function () {
-      return haversineKm(DELIVERY_ORIGIN, dest) * 1.28;
+    if (YANDEX_MAPS_API_KEY) {
+      return yandexRouteDistanceKm(DELIVERY_ORIGIN, dest, YANDEX_MAPS_API_KEY);
+    }
+    return routeDistanceKmOsrm(DELIVERY_ORIGIN, dest).catch(function () {
+      return haversineKm(DELIVERY_ORIGIN, dest) * 1.35;
     });
   }
 
@@ -218,7 +282,8 @@
     deliveryState.address = '';
     deliveryState.message =
       cart.length > 0
-        ? 'Укажите адрес доставки — рассчитаем километраж и стоимость автоматически.'
+        ? 'Укажите адрес доставки — рассчитаем километраж от М-1, 68-й км, вл1с3 (как в навигаторе).' +
+          (YANDEX_MAPS_API_KEY ? '' : ' Для точного совпадения с Яндекс.Навигатором укажите ключ API в index.html.')
         : '';
     renderDeliveryUi();
     updateOrderTotals();
@@ -316,11 +381,13 @@
           deliveryState.cost = deliveryCostFromKm(km);
           deliveryState.status = 'ok';
           deliveryState.message =
-            'До объекта около ' +
+            'До объекта ' +
             formatKm(km) +
-            ' км, туда и обратно на производство — около ' +
+            ' км' +
+            (YANDEX_MAPS_API_KEY ? ' (маршрут Яндекс, как в навигаторе)' : ' (по дорогам)') +
+            ', туда и обратно — ' +
             formatKm(deliveryRoundTripKm(km)) +
-            ' км. В стоимость входит обратный путь водителя.';
+            ' км. Отсчёт от М-1, 68-й км, вл1с3.';
         });
       })
       .catch(function () {
@@ -1115,7 +1182,7 @@
           ' км\n' +
           'Стоимость: <b>' +
           formatMoney(deliveryState.cost) +
-          ' руб.</b> (500 руб./км до объекта, с обратным путём)';
+          ' руб.</b> (500 руб./км до объекта; маршрут от М-1, 68-й км)';
       } else if (address) {
         deliveryBlock =
           '\n\n<b>Доставка</b>\nАдрес указан, автоматический расчёт не выполнен — уточните у менеджера.';
