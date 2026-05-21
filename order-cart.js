@@ -19,11 +19,6 @@
   var orderForm = document.getElementById('order-form');
   var ukladkaForm = document.getElementById('ukladka-form');
   var orderAddressEl = document.getElementById('order-address');
-  var orderDeliveryBox = document.getElementById('order-delivery');
-  var orderDeliveryStatus = document.getElementById('order-delivery-status');
-  var orderDeliveryKmEl = document.getElementById('order-delivery-km');
-  var orderDeliveryKmRoundEl = document.getElementById('order-delivery-km-round');
-  var orderDeliveryCostEl = document.getElementById('order-delivery-cost');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
   var cartDeliveryLine = document.getElementById('cart-delivery-line');
   var cartDeliveryTotalEl = document.getElementById('cart-delivery-total');
@@ -152,7 +147,18 @@
 
   function formatKm(km) {
     if (km == null || isNaN(km)) return '—';
-    return (Math.round(km * 10) / 10).toLocaleString('ru-RU');
+    return Math.round(km).toLocaleString('ru-RU');
+  }
+
+  function cartDeliveryKmLabel() {
+    if (deliveryState.km == null) return '';
+    return (
+      ' (' +
+      formatKm(deliveryState.km) +
+      ' км до объекта, ' +
+      formatKm(deliveryRoundTripKm(deliveryState.km)) +
+      ' км туда-обратно)'
+    );
   }
 
   function deliveryRoundTripKm(oneWayKm) {
@@ -404,68 +410,36 @@
     deliveryState.km = null;
     deliveryState.cost = null;
     deliveryState.address = '';
-    deliveryState.message =
-      cart.length > 0
-        ? 'Укажите адрес доставки — появится расчёт километража от М-1, 68-й км, вл1с3.'
-        : '';
+    deliveryState.message = '';
     renderDeliveryUi();
     updateOrderTotals();
   }
 
   function renderDeliveryUi() {
-    if (orderDeliveryBox) {
-      var addrLen = orderAddressEl ? orderAddressEl.value.trim().length : 0;
-      orderDeliveryBox.hidden = !(
-        cart.length > 0 ||
-        addrLen >= DELIVERY_MIN_ADDRESS_LEN ||
-        deliveryState.status === 'loading' ||
-        deliveryState.status === 'ok' ||
-        deliveryState.status === 'error'
-      );
+    if (!cartDeliveryLine) return;
+
+    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
+      cartDeliveryLine.hidden = false;
+      if (cartDeliveryTotalEl) {
+        cartDeliveryTotalEl.textContent = formatMoney(deliveryState.cost);
+      }
+      if (cartDeliveryKmEl) {
+        cartDeliveryKmEl.textContent = cartDeliveryKmLabel();
+      }
+      return;
     }
-    if (
-      cart.length > 0 &&
-      deliveryState.status === 'idle' &&
-      !deliveryState.address &&
-      !deliveryState.message
-    ) {
-      deliveryState.message =
-        'Укажите адрес доставки — рассчитаем километраж и стоимость автоматически.';
+
+    if (deliveryState.status === 'loading' && deliveryState.address) {
+      cartDeliveryLine.hidden = false;
+      if (cartDeliveryTotalEl) cartDeliveryTotalEl.textContent = '…';
+      if (cartDeliveryKmEl) {
+        cartDeliveryKmEl.textContent = ' (считаем доставку)';
+      }
+      return;
     }
-    if (orderDeliveryStatus) {
-      orderDeliveryStatus.textContent = deliveryState.message || '';
-      orderDeliveryStatus.className =
-        'order-delivery__status' +
-        (deliveryState.status === 'error' ? ' order-delivery__status--error' : '');
-    }
-    if (orderDeliveryKmEl) {
-      orderDeliveryKmEl.textContent =
-        deliveryState.km != null ? formatKm(deliveryState.km) : '—';
-    }
-    if (orderDeliveryKmRoundEl) {
-      orderDeliveryKmRoundEl.textContent =
-        deliveryState.km != null ? formatKm(deliveryRoundTripKm(deliveryState.km)) : '—';
-    }
-    if (orderDeliveryCostEl) {
-      orderDeliveryCostEl.textContent =
-        deliveryState.cost != null ? formatMoney(deliveryState.cost) : '—';
-    }
-    if (cartDeliveryLine) {
-      cartDeliveryLine.hidden = deliveryState.cost == null || deliveryState.status !== 'ok';
-    }
-    if (cartDeliveryTotalEl && deliveryState.cost != null) {
-      cartDeliveryTotalEl.textContent = formatMoney(deliveryState.cost);
-    }
-    if (cartDeliveryKmEl) {
-      cartDeliveryKmEl.textContent =
-        deliveryState.km != null
-          ? '(' +
-            formatKm(deliveryState.km) +
-            ' км до объекта, ' +
-            formatKm(deliveryRoundTripKm(deliveryState.km)) +
-            ' км туда-обратно)'
-          : '';
-    }
+
+    cartDeliveryLine.hidden = true;
+    if (cartDeliveryKmEl) cartDeliveryKmEl.textContent = '';
   }
 
   function getCartProductsTotal() {
@@ -496,7 +470,7 @@
   function calculateDelivery(address) {
     var token = ++deliveryCalcToken;
     deliveryState.status = 'loading';
-    deliveryState.message = 'Считаем расстояние и стоимость доставки…';
+    deliveryState.message = '';
     deliveryState.km = null;
     deliveryState.cost = null;
     deliveryState.address = address;
@@ -511,18 +485,7 @@
         deliveryState.km = km;
         deliveryState.cost = deliveryCostFromKm(km);
         deliveryState.status = 'ok';
-        var routeNote =
-          result.source === 'yandex'
-            ? ' (маршрут Яндекс, как в навигаторе)'
-            : ' (ориентировочно по карте; если ключ Яндекса только что выдан — подождите до 15 мин и обновите страницу)';
-        deliveryState.message =
-          'До объекта ' +
-          formatKm(km) +
-          ' км' +
-          routeNote +
-          ', туда и обратно — ' +
-          formatKm(deliveryRoundTripKm(km)) +
-          ' км. Отсчёт от М-1, 68-й км, вл1с3.';
+        deliveryState.message = '';
       })
       .catch(function (err) {
         if (token !== deliveryCalcToken) return;
@@ -530,8 +493,7 @@
         deliveryState.status = 'error';
         deliveryState.km = null;
         deliveryState.cost = null;
-        deliveryState.message =
-          'Не удалось рассчитать доставку. Укажите город и адрес подробнее (например: Одинцово, Можайское шоссе, 15). Корзина и заказ работают как обычно.';
+        deliveryState.message = 'delivery_error';
       })
       .then(function () {
         if (token !== deliveryCalcToken) return;
@@ -556,8 +518,7 @@
         console.warn('delivery_calc_sync', syncErr);
         markYmapsUnavailable(syncErr);
         deliveryState.status = 'error';
-        deliveryState.message =
-          'Ошибка расчёта доставки. Попробуйте другой адрес или обновите страницу. Остальной сайт работает.';
+        deliveryState.message = 'delivery_error';
         renderDeliveryUi();
       }
     }, 700);

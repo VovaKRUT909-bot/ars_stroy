@@ -542,27 +542,9 @@
                     id="order-address"
                     required
                     autocomplete="street-address"
-                    placeholder="Город, улица, дом — стоимость доставки посчитается автоматически"
+                    placeholder="Город, улица, дом"
                   />
                 </label>
-                <div class="order-delivery" id="order-delivery" hidden aria-live="polite">
-                  <div class="order-delivery__status" id="order-delivery-status"></div>
-                  <div class="order-delivery__rows">
-                    <div class="order-delivery__row">
-                      <span class="order-delivery__label">До объекта (от производства)</span>
-                      <span class="order-delivery__value"><b id="order-delivery-km">—</b> км</span>
-                    </div>
-                    <div class="order-delivery__row">
-                      <span class="order-delivery__label">Туда и обратно на производство</span>
-                      <span class="order-delivery__value"><b id="order-delivery-km-round">—</b> км</span>
-                    </div>
-                    <div class="order-delivery__row order-delivery__row--accent">
-                      <span class="order-delivery__label">Стоимость доставки</span>
-                      <span class="order-delivery__value"><b id="order-delivery-cost">—</b> руб.</span>
-                    </div>
-                  </div>
-                  <p class="order-delivery__hint">Тариф: 5&nbsp;000&nbsp;₽, если до заказчика 10&nbsp;км и столько же обратно (500&nbsp;₽/км). Отсчёт от производства: М-1, 68-й&nbsp;км, вл1с3. Километраж — по маршруту, как в навигаторе.</p>
-                </div>
                 <label class="order-field order-field--full">
                   <span class="order-field__label">Дополнительная информация</span>
                   <textarea class="order-field__input order-field__textarea" name="comment" id="order-comment" rows="3"></textarea>
@@ -958,7 +940,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=delivery-safe" defer></script>
+    <script src="order-cart.js?v=delivery-ui-clean" defer></script>
 
     <!-- Yandex.Metrika counter -->
     <script>
