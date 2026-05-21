@@ -190,6 +190,27 @@
     return TILE_IMG_BASE + '/bordyur-' + sizeCode + '-' + colorVariantKey + '.jpg';
   }
 
+  function isBlokBlock(meta, productKey) {
+    return meta.blockId === 'prices-block' || productKey === 'blok';
+  }
+
+  function assetSrcFromImg(imgEl) {
+    if (!imgEl) return '';
+    var attr = imgEl.getAttribute('src');
+    if (attr) return attr;
+    var abs = imgEl.src || '';
+    var idx = abs.indexOf('/assets/');
+    return idx !== -1 ? abs.slice(idx + 1) : abs;
+  }
+
+  function isAssetCatalogSrc(src) {
+    return /(?:^|\/)(assets\/(?:blok-|lito-|bordyur-|novyi-gorod|zavod))/i.test(src || '');
+  }
+
+  function isTileCatalogSrc(src) {
+    return (src || '').indexOf(TILE_IMG_BASE + '/') !== -1;
+  }
+
   function blokTileSrc(kindOrSizeCode) {
     if (
       kindOrSizeCode === 'solid' ||
@@ -205,7 +226,19 @@
     ) {
       return 'assets/blok-pustotelniy.png';
     }
-    return TILE_FALLBACK;
+    return 'assets/blok-polnotelnyi.png';
+  }
+
+  function resolveBlokImage(el, meta) {
+    var blockCard = el.closest('.subprices__card');
+    var blockPhoto = blockCard ? blockCard.querySelector('.subprices__photo') : null;
+    var photoSrc = assetSrcFromImg(blockPhoto);
+    if (photoSrc && /blok-(polnotelnyi|pustotelniy)\.png/i.test(photoSrc)) {
+      return photoSrc;
+    }
+    var blockKind =
+      meta.blockType || blockTypeFromCard(el) || blockTypeCode(meta.subTitle || '');
+    return blokTileSrc(blockKind);
   }
 
   function bordyurTileAltSrcs(sizeCode, colorVariantKey) {
@@ -345,21 +378,14 @@
     }
 
     var image;
-    if (productKey === 'bruschatka') {
+    if (isBlokBlock(meta, productKey)) {
+      image = resolveBlokImage(el, meta);
+    } else if (productKey === 'bruschatka') {
       image = bruschatkaTileSrc(colorVariantKey);
     } else if (meta.blockId === 'prices-cast') {
       image = litoTileSrc(colorVariantKey);
     } else if (meta.blockId === 'prices-curb') {
       image = bordyurTileSrc(sizeCode, colorVariantKey);
-    } else if (meta.blockId === 'prices-block') {
-      var blockCard = el.closest('.subprices__card');
-      var blockPhoto = blockCard ? blockCard.querySelector('.subprices__photo') : null;
-      var blockKindForImg =
-        meta.blockType || blockTypeFromCard(el) || blockTypeCode(meta.subTitle || '');
-      image =
-        blockPhoto && blockPhoto.src
-          ? blockPhoto.src
-          : blokTileSrc(blockKindForImg || sizeCode);
     } else {
       image = TILE_IMG_BASE + '/' + productKey + '-' + colorVariantKey + '.jpg';
     }
@@ -396,11 +422,34 @@
     return TILE_FALLBACK;
   }
 
-  function bindTileImgError(img, el, src, altSrcs) {
+  function blokFallbackFromItem(item) {
+    if (!item || !item.id) return 'assets/blok-polnotelnyi.png';
+    var sizePart = (item.id || '').split('|')[1] || '';
+    return blokTileSrc(sizePart);
+  }
+
+  function bindTileImgError(img, el, src, altSrcs, options) {
+    options = options || {};
     var curbAlts = altSrcs && altSrcs.length ? altSrcs.slice() : null;
     img.addEventListener('error', function onTileError() {
       if (curbAlts && curbAlts.length) {
         img.src = curbAlts.shift();
+        return;
+      }
+      if (options.blokFallback) {
+        img.removeEventListener('error', onTileError);
+        img.src = options.blokFallback;
+        return;
+      }
+      if (isAssetCatalogSrc(src) || isAssetCatalogSrc(img.src)) {
+        img.removeEventListener('error', onTileError);
+        if (el) {
+          img.src = tileFallback(el);
+        }
+        return;
+      }
+      if (!isTileCatalogSrc(src)) {
+        img.removeEventListener('error', onTileError);
         return;
       }
       var alt = bruschatkaTileAltSrc(src);
@@ -409,12 +458,26 @@
         return;
       }
       img.removeEventListener('error', onTileError);
-      if (/blok-(polnotelnyi|pustotelniy)\.png/i.test(src)) {
-        img.src = src;
-        return;
-      }
       img.src = el ? tileFallback(el) : TILE_FALLBACK;
     });
+  }
+
+  function bindCartItemImage(img, item) {
+    var src = item.image || '';
+    img.src = src;
+    if (isBlokBlock({ blockId: (item.id || '').split('|')[0] }, 'blok') || isAssetCatalogSrc(src)) {
+      bindTileImgError(img, null, src, null, {
+        blokFallback: blokFallbackFromItem(item)
+      });
+      return;
+    }
+    var cartTileAlts = /bordyur/i.test(src)
+      ? bordyurTileAltSrcs(
+          (item.id || '').split('|')[1] || '',
+          (item.id || '').split('|')[2] || 'gray'
+        )
+      : null;
+    bindTileImgError(img, null, src, cartTileAlts);
   }
 
   function injectTilePreview(el) {
@@ -537,15 +600,8 @@
         '<button type="button" class="cart-item__remove" aria-label="Удалить">×</button>';
 
       var img = row.querySelector('.cart-item__img');
-      img.src = item.image;
       img.alt = item.productName + ' — ' + item.color;
-      var cartTileAlts = /bordyur/i.test(item.image || '')
-        ? bordyurTileAltSrcs(
-            (item.id || '').split('|')[1] || '',
-            (item.id || '').split('|')[2] || 'gray'
-          )
-        : null;
-      bindTileImgError(img, null, item.image, cartTileAlts);
+      bindCartItemImage(img, item);
 
       renderCartRows(row.querySelector('.cart-item__details'), item, isSqm);
 
@@ -629,6 +685,9 @@
       if (product.qty != null) {
         existing.qty =
           existing.qty != null ? existing.qty + product.qty : product.qty;
+      }
+      if (product.image) {
+        existing.image = product.image;
       }
     } else {
       product.lineUid = product.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
