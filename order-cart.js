@@ -1,10 +1,9 @@
 (function initOrderCart() {
   'use strict';
 
-  var TELEGRAM_API_BASE =
+  var TELEGRAM_API_URL =
     'https://api.telegram.org/bot8428755203:AAGdq1k0nsg_4EP-eDp2RUfJqi8UWVek78k/sendMessage';
   var TELEGRAM_CHAT_ID = '7667524051';
-  var CODETABS_PROXY = 'https://api.codetabs.com/v1/proxy?quest=';
 
   var TILE_IMG_BASE = 'img/tiles';
   var TILE_FALLBACK = 'assets/bruschatka-1.png';
@@ -249,18 +248,10 @@
   }
 
   function fetchGeoJson(url) {
-    return fetch(url, { method: 'GET', headers: DELIVERY_GEO_HEADERS })
-      .then(function (res) {
-        if (!res.ok) throw new Error('geo_http');
-        return res.json();
-      })
-      .catch(function () {
-        var proxyUrl = CODETABS_PROXY + encodeURIComponent(url);
-        return fetch(proxyUrl, { method: 'GET' }).then(function (res) {
-          if (!res.ok) throw new Error('geo_proxy');
-          return res.json();
-        });
-      });
+    return fetch(url, { method: 'GET', headers: DELIVERY_GEO_HEADERS }).then(function (res) {
+      if (!res.ok) throw new Error('geo_http');
+      return res.json();
+    });
   }
 
   function markYmapsUnavailable(err) {
@@ -570,23 +561,16 @@
       .replace(/>/g, '&gt;');
   }
 
-  function buildTelegramGetUrl(text) {
-    return (
-      TELEGRAM_API_BASE +
-      '?chat_id=' +
-      encodeURIComponent(TELEGRAM_CHAT_ID) +
-      '&text=' +
-      encodeURIComponent(text) +
-      '&parse_mode=' +
-      encodeURIComponent('HTML')
-    );
-  }
-
   function postToTelegramBot(text) {
-    var telegramUrl = buildTelegramGetUrl(text);
-    var url = CODETABS_PROXY + encodeURIComponent(telegramUrl);
-
-    return fetch(url, { method: 'GET' })
+    return fetch(TELEGRAM_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: 'HTML'
+      })
+    })
       .then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok || !data.ok) {
