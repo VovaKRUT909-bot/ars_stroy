@@ -45,7 +45,26 @@
     lon: 36.635938,
     label: 'М-1 Беларусь, 68-й км, вл1с3 (Арс Строй)'
   };
+  var DELIVERY_ORIGIN_ADDRESS =
+    'Московская обл., Одинцовский г.о., М-1 Беларусь, 68-й километр, вл1с3';
   var NOMINATIM_VIEWBOX = '34.8,56.2,39.8,54.8';
+  var DELIVERY_MIN_ADDRESS_LEN = 3;
+  var YMAPS_LOAD_TIMEOUT_MS = 12000;
+  var YMAPS_ROUTE_TIMEOUT_MS = 12000;
+  var ymapsLoadPromise = null;
+  var ymapsApiUnavailable = false;
+  var deliveryUsedFallback = false;
+
+  window.addEventListener(
+    'error',
+    function (ev) {
+      var src = (ev && ev.filename) || '';
+      if (/yandex|api-maps/i.test(src)) {
+        ymapsApiUnavailable = true;
+      }
+    },
+    true
+  );
   var DELIVERY_RUB_PER_KM_ONE_WAY = 500;
   var DELIVERY_GEO_HEADERS = {
     Accept: 'application/json',
@@ -159,6 +178,34 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  function promiseTimeout(promise, ms, label) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var timer = setTimeout(function () {
+        if (!done) {
+          done = true;
+          reject(new Error(label || 'timeout'));
+        }
+      }, ms);
+      Promise.resolve(promise).then(
+        function (val) {
+          if (!done) {
+            done = true;
+            clearTimeout(timer);
+            resolve(val);
+          }
+        },
+        function (err) {
+          if (!done) {
+            done = true;
+            clearTimeout(timer);
+            reject(err);
+          }
+        }
+      );
+    });
+  }
+
   function fetchGeoJson(url) {
     return fetch(url, { method: 'GET', headers: DELIVERY_GEO_HEADERS })
       .then(function (res) {
@@ -174,41 +221,100 @@
       });
   }
 
-  function yandexGeocode(address, apiKey) {
-    var url =
-      'https://geocode-maps.yandex.ru/1.x/?apikey=' +
-      encodeURIComponent(apiKey) +
-      '&format=json&results=1&geocode=' +
-      encodeURIComponent(address + ', Московская область, Россия');
-    return fetchGeoJson(url).then(function (data) {
-      var member =
-        data.response &&
-        data.response.GeoObjectCollection &&
-        data.response.GeoObjectCollection.featureMember;
-      if (!member || !member[0]) throw new Error('not_found');
-      var pos = member[0].GeoObject.Point.pos.split(' ');
-      return { lon: parseFloat(pos[0]), lat: parseFloat(pos[1]) };
+  function markYmapsUnavailable(err) {
+    ymapsApiUnavailable = true;
+    if (err) console.warn('ymaps_skip', err);
+  }
+
+  function loadYmapsApi() {
+    if (!YANDEX_MAPS_API_KEY || ymapsApiUnavailable) {
+      return Promise.reject(new Error('no_yandex_key'));
+    }
+    if (window.ymaps) return Promise.resolve(window.ymaps);
+    if (ymapsLoadPromise) return ymapsLoadPromise;
+
+    var loadCore = function () {
+      return new Promise(function (resolve, reject) {
+        var existing = document.getElementById('yandex-maps-api-script');
+        if (existing) {
+          if (window.ymaps) {
+            resolve(window.ymaps);
+            return;
+          }
+          existing.addEventListener('load', function () {
+            if (window.ymaps) resolve(window.ymaps);
+            else reject(new Error('ymaps_missing'));
+          });
+          existing.addEventListener('error', function () {
+            reject(new Error('ymaps_load_fail'));
+          });
+          return;
+        }
+        var script = document.createElement('script');
+        script.id = 'yandex-maps-api-script';
+        script.async = true;
+        script.src =
+          'https://api-maps.yandex.ru/2.1/?apikey=' +
+          encodeURIComponent(YANDEX_MAPS_API_KEY) +
+          '&lang=ru_RU';
+        script.onload = function () {
+          if (window.ymaps) resolve(window.ymaps);
+          else reject(new Error('ymaps_missing'));
+        };
+        script.onerror = function () {
+          reject(new Error('ymaps_load_fail'));
+        };
+        document.head.appendChild(script);
+      });
+    };
+
+    ymapsLoadPromise = promiseTimeout(loadCore(), YMAPS_LOAD_TIMEOUT_MS, 'ymaps_load_timeout').catch(
+      function (err) {
+        ymapsLoadPromise = null;
+        markYmapsUnavailable(err);
+        throw err;
+      }
+    );
+    return ymapsLoadPromise;
+  }
+
+  function ymapsReady(run) {
+    return loadYmapsApi().then(function () {
+      return promiseTimeout(
+        new Promise(function (resolve, reject) {
+          try {
+            window.ymaps.ready(function () {
+              try {
+                Promise.resolve(run(window.ymaps)).then(resolve, reject);
+              } catch (runErr) {
+                reject(runErr);
+              }
+            });
+          } catch (readyErr) {
+            reject(readyErr);
+          }
+        }),
+        YMAPS_ROUTE_TIMEOUT_MS,
+        'ymaps_ready_timeout'
+      );
     });
   }
 
-  function yandexRouteDistanceKm(from, to, apiKey) {
-    var waypoints =
-      from.lat + ',' + from.lon + '|' + to.lat + ',' + to.lon;
-    var url =
-      'https://api.routing.yandex.net/v2/route?apikey=' +
-      encodeURIComponent(apiKey) +
-      '&waypoints=' +
-      encodeURIComponent(waypoints) +
-      '&mode=driving&traffic=enabled';
-    return fetchGeoJson(url).then(function (data) {
-      var leg = data.route && data.route.legs && data.route.legs[0];
-      if (!leg || leg.status !== 'OK') throw new Error('no_route');
-      var meters = 0;
-      (leg.steps || []).forEach(function (step) {
-        meters += step.length || 0;
-      });
-      if (!meters) throw new Error('no_length');
-      return meters / 1000;
+  /** Маршрут через JS API Яндекс.Карт (как в навигаторе). */
+  function ymapsRouteOneWayKm(customerAddress) {
+    var destination = customerAddress + ', Московская область, Россия';
+    return ymapsReady(function (ymaps) {
+      return ymaps
+        .route([DELIVERY_ORIGIN_ADDRESS, destination], {
+          routingMode: 'auto',
+          mapStateAutoApply: false
+        })
+        .then(function (route) {
+          if (!route) throw new Error('no_route');
+          var meters = route.getLength ? route.getLength() : 0;
+          if (!meters || meters <= 0) throw new Error('no_length');
+          return meters / 1000;
+        });
     });
   }
 
@@ -239,11 +345,6 @@
   }
 
   function geocodeAddress(address) {
-    if (YANDEX_MAPS_API_KEY) {
-      return yandexGeocode(address, YANDEX_MAPS_API_KEY).catch(function () {
-        return geocodeAddressOsm(address);
-      });
-    }
     return geocodeAddressOsm(address);
   }
 
@@ -266,13 +367,36 @@
     });
   }
 
-  function estimateDistanceKm(dest) {
-    if (YANDEX_MAPS_API_KEY) {
-      return yandexRouteDistanceKm(DELIVERY_ORIGIN, dest, YANDEX_MAPS_API_KEY);
-    }
+  function estimateDistanceKmOsm(dest) {
     return routeDistanceKmOsrm(DELIVERY_ORIGIN, dest).catch(function () {
       return haversineKm(DELIVERY_ORIGIN, dest) * 1.35;
     });
+  }
+
+  function deliveryDistanceViaOsm(customerAddress) {
+    return geocodeAddress(customerAddress).then(function (point) {
+      return estimateDistanceKmOsm(point).then(function (km) {
+        return { km: km, source: 'osm' };
+      });
+    });
+  }
+
+  function deliveryDistanceKm(customerAddress) {
+    if (!YANDEX_MAPS_API_KEY || ymapsApiUnavailable) {
+      return deliveryDistanceViaOsm(customerAddress);
+    }
+    return promiseTimeout(
+      ymapsRouteOneWayKm(customerAddress),
+      YMAPS_ROUTE_TIMEOUT_MS,
+      'ymaps_route_timeout'
+    )
+      .then(function (km) {
+        return { km: km, source: 'yandex' };
+      })
+      .catch(function (err) {
+        markYmapsUnavailable(err);
+        return deliveryDistanceViaOsm(customerAddress);
+      });
   }
 
   function resetDeliveryState() {
@@ -282,8 +406,7 @@
     deliveryState.address = '';
     deliveryState.message =
       cart.length > 0
-        ? 'Укажите адрес доставки — рассчитаем километраж от М-1, 68-й км, вл1с3 (как в навигаторе).' +
-          (YANDEX_MAPS_API_KEY ? '' : ' Для точного совпадения с Яндекс.Навигатором укажите ключ API в index.html.')
+        ? 'Укажите адрес доставки — появится расчёт километража от М-1, 68-й км, вл1с3.'
         : '';
     renderDeliveryUi();
     updateOrderTotals();
@@ -291,7 +414,14 @@
 
   function renderDeliveryUi() {
     if (orderDeliveryBox) {
-      orderDeliveryBox.hidden = cart.length === 0;
+      var addrLen = orderAddressEl ? orderAddressEl.value.trim().length : 0;
+      orderDeliveryBox.hidden = !(
+        cart.length > 0 ||
+        addrLen >= DELIVERY_MIN_ADDRESS_LEN ||
+        deliveryState.status === 'loading' ||
+        deliveryState.status === 'ok' ||
+        deliveryState.status === 'error'
+      );
     }
     if (
       cart.length > 0 &&
@@ -370,33 +500,38 @@
     deliveryState.km = null;
     deliveryState.cost = null;
     deliveryState.address = address;
+    deliveryUsedFallback = false;
     renderDeliveryUi();
 
-    return geocodeAddress(address)
-      .then(function (point) {
+    return deliveryDistanceKm(address)
+      .then(function (result) {
         if (token !== deliveryCalcToken) return;
-        return estimateDistanceKm(point).then(function (km) {
-          if (token !== deliveryCalcToken) return;
-          deliveryState.km = km;
-          deliveryState.cost = deliveryCostFromKm(km);
-          deliveryState.status = 'ok';
-          deliveryState.message =
-            'До объекта ' +
-            formatKm(km) +
-            ' км' +
-            (YANDEX_MAPS_API_KEY ? ' (маршрут Яндекс, как в навигаторе)' : ' (по дорогам)') +
-            ', туда и обратно — ' +
-            formatKm(deliveryRoundTripKm(km)) +
-            ' км. Отсчёт от М-1, 68-й км, вл1с3.';
-        });
+        var km = result.km;
+        deliveryUsedFallback = result.source !== 'yandex';
+        deliveryState.km = km;
+        deliveryState.cost = deliveryCostFromKm(km);
+        deliveryState.status = 'ok';
+        var routeNote =
+          result.source === 'yandex'
+            ? ' (маршрут Яндекс, как в навигаторе)'
+            : ' (ориентировочно по карте; если ключ Яндекса только что выдан — подождите до 15 мин и обновите страницу)';
+        deliveryState.message =
+          'До объекта ' +
+          formatKm(km) +
+          ' км' +
+          routeNote +
+          ', туда и обратно — ' +
+          formatKm(deliveryRoundTripKm(km)) +
+          ' км. Отсчёт от М-1, 68-й км, вл1с3.';
       })
-      .catch(function () {
+      .catch(function (err) {
         if (token !== deliveryCalcToken) return;
+        console.warn('delivery_calc', err);
         deliveryState.status = 'error';
         deliveryState.km = null;
         deliveryState.cost = null;
         deliveryState.message =
-          'Не удалось определить адрес. Уточните город, улицу и дом (например: Одинцово, Можайское ш., 15).';
+          'Не удалось рассчитать доставку. Укажите город и адрес подробнее (например: Одинцово, Можайское шоссе, 15). Корзина и заказ работают как обычно.';
       })
       .then(function () {
         if (token !== deliveryCalcToken) return;
@@ -408,14 +543,22 @@
     if (!orderAddressEl) return;
     var address = orderAddressEl.value.trim();
     if (deliveryDebounceTimer) clearTimeout(deliveryDebounceTimer);
-    if (address.length < 6) {
+    if (address.length < DELIVERY_MIN_ADDRESS_LEN) {
       deliveryCalcToken++;
       resetDeliveryState();
       return;
     }
     deliveryDebounceTimer = setTimeout(function () {
-      if (orderAddressEl.value.trim() === address) {
+      if (orderAddressEl.value.trim() !== address) return;
+      try {
         calculateDelivery(address);
+      } catch (syncErr) {
+        console.warn('delivery_calc_sync', syncErr);
+        markYmapsUnavailable(syncErr);
+        deliveryState.status = 'error';
+        deliveryState.message =
+          'Ошибка расчёта доставки. Попробуйте другой адрес или обновите страницу. Остальной сайт работает.';
+        renderDeliveryUi();
       }
     }, 700);
   }
@@ -1111,7 +1254,7 @@
     orderAddressEl.addEventListener('change', scheduleDeliveryCalc);
     orderAddressEl.addEventListener('blur', function () {
       var address = orderAddressEl.value.trim();
-      if (address.length >= 6) calculateDelivery(address);
+      if (address.length >= DELIVERY_MIN_ADDRESS_LEN) calculateDelivery(address);
     });
   }
 
