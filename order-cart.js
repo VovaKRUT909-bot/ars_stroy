@@ -18,8 +18,36 @@
   var cartClearBtn = document.getElementById('cart-clear');
   var orderForm = document.getElementById('order-form');
   var ukladkaForm = document.getElementById('ukladka-form');
+  var orderAddressEl = document.getElementById('order-address');
+  var orderDeliveryBox = document.getElementById('order-delivery');
+  var orderDeliveryStatus = document.getElementById('order-delivery-status');
+  var orderDeliveryKmEl = document.getElementById('order-delivery-km');
+  var orderDeliveryKmRoundEl = document.getElementById('order-delivery-km-round');
+  var orderDeliveryCostEl = document.getElementById('order-delivery-cost');
+  var cartSubtotalEl = document.getElementById('cart-subtotal');
+  var cartDeliveryLine = document.getElementById('cart-delivery-line');
+  var cartDeliveryTotalEl = document.getElementById('cart-delivery-total');
+  var cartDeliveryKmEl = document.getElementById('cart-delivery-km');
 
   var cart = [];
+
+  /** Производство: Кубинка, М-1 68 км. Тариф: 500 ₽ за км до объекта (10 км туда + 10 км обратно = 5 000 ₽). */
+  var DELIVERY_ORIGIN = { lat: 55.5797, lon: 36.825, label: 'Арс Строй, Кубинка' };
+  var DELIVERY_RUB_PER_KM_ONE_WAY = 500;
+  var DELIVERY_GEO_HEADERS = {
+    Accept: 'application/json',
+    'Accept-Language': 'ru',
+    'User-Agent': 'ArsStroySite/1.0 (oooarsstroy.ru; delivery-estimate)'
+  };
+  var deliveryState = {
+    status: 'idle',
+    km: null,
+    cost: null,
+    address: '',
+    message: ''
+  };
+  var deliveryCalcToken = 0;
+  var deliveryDebounceTimer = null;
 
   var BLOCK_CONFIG = {
     'prices-b1': {
@@ -88,6 +116,241 @@
 
   function formatMoney(n) {
     return n.toLocaleString('ru-RU');
+  }
+
+  function formatKm(km) {
+    if (km == null || isNaN(km)) return '—';
+    return (Math.round(km * 10) / 10).toLocaleString('ru-RU');
+  }
+
+  function deliveryRoundTripKm(oneWayKm) {
+    if (oneWayKm == null || isNaN(oneWayKm)) return null;
+    return oneWayKm * 2;
+  }
+
+  /** Стоимость по км до объекта (обратный путь включён в тариф). */
+  function deliveryCostFromKm(oneWayKm) {
+    if (oneWayKm == null || isNaN(oneWayKm) || oneWayKm <= 0) return 0;
+    return Math.ceil(oneWayKm) * DELIVERY_RUB_PER_KM_ONE_WAY;
+  }
+
+  function haversineKm(from, to) {
+    var R = 6371;
+    var dLat = ((to.lat - from.lat) * Math.PI) / 180;
+    var dLon = ((to.lon - from.lon) * Math.PI) / 180;
+    var lat1 = (from.lat * Math.PI) / 180;
+    var lat2 = (to.lat * Math.PI) / 180;
+    var a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function fetchGeoJson(url) {
+    return fetch(url, { method: 'GET', headers: DELIVERY_GEO_HEADERS })
+      .then(function (res) {
+        if (!res.ok) throw new Error('geo_http');
+        return res.json();
+      })
+      .catch(function () {
+        var proxyUrl = CODETABS_PROXY + encodeURIComponent(url);
+        return fetch(proxyUrl, { method: 'GET' }).then(function (res) {
+          if (!res.ok) throw new Error('geo_proxy');
+          return res.json();
+        });
+      });
+  }
+
+  function geocodeAddress(address) {
+    var q =
+      address +
+      ', Московская область, Россия';
+    var nominatim =
+      'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ru&q=' +
+      encodeURIComponent(q);
+    var photon =
+      'https://photon.komoot.io/api/?limit=1&lang=ru&q=' + encodeURIComponent(q);
+
+    return fetchGeoJson(nominatim).then(function (data) {
+      if (data && data[0]) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lon: parseFloat(data[0].lon)
+        };
+      }
+      return fetchGeoJson(photon).then(function (ph) {
+        if (!ph.features || !ph.features[0]) throw new Error('not_found');
+        var c = ph.features[0].geometry.coordinates;
+        return { lat: c[1], lon: c[0] };
+      });
+    });
+  }
+
+  function routeDistanceKm(from, to) {
+    var url =
+      'https://router.project-osrm.org/route/v1/driving/' +
+      from.lon +
+      ',' +
+      from.lat +
+      ';' +
+      to.lon +
+      ',' +
+      to.lat +
+      '?overview=false';
+    return fetchGeoJson(url).then(function (data) {
+      if (!data.routes || !data.routes[0] || data.routes[0].distance == null) {
+        throw new Error('no_route');
+      }
+      return data.routes[0].distance / 1000;
+    });
+  }
+
+  function estimateDistanceKm(dest) {
+    return routeDistanceKm(DELIVERY_ORIGIN, dest).catch(function () {
+      return haversineKm(DELIVERY_ORIGIN, dest) * 1.28;
+    });
+  }
+
+  function resetDeliveryState() {
+    deliveryState.status = 'idle';
+    deliveryState.km = null;
+    deliveryState.cost = null;
+    deliveryState.address = '';
+    deliveryState.message =
+      cart.length > 0
+        ? 'Укажите адрес доставки — рассчитаем километраж и стоимость автоматически.'
+        : '';
+    renderDeliveryUi();
+    updateOrderTotals();
+  }
+
+  function renderDeliveryUi() {
+    if (orderDeliveryBox) {
+      orderDeliveryBox.hidden = cart.length === 0;
+    }
+    if (
+      cart.length > 0 &&
+      deliveryState.status === 'idle' &&
+      !deliveryState.address &&
+      !deliveryState.message
+    ) {
+      deliveryState.message =
+        'Укажите адрес доставки — рассчитаем километраж и стоимость автоматически.';
+    }
+    if (orderDeliveryStatus) {
+      orderDeliveryStatus.textContent = deliveryState.message || '';
+      orderDeliveryStatus.className =
+        'order-delivery__status' +
+        (deliveryState.status === 'error' ? ' order-delivery__status--error' : '');
+    }
+    if (orderDeliveryKmEl) {
+      orderDeliveryKmEl.textContent =
+        deliveryState.km != null ? formatKm(deliveryState.km) : '—';
+    }
+    if (orderDeliveryKmRoundEl) {
+      orderDeliveryKmRoundEl.textContent =
+        deliveryState.km != null ? formatKm(deliveryRoundTripKm(deliveryState.km)) : '—';
+    }
+    if (orderDeliveryCostEl) {
+      orderDeliveryCostEl.textContent =
+        deliveryState.cost != null ? formatMoney(deliveryState.cost) : '—';
+    }
+    if (cartDeliveryLine) {
+      cartDeliveryLine.hidden = deliveryState.cost == null || deliveryState.status !== 'ok';
+    }
+    if (cartDeliveryTotalEl && deliveryState.cost != null) {
+      cartDeliveryTotalEl.textContent = formatMoney(deliveryState.cost);
+    }
+    if (cartDeliveryKmEl) {
+      cartDeliveryKmEl.textContent =
+        deliveryState.km != null
+          ? '(' +
+            formatKm(deliveryState.km) +
+            ' км до объекта, ' +
+            formatKm(deliveryRoundTripKm(deliveryState.km)) +
+            ' км туда-обратно)'
+          : '';
+    }
+  }
+
+  function getCartProductsTotal() {
+    return cart.reduce(function (sum, item) {
+      if (item.qty == null || item.qty <= 0) return sum;
+      return sum + item.price * item.qty;
+    }, 0);
+  }
+
+  function getCartGrandTotal() {
+    var total = getCartProductsTotal();
+    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
+      total += deliveryState.cost;
+    }
+    return total;
+  }
+
+  function updateOrderTotals() {
+    if (cartSubtotalEl) {
+      cartSubtotalEl.textContent = formatMoney(getCartProductsTotal());
+    }
+    if (cartGrandTotal) {
+      cartGrandTotal.textContent = formatMoney(getCartGrandTotal());
+    }
+    renderDeliveryUi();
+  }
+
+  function calculateDelivery(address) {
+    var token = ++deliveryCalcToken;
+    deliveryState.status = 'loading';
+    deliveryState.message = 'Считаем расстояние и стоимость доставки…';
+    deliveryState.km = null;
+    deliveryState.cost = null;
+    deliveryState.address = address;
+    renderDeliveryUi();
+
+    return geocodeAddress(address)
+      .then(function (point) {
+        if (token !== deliveryCalcToken) return;
+        return estimateDistanceKm(point).then(function (km) {
+          if (token !== deliveryCalcToken) return;
+          deliveryState.km = km;
+          deliveryState.cost = deliveryCostFromKm(km);
+          deliveryState.status = 'ok';
+          deliveryState.message =
+            'До объекта около ' +
+            formatKm(km) +
+            ' км, туда и обратно на производство — около ' +
+            formatKm(deliveryRoundTripKm(km)) +
+            ' км. В стоимость входит обратный путь водителя.';
+        });
+      })
+      .catch(function () {
+        if (token !== deliveryCalcToken) return;
+        deliveryState.status = 'error';
+        deliveryState.km = null;
+        deliveryState.cost = null;
+        deliveryState.message =
+          'Не удалось определить адрес. Уточните город, улицу и дом (например: Одинцово, Можайское ш., 15).';
+      })
+      .then(function () {
+        if (token !== deliveryCalcToken) return;
+        updateOrderTotals();
+      });
+  }
+
+  function scheduleDeliveryCalc() {
+    if (!orderAddressEl) return;
+    var address = orderAddressEl.value.trim();
+    if (deliveryDebounceTimer) clearTimeout(deliveryDebounceTimer);
+    if (address.length < 6) {
+      deliveryCalcToken++;
+      resetDeliveryState();
+      return;
+    }
+    deliveryDebounceTimer = setTimeout(function () {
+      if (orderAddressEl.value.trim() === address) {
+        calculateDelivery(address);
+      }
+    }, 700);
   }
 
   function escapeHtml(text) {
@@ -527,13 +790,6 @@
     return cart.length;
   }
 
-  function getCartGrandTotal() {
-    return cart.reduce(function (sum, item) {
-      if (item.qty == null || item.qty <= 0) return sum;
-      return sum + item.price * item.qty;
-    }, 0);
-  }
-
   function cartHasMissingQty() {
     return cart.some(function (item) {
       return item.qty == null || item.qty <= 0;
@@ -578,14 +834,13 @@
       cartItemsEl.innerHTML = '';
       if (orderCart) orderCart.hidden = true;
       if (orderSelected) orderSelected.hidden = false;
-      if (cartGrandTotal) cartGrandTotal.textContent = '0';
+      resetDeliveryState();
       updateCartBadge();
       return;
     }
 
     if (orderCart) orderCart.hidden = false;
     if (orderSelected) orderSelected.hidden = true;
-    if (cartGrandTotal) cartGrandTotal.textContent = formatMoney(getCartGrandTotal());
 
     cartItemsEl.innerHTML = '';
     cart.forEach(function (item) {
@@ -642,13 +897,13 @@
           sumEl.textContent = isSqm
             ? 'Укажите м²'
             : 'Укажите количество';
-          if (cartGrandTotal) cartGrandTotal.textContent = formatMoney(getCartGrandTotal());
+          updateOrderTotals();
           updateCartBadge();
           return;
         }
         input.value = String(item.qty);
         sumEl.textContent = formatMoney(item.price * item.qty) + ' руб.';
-        if (cartGrandTotal) cartGrandTotal.textContent = formatMoney(getCartGrandTotal());
+        updateOrderTotals();
         updateCartBadge();
       }
       minus.addEventListener('click', function () {
@@ -674,6 +929,7 @@
       cartItemsEl.appendChild(row);
     });
 
+    updateOrderTotals();
     updateCartBadge();
   }
 
@@ -778,7 +1034,17 @@
   if (cartClearBtn) {
     cartClearBtn.addEventListener('click', function () {
       cart = [];
+      deliveryCalcToken++;
       renderCart();
+    });
+  }
+
+  if (orderAddressEl) {
+    orderAddressEl.addEventListener('input', scheduleDeliveryCalc);
+    orderAddressEl.addEventListener('change', scheduleDeliveryCalc);
+    orderAddressEl.addEventListener('blur', function () {
+      var address = orderAddressEl.value.trim();
+      if (address.length >= 6) calculateDelivery(address);
     });
   }
 
@@ -837,6 +1103,24 @@
         );
       });
 
+      var deliveryBlock = '';
+      if (deliveryState.status === 'ok' && deliveryState.cost != null) {
+        deliveryBlock =
+          '\n\n<b>Доставка</b>\n' +
+          'До объекта: ' +
+          formatKm(deliveryState.km) +
+          ' км\n' +
+          'Туда и обратно: ' +
+          formatKm(deliveryRoundTripKm(deliveryState.km)) +
+          ' км\n' +
+          'Стоимость: <b>' +
+          formatMoney(deliveryState.cost) +
+          ' руб.</b> (500 руб./км до объекта, с обратным путём)';
+      } else if (address) {
+        deliveryBlock =
+          '\n\n<b>Доставка</b>\nАдрес указан, автоматический расчёт не выполнен — уточните у менеджера.';
+      }
+
       var message =
         '<b>Новый заказ с сайта</b>\n\n' +
         '<b>Данные клиента</b>\n' +
@@ -852,10 +1136,17 @@
         escapeHtml(email || '—') +
         '\nКомментарий: ' +
         escapeHtml(comment || '—') +
+        deliveryBlock +
         '\n\n' +
         '<b>Товары</b>\n\n' +
         productLines.join('\n\n') +
-        '\n\n<b>Итого:</b> ' +
+        '\n\nТовары: ' +
+        formatMoney(getCartProductsTotal()) +
+        ' руб.' +
+        (deliveryState.cost != null
+          ? '\nДоставка: ' + formatMoney(deliveryState.cost) + ' руб.'
+          : '') +
+        '\n<b>Итого:</b> ' +
         formatMoney(getCartGrandTotal()) +
         ' руб.';
 
@@ -863,6 +1154,8 @@
         .then(function () {
           orderForm.reset();
           cart = [];
+          deliveryCalcToken++;
+          resetDeliveryState();
           renderCart();
           alert('Спасибо! Ваш заказ успешно отправлен в обработку');
         })
@@ -895,5 +1188,6 @@
     });
   }
 
+  resetDeliveryState();
   renderCart();
 })();

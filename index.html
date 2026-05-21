@@ -466,8 +466,8 @@
             </div>
             <div class="delivery__right">
               <div class="delivery-card">
-                <div class="delivery-card__title">Уточнить доставку</div>
-                <div class="delivery-card__text">Напишите/позвоните и скажите адрес или район.</div>
+                <div class="delivery-card__title">Расчёт доставки</div>
+                <div class="delivery-card__text">В заказе укажите адрес — сайт посчитает путь до объекта и обратно на производство. Пример: 10&nbsp;км туда + 10&nbsp;км обратно = 5&nbsp;000&nbsp;₽.</div>
                 <div class="delivery-card__actions">
                   <a class="btn btn--primary" href="tel:+79258056308">Позвонить</a>
                   <a class="btn btn--ghost" href="#contacts">Контакты</a>
@@ -502,8 +502,17 @@
                   <button type="button" class="order-cart__clear" id="cart-clear">Очистить</button>
                 </div>
                 <div class="order-cart__items" id="cart-items"></div>
-                <div class="order-cart__grand">
-                  Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
+                <div class="order-cart__totals">
+                  <div class="order-cart__subline">
+                    Товары: <b id="cart-subtotal">0</b> <span class="unit">руб.</span>
+                  </div>
+                  <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
+                    Доставка: <b id="cart-delivery-total">0</b> <span class="unit">руб.</span>
+                    <span class="order-cart__delivery-km" id="cart-delivery-km"></span>
+                  </div>
+                  <div class="order-cart__grand">
+                    Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
+                  </div>
                 </div>
               </div>
 
@@ -526,8 +535,34 @@
                 </label>
                 <label class="order-field order-field--full">
                   <span class="order-field__label">Адрес доставки</span>
-                  <input class="order-field__input" type="text" name="address" id="order-address" required />
+                  <input
+                    class="order-field__input"
+                    type="text"
+                    name="address"
+                    id="order-address"
+                    required
+                    autocomplete="street-address"
+                    placeholder="Город, улица, дом — стоимость доставки посчитается автоматически"
+                  />
                 </label>
+                <div class="order-delivery" id="order-delivery" hidden aria-live="polite">
+                  <div class="order-delivery__status" id="order-delivery-status"></div>
+                  <div class="order-delivery__rows">
+                    <div class="order-delivery__row">
+                      <span class="order-delivery__label">До объекта (от производства)</span>
+                      <span class="order-delivery__value"><b id="order-delivery-km">—</b> км</span>
+                    </div>
+                    <div class="order-delivery__row">
+                      <span class="order-delivery__label">Туда и обратно на производство</span>
+                      <span class="order-delivery__value"><b id="order-delivery-km-round">—</b> км</span>
+                    </div>
+                    <div class="order-delivery__row order-delivery__row--accent">
+                      <span class="order-delivery__label">Стоимость доставки</span>
+                      <span class="order-delivery__value"><b id="order-delivery-cost">—</b> руб.</span>
+                    </div>
+                  </div>
+                  <p class="order-delivery__hint">Тариф: 5&nbsp;000&nbsp;₽, если до заказчика 10&nbsp;км и столько же обратно до Кубинки (500&nbsp;₽ за каждый км пути до объекта).</p>
+                </div>
                 <label class="order-field order-field--full">
                   <span class="order-field__label">Дополнительная информация</span>
                   <textarea class="order-field__input order-field__textarea" name="comment" id="order-comment" rows="3"></textarea>
@@ -921,7 +956,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=blok-cart-img" defer></script>
+    <script src="order-cart.js?v=delivery-roundtrip" defer></script>
 
     <!-- Yandex.Metrika counter -->
     <script>
