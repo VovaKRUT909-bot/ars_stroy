@@ -629,10 +629,7 @@
   }
 
   var PAY_PHONE_DISPLAY = '+7 (925) 838-72-48';
-  var PAY_DEEP_SBER = 'sberbankonline://';
-  var PAY_FALLBACK_SBER = 'https://sberbank.ru';
-  var PAY_DEEP_ALFA = 'alfabank://';
-  var PAY_FALLBACK_ALFA = 'https://alfabank.ru';
+  var PAY_PHONE_COPY = '79258387248';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
   var sbpPayToastTimer = null;
@@ -675,11 +672,12 @@
     });
   }
 
-  function showPayCopiedToast() {
+  function showPayToast(message) {
     var toast = document.getElementById('sbp-pay-toast');
     if (!toast) {
       return;
     }
+    toast.textContent = message;
     toast.hidden = false;
     toast.classList.add('sbp-pay__toast--visible');
     if (sbpPayToastTimer) {
@@ -691,27 +689,18 @@
     }, 2200);
   }
 
-  function openBankAppAfterCopy(deepLink, fallbackUrl, totalSum) {
-    function launchBankApp() {
-      window.location.href = deepLink;
-      window.setTimeout(function () {
-        window.location.href = fallbackUrl;
-      }, 1000);
-    }
-
-    copyTextToClipboard(totalSum)
+  function copyAndNotify(text, toastMessage) {
+    copyTextToClipboard(text)
       .then(function () {
-        showPayCopiedToast();
-        launchBankApp();
+        showPayToast(toastMessage);
       })
       .catch(function () {
-        showPayCopiedToast();
-        launchBankApp();
+        showPayToast(toastMessage);
       });
   }
 
   function ensureSbpPayModal() {
-    if (sbpPayModalEl && document.getElementById('sbp-pay-sber')) {
+    if (sbpPayModalEl && document.getElementById('sbp-pay-copy-phone')) {
       return sbpPayModalEl;
     }
     if (sbpPayModalEl) {
@@ -732,23 +721,24 @@
       '<div class="sbp-pay__panel">' +
       '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
       '<h2 class="sbp-pay__title" id="sbp-pay-title">Оплата заказа</h2>' +
-      '<div class="sbp-pay__card">' +
-      '<p class="sbp-pay__instruction">' +
-      'Перевод по номеру: <strong>' +
+      '<div class="sbp-pay__guide">' +
+      '<p class="sbp-pay__guide-title">⚡ БЫСТРАЯ ОПЛАТА ЗАКАЗА ⚡</p>' +
+      '<ol class="sbp-pay__steps">' +
+      '<li>Нажмите на кнопки ниже, чтобы скопировать номер телефона и сумму.</li>' +
+      '<li>Откройте приложение Сбербанка или Альфа-Банка на своем телефоне.</li>' +
+      '<li>Вставьте скопированные данные для перевода (Получатель: Сбербанк / Альфа-Банк).</li>' +
+      '</ol>' +
+      '</div>' +
+      '<div class="sbp-pay__copy-actions">' +
+      '<button type="button" class="sbp-pay__copy-btn sbp-pay__copy-btn--phone" id="sbp-pay-copy-phone">' +
+      '📋 Скопировать номер: ' +
       PAY_PHONE_DISPLAY +
-      '</strong>. Сумма заказа скопируется автоматически при нажатии на кнопку банка. Вам останется только вставить её при переводе.' +
-      '</p>' +
-      '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
-      '</div>' +
-      '<div class="sbp-pay__banks sbp-pay__mobile-only">' +
-      '<button type="button" class="sbp-pay__bank sbp-pay__bank--sber" id="sbp-pay-sber">' +
-      '<span class="sbp-pay__bank-label">📲 Открыть Сбербанк</span>' +
       '</button>' +
-      '<button type="button" class="sbp-pay__bank sbp-pay__bank--alfa" id="sbp-pay-alfa">' +
-      '<span class="sbp-pay__bank-label">📲 Открыть Альфа-Банк</span>' +
+      '<button type="button" class="sbp-pay__copy-btn sbp-pay__copy-btn--sum" id="sbp-pay-copy-sum">' +
+      '💰 Скопировать сумму заказа: <span id="sbp-pay-sum-label">0</span> руб.' +
       '</button>' +
       '</div>' +
-      '<p class="sbp-pay__toast" id="sbp-pay-toast" role="status" aria-live="polite" hidden>Сумма заказа скопирована!</p>' +
+      '<p class="sbp-pay__toast" id="sbp-pay-toast" role="status" aria-live="polite" hidden></p>' +
       '<button type="button" class="btn btn--primary sbp-pay__done" data-sbp-close>Закрыть и очистить корзину</button>' +
       '</div>';
 
@@ -757,21 +747,16 @@
         closeSbpPayModalAndClearCart();
         return;
       }
-      if (e.target.closest('#sbp-pay-sber')) {
+      if (e.target.closest('#sbp-pay-copy-phone')) {
         e.preventDefault();
-        openBankAppAfterCopy(
-          PAY_DEEP_SBER,
-          PAY_FALLBACK_SBER,
-          root.getAttribute('data-pay-total-sum') || ''
-        );
+        copyAndNotify(PAY_PHONE_COPY, 'Номер телефона скопирован!');
         return;
       }
-      if (e.target.closest('#sbp-pay-alfa')) {
+      if (e.target.closest('#sbp-pay-copy-sum')) {
         e.preventDefault();
-        openBankAppAfterCopy(
-          PAY_DEEP_ALFA,
-          PAY_FALLBACK_ALFA,
-          root.getAttribute('data-pay-total-sum') || ''
+        copyAndNotify(
+          root.getAttribute('data-pay-total-sum') || '',
+          'Сумма заказа скопирована!'
         );
       }
     });
@@ -791,11 +776,11 @@
     var modal = ensureSbpPayModal();
     var sum = Math.max(1, Math.round(Number(sumRub) || 0));
     var totalSum = getPayTotalSum(sum);
-    var sumEl = document.getElementById('sbp-pay-sum');
+    var sumLabel = document.getElementById('sbp-pay-sum-label');
 
     modal.setAttribute('data-pay-total-sum', totalSum);
-    if (sumEl) {
-      sumEl.textContent = 'Сумма к переводу: ' + formatMoney(sum) + ' ₽';
+    if (sumLabel) {
+      sumLabel.textContent = formatMoney(sum);
     }
 
     sbpPayPrevBodyOverflow = document.body.style.overflow;

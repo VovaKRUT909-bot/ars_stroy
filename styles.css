@@ -1648,7 +1648,7 @@ h3.section__subtitle{
   }
 }
 
-/* Оплата заказа после отправки формы */
+/* Оплата заказа: ручное копирование номера и суммы */
 .sbp-pay{
   position:fixed;
   inset:0;
@@ -1674,7 +1674,7 @@ h3.section__subtitle{
 .sbp-pay__panel{
   position:relative;
   z-index:1;
-  width:min(100%, 400px);
+  width:min(100%, 440px);
   max-height:calc(100vh - 32px);
   overflow:auto;
   padding:22px 20px 20px;
@@ -1707,87 +1707,86 @@ h3.section__subtitle{
   background:rgba(255,255,255,.12);
 }
 .sbp-pay__title{
-  margin:0 28px 10px 0;
+  margin:0 28px 14px 0;
   font-size: clamp(18px, 4.5vw, 22px);
   line-height:1.25;
   letter-spacing:-0.2px;
-}
-.sbp-pay__card{
-  margin:0 0 16px;
-  padding:16px 14px;
-  border-radius:14px;
-  border:1px solid rgba(255, 196, 61, 0.28);
-  background:linear-gradient(160deg, rgba(255, 196, 61, 0.1), rgba(255, 255, 255, 0.03));
   text-align:left;
 }
-.sbp-pay__instruction{
+.sbp-pay__guide{
+  margin:0 0 18px;
+  padding:16px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255, 196, 61, 0.35);
+  background:linear-gradient(160deg, rgba(255, 196, 61, 0.14), rgba(255, 255, 255, 0.04));
+  text-align:left;
+}
+.sbp-pay__guide-title{
   margin:0 0 12px;
-  font-size:clamp(15px, 3.8vw, 17px);
+  font-size:clamp(17px, 4.2vw, 20px);
+  font-weight:950;
+  line-height:1.3;
+  letter-spacing:0.02em;
+  color:var(--primary);
+  text-align:center;
+}
+.sbp-pay__steps{
+  margin:0;
+  padding:0 0 0 1.15rem;
+  font-size:clamp(14px, 3.6vw, 16px);
   line-height:1.55;
   font-weight:700;
   color:var(--text);
 }
-.sbp-pay__instruction strong{
-  color:var(--primary);
-  font-weight:950;
-  white-space:nowrap;
+.sbp-pay__steps li + li{
+  margin-top:8px;
 }
-.sbp-pay__mobile-only{
-  display:none;
-}
-.sbp-pay__banks{
-  display:none;
+.sbp-pay__copy-actions{
+  display:flex;
   flex-direction:column;
   gap:12px;
-  margin:0 0 16px;
-  text-align:left;
+  margin:0 0 14px;
 }
-.sbp-pay__bank{
+.sbp-pay__copy-btn{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:14px;
   width:100%;
-  min-height:58px;
-  padding:14px 16px;
+  min-height:64px;
+  padding:16px 18px;
   border-radius:14px;
-  border:1px solid rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.16);
   color:#fff;
   font-weight:900;
-  font-size:16px;
-  line-height:1.25;
-  box-shadow:0 10px 28px rgba(0,0,0,.28);
+  font-size:clamp(15px, 3.8vw, 17px);
+  line-height:1.3;
+  text-align:center;
+  box-shadow:0 12px 32px rgba(0,0,0,.32);
   transition: transform .15s ease, filter .15s ease;
   cursor:pointer;
   font-family:inherit;
+  -webkit-tap-highlight-color:transparent;
 }
-.sbp-pay__bank:active{
+.sbp-pay__copy-btn:active{
   transform:scale(0.98);
 }
-.sbp-pay__bank--sber{
-  background:linear-gradient(135deg, #1a9c3a, #21a038 55%, #1d8f34);
+.sbp-pay__copy-btn--phone{
+  background:linear-gradient(135deg, #1565c0, #1e88e5 55%, #0d47a1);
 }
-.sbp-pay__bank--sber:hover{
-  filter:brightness(1.06);
+.sbp-pay__copy-btn--phone:hover{
+  filter:brightness(1.07);
 }
-.sbp-pay__bank--alfa{
-  background:linear-gradient(135deg, #d4201f, #ef3124 55%, #c91b1a);
+.sbp-pay__copy-btn--sum{
+  background:linear-gradient(135deg, #c8860a, #ffc43d 45%, #e6a817);
+  color:#1a1408;
+  border-color:rgba(255, 220, 120, 0.45);
 }
-.sbp-pay__bank--alfa:hover{
-  filter:brightness(1.06);
+.sbp-pay__copy-btn--sum:hover{
+  filter:brightness(1.05);
 }
-.sbp-pay__bank-label{
-  flex:1 1 auto;
-  text-align:center;
-}
-.sbp-pay__sum{
-  margin:0;
-  font-size:clamp(22px, 5vw, 28px);
+.sbp-pay__copy-btn #sbp-pay-sum-label{
   font-weight:950;
-  line-height:1.2;
-  letter-spacing:-0.3px;
-  color:var(--primary);
-  text-align:center;
+  white-space:nowrap;
 }
 .sbp-pay__toast{
   margin:0 0 12px;
@@ -1811,15 +1810,9 @@ h3.section__subtitle{
   max-width:100%;
 }
 
-@media (max-width: 768px) {
-  .sbp-pay__banks{
-    display:flex;
-  }
-
-  .sbp-pay__bank{
-    min-height:64px;
-    padding:16px 18px;
-    font-size:17px;
+@media (min-width: 769px) {
+  .sbp-pay__copy-btn{
+    min-height:58px;
   }
 }
 
