@@ -1322,7 +1322,7 @@ h3.section__subtitle{
   flex-direction:column;
   justify-content:space-between;
 }
-.delivery-card__title{ font-weight:950; font-size: 16px; }
+.delivery-card__title{ margin:0; font-weight:950; font-size: 16px; }
 .delivery-card__text{ color: var(--muted); margin-top: 8px; line-height:1.6; }
 .delivery-card__actions{
   display:flex;
@@ -1373,7 +1373,7 @@ h3.section__subtitle{
 .contact-card--wide{
   grid-column: 1 / -1;
 }
-.contact-card__title{ font-weight:950; }
+.contact-card__title{ margin:0; font-weight:950; }
 .contact-card__phones{
   margin-top: 12px;
   display:flex;
