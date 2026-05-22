@@ -628,59 +628,37 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var SBP_BANK_SBER = '100000000111';
-  var SBP_BANK_ALFA = '100000000008';
   var SBP_PAY_PHONE = '79258387248';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
 
-  function computeNspkCrc(query) {
-    var crc = 0xffff;
-    var polynomial = 0x1021;
-    var i;
-    var j;
-
-    for (i = 0; i < query.length; i++) {
-      crc ^= query.charCodeAt(i) << 8;
-      for (j = 0; j < 8; j++) {
-        if (crc & 0x8000) {
-          crc = ((crc << 1) ^ polynomial) & 0xffff;
-        } else {
-          crc = (crc << 1) & 0xffff;
-        }
-      }
-    }
-
-    var hex = (crc & 0xffff).toString(16).toUpperCase();
-    while (hex.length < 4) {
-      hex = '0' + hex;
-    }
-    return hex;
+  /** Целые рубли без копеек и пробелов — для totalSum в ссылках банков. */
+  function getPayTotalSum(sumRub) {
+    return String(Math.max(1, Math.round(Number(sumRub) || 0)));
   }
 
-  function buildSbpPaymentQuery(bankId, sumRub) {
-    var sum = Math.max(1, Math.round(Number(sumRub) || 0));
+  /** Сбер: сбор/перевод по номеру телефона (SMS-шлюз collect → pbpn). */
+  function buildSberCollectUrl(sumRub) {
+    var totalSum = getPayTotalSum(sumRub);
     return (
-      'bank=' +
-      bankId +
-      '&phone=' +
-      SBP_PAY_PHONE +
-      '&sum=' +
-      String(sum) +
-      '&cur=RUB'
+      'https://www.sberbank.com/sms/pbpn?' +
+      'requisiteNumber=' +
+      encodeURIComponent(SBP_PAY_PHONE) +
+      '&totalSum=' +
+      encodeURIComponent(totalSum)
     );
   }
 
-  function buildSbpHttpsUrl(bankId, sumRub) {
-    var query = buildSbpPaymentQuery(bankId, sumRub);
-    return 'https://qr.nspk.ru/proxyapp?' + query + '&crc=' + computeNspkCrc(query);
-  }
-
-  /** Официальный deep-link СБП: bank{ID}://qr.nspk.ru/... */
-  function buildSbpDeepLink(bankId, sumRub) {
-    var query = buildSbpPaymentQuery(bankId, sumRub);
-    var path = 'qr.nspk.ru/proxyapp?' + query + '&crc=' + computeNspkCrc(query);
-    return 'bank' + bankId + '://' + path;
+  /** Альфа-Банк: перевод на карту по номеру телефона. */
+  function buildAlfaCard2PhoneUrl(sumRub) {
+    var totalSum = getPayTotalSum(sumRub);
+    return (
+      'https://alfabank.ru/transfer/card2phone?' +
+      'phone=' +
+      encodeURIComponent(SBP_PAY_PHONE) +
+      '&totalSum=' +
+      encodeURIComponent(totalSum)
+    );
   }
 
   function getSbpQrImageUrl(paymentUrl) {
@@ -757,14 +735,17 @@
     var sberLink = document.getElementById('sbp-pay-sber');
     var alfaLink = document.getElementById('sbp-pay-alfa');
 
+    var sberPayUrl = buildSberCollectUrl(sum);
+    var alfaPayUrl = buildAlfaCard2PhoneUrl(sum);
+
     if (qrImg) {
-      qrImg.src = getSbpQrImageUrl(buildSbpHttpsUrl(SBP_BANK_SBER, sum));
+      qrImg.src = getSbpQrImageUrl(sberPayUrl);
     }
     if (sberLink) {
-      sberLink.href = buildSbpDeepLink(SBP_BANK_SBER, sum);
+      sberLink.href = sberPayUrl;
     }
     if (alfaLink) {
-      alfaLink.href = buildSbpDeepLink(SBP_BANK_ALFA, sum);
+      alfaLink.href = alfaPayUrl;
     }
     if (sumEl) {
       sumEl.textContent = 'К оплате: ' + formatMoney(sum) + ' ₽';
