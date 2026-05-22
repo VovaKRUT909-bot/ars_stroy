@@ -1718,6 +1718,57 @@ h3.section__subtitle{
   font-size:14px;
   line-height:1.55;
 }
+.sbp-pay__text--mobile,
+.sbp-pay__mobile-only{
+  display:none;
+}
+.sbp-pay__banks{
+  display:none;
+  flex-direction:column;
+  gap:12px;
+  margin:0 0 16px;
+  text-align:left;
+}
+.sbp-pay__bank{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-height:58px;
+  padding:14px 16px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  text-decoration:none;
+  color:#fff;
+  font-weight:900;
+  font-size:16px;
+  line-height:1.25;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+  transition: transform .15s ease, filter .15s ease;
+}
+.sbp-pay__bank:active{
+  transform:scale(0.98);
+}
+.sbp-pay__bank--sber{
+  background:linear-gradient(135deg, #1a9c3a, #21a038 55%, #1d8f34);
+}
+.sbp-pay__bank--sber:hover{
+  filter:brightness(1.06);
+}
+.sbp-pay__bank--alfa{
+  background:linear-gradient(135deg, #d4201f, #ef3124 55%, #c91b1a);
+}
+.sbp-pay__bank--alfa:hover{
+  filter:brightness(1.06);
+}
+.sbp-pay__bank-icon{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.sbp-pay__bank-label{
+  flex:1 1 auto;
+}
 .sbp-pay__qr-wrap{
   display:inline-flex;
   padding:10px;
@@ -1745,6 +1796,28 @@ h3.section__subtitle{
 .sbp-pay__done{
   width:100%;
   max-width:100%;
+}
+
+@media (max-width: 768px) {
+  .sbp-pay__text--desktop,
+  .sbp-pay__desktop-only,
+  .sbp-pay__hint--desktop{
+    display:none !important;
+  }
+
+  .sbp-pay__text--mobile{
+    display:block;
+  }
+
+  .sbp-pay__banks{
+    display:flex;
+  }
+
+  .sbp-pay__bank{
+    min-height:64px;
+    padding:16px 18px;
+    font-size:17px;
+  }
 }
 
 @media (max-width: 480px){
