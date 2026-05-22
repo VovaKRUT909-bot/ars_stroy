@@ -628,129 +628,7 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var PAY_PHONE_DISPLAY = '+7 (925) 838-72-48';
-  var PAY_NSPK_URL = 'https://nspk.ru';
-  var sbpPayModalEl = null;
-  var sbpPayPrevBodyOverflow = '';
-
-  function getPayQrImageUrl(dataUrl) {
-    return (
-      'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=14&data=' +
-      encodeURIComponent(dataUrl)
-    );
-  }
-
-  function ensureSbpPayModal() {
-    if (sbpPayModalEl && document.getElementById('sbp-pay-cash')) {
-      return sbpPayModalEl;
-    }
-    if (sbpPayModalEl) {
-      sbpPayModalEl.remove();
-      sbpPayModalEl = null;
-    }
-
-    var root = document.createElement('div');
-    root.id = 'sbp-pay-modal';
-    root.className = 'sbp-pay';
-    root.hidden = true;
-    root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-modal', 'true');
-    root.setAttribute('aria-labelledby', 'sbp-pay-title');
-
-    root.innerHTML =
-      '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
-      '<div class="sbp-pay__panel">' +
-      '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
-      '<h2 class="sbp-pay__title" id="sbp-pay-title">⚡ Оформление заказа — АРС Строй</h2>' +
-      '<p class="sbp-pay__intro" id="sbp-pay-intro"></p>' +
-      '<div class="sbp-pay__qr-block sbp-pay__desktop-only">' +
-      '<p class="sbp-pay__qr-caption">Отсканируйте QR-код в приложении банка (СБП), укажите сумму и номер получателя вручную</p>' +
-      '<div class="sbp-pay__qr-wrap">' +
-      '<img class="sbp-pay__qr" id="sbp-pay-qr" width="240" height="240" alt="QR-код для оплаты через СБП" decoding="async" />' +
-      '</div>' +
-      '</div>' +
-      '<div class="sbp-pay__methods sbp-pay__mobile-only">' +
-      '<a class="sbp-pay__method sbp-pay__method--sber" href="' +
-      PAY_NSPK_URL +
-      '" target="_blank" rel="noopener noreferrer">📲 Перевод через Сбербанк</a>' +
-      '<a class="sbp-pay__method sbp-pay__method--alfa" href="' +
-      PAY_NSPK_URL +
-      '" target="_blank" rel="noopener noreferrer">📲 Перевод через Альфа-Банк</a>' +
-      '</div>' +
-      '<button type="button" class="sbp-pay__method sbp-pay__method--cash" id="sbp-pay-cash">💵 Оплата наличными водителю при доставке</button>' +
-      '<p class="sbp-pay__reserve">Резервный номер телефона для перевода: <strong>' +
-      PAY_PHONE_DISPLAY +
-      '</strong></p>' +
-      '<button type="button" class="btn btn--ghost sbp-pay__later" data-sbp-close>Закрыть</button>' +
-      '</div>';
-
-    root.addEventListener('click', function (e) {
-      if (e.target.closest('[data-sbp-close]')) {
-        closeSbpPayModalAndClearCart();
-        return;
-      }
-      if (e.target.closest('#sbp-pay-cash')) {
-        e.preventDefault();
-        chooseCashPaymentAndClose();
-      }
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && sbpPayModalEl && !sbpPayModalEl.hidden) {
-        closeSbpPayModalAndClearCart();
-      }
-    });
-
-    document.body.appendChild(root);
-    sbpPayModalEl = root;
-    return sbpPayModalEl;
-  }
-
-  function chooseCashPaymentAndClose() {
-    closeSbpPayModalAndClearCart();
-    window.alert(
-      "Способ оплаты 'Наличными' выбран. Менеджер свяжется с вами для подтверждения доставки!"
-    );
-  }
-
-  function showSbpPayModal(sumRub) {
-    var modal = ensureSbpPayModal();
-    var sum = Math.max(1, Math.round(Number(sumRub) || 0));
-    var introEl = document.getElementById('sbp-pay-intro');
-    var qrImg = document.getElementById('sbp-pay-qr');
-
-    if (introEl) {
-      introEl.innerHTML =
-        'Ваш заказ успешно сформирован! Сумма к оплате: <strong>' +
-        formatMoney(sum) +
-        ' руб.</strong><br>Выберите удобный способ оплаты ниже:';
-    }
-    if (qrImg) {
-      qrImg.src = getPayQrImageUrl(PAY_NSPK_URL);
-    }
-
-    sbpPayPrevBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    modal.hidden = false;
-    requestAnimationFrame(function () {
-      modal.classList.add('sbp-pay--open');
-    });
-
-    var cashBtn = document.getElementById('sbp-pay-cash');
-    if (cashBtn) {
-      cashBtn.focus();
-    }
-  }
-
-  function closeSbpPayModalAndClearCart() {
-    if (!sbpPayModalEl) {
-      return;
-    }
-
-    sbpPayModalEl.classList.remove('sbp-pay--open');
-    sbpPayModalEl.hidden = true;
-    document.body.style.overflow = sbpPayPrevBodyOverflow;
-
+  function clearOrderAfterSubmit() {
     cart = [];
     deliveryCalcToken++;
     resetDeliveryState();
@@ -1440,12 +1318,10 @@
         return;
       }
 
-      var orderTotalRub = getCartGrandTotal();
-
       sendZakazForm(phone)
         .then(function () {
-          orderForm.reset();
-          showSbpPayModal(orderTotalRub);
+          clearOrderAfterSubmit();
+          alert('Заказ отправлен! Мы свяжемся с вами.');
         })
         .catch(function (err) {
           console.error(err);
