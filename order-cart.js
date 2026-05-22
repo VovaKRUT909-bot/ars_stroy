@@ -628,6 +628,145 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
+  var SBP_BANK_SBER = '100000000111';
+  var SBP_PAY_PHONE = '79258387248';
+  var sbpPayModalEl = null;
+  var sbpPayPrevBodyOverflow = '';
+
+  function computeNspkCrc(query) {
+    var crc = 0xffff;
+    var polynomial = 0x1021;
+    var i;
+    var j;
+
+    for (i = 0; i < query.length; i++) {
+      crc ^= query.charCodeAt(i) << 8;
+      for (j = 0; j < 8; j++) {
+        if (crc & 0x8000) {
+          crc = ((crc << 1) ^ polynomial) & 0xffff;
+        } else {
+          crc = (crc << 1) & 0xffff;
+        }
+      }
+    }
+
+    var hex = (crc & 0xffff).toString(16).toUpperCase();
+    while (hex.length < 4) {
+      hex = '0' + hex;
+    }
+    return hex;
+  }
+
+  function buildSbpPaymentUrl(sumRub) {
+    var sum = Math.max(1, Math.round(Number(sumRub) || 0));
+    var query =
+      'bank=' +
+      SBP_BANK_SBER +
+      '&phone=' +
+      SBP_PAY_PHONE +
+      '&sum=' +
+      String(sum) +
+      '&cur=RUB';
+    var crc = computeNspkCrc(query);
+    return 'https://qr.nspk.ru/proxyapp?' + query + '&crc=' + crc;
+  }
+
+  function getSbpQrImageUrl(paymentUrl) {
+    return (
+      'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=' +
+      encodeURIComponent(paymentUrl)
+    );
+  }
+
+  function ensureSbpPayModal() {
+    if (sbpPayModalEl) {
+      return sbpPayModalEl;
+    }
+
+    var root = document.createElement('div');
+    root.id = 'sbp-pay-modal';
+    root.className = 'sbp-pay';
+    root.hidden = true;
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.setAttribute('aria-labelledby', 'sbp-pay-title');
+
+    root.innerHTML =
+      '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
+      '<div class="sbp-pay__panel">' +
+      '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
+      '<h2 class="sbp-pay__title" id="sbp-pay-title">Быстрая оплата заказа через СБП ⚡</h2>' +
+      '<p class="sbp-pay__text">Отсканируйте QR-код в приложении вашего банка для моментальной оплаты.</p>' +
+      '<div class="sbp-pay__qr-wrap">' +
+      '<img class="sbp-pay__qr" id="sbp-pay-qr" width="260" height="260" alt="QR-код для оплаты через СБП" decoding="async" />' +
+      '</div>' +
+      '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
+      '<p class="sbp-pay__hint">Сбербанк • перевод по номеру телефона</p>' +
+      '<button type="button" class="btn btn--primary sbp-pay__done" data-sbp-close>Закрыть и очистить корзину</button>' +
+      '</div>';
+
+    root.addEventListener('click', function (e) {
+      if (e.target.closest('[data-sbp-close]')) {
+        closeSbpPayModalAndClearCart();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && sbpPayModalEl && !sbpPayModalEl.hidden) {
+        closeSbpPayModalAndClearCart();
+      }
+    });
+
+    document.body.appendChild(root);
+    sbpPayModalEl = root;
+    return sbpPayModalEl;
+  }
+
+  function showSbpPayModal(sumRub) {
+    var modal = ensureSbpPayModal();
+    var sum = Math.max(1, Math.round(Number(sumRub) || 0));
+    var paymentUrl = buildSbpPaymentUrl(sum);
+    var qrImg = document.getElementById('sbp-pay-qr');
+    var sumEl = document.getElementById('sbp-pay-sum');
+
+    if (qrImg) {
+      qrImg.src = getSbpQrImageUrl(paymentUrl);
+    }
+    if (sumEl) {
+      sumEl.textContent = 'К оплате: ' + formatMoney(sum) + ' ₽';
+    }
+
+    sbpPayPrevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    modal.hidden = false;
+    requestAnimationFrame(function () {
+      modal.classList.add('sbp-pay--open');
+    });
+
+    var doneBtn = modal.querySelector('.sbp-pay__done');
+    if (doneBtn) {
+      doneBtn.focus();
+    }
+  }
+
+  function closeSbpPayModalAndClearCart() {
+    if (!sbpPayModalEl) {
+      return;
+    }
+
+    sbpPayModalEl.classList.remove('sbp-pay--open');
+    sbpPayModalEl.hidden = true;
+    document.body.style.overflow = sbpPayPrevBodyOverflow;
+
+    cart = [];
+    deliveryCalcToken++;
+    resetDeliveryState();
+    renderCart();
+    if (orderForm) {
+      orderForm.reset();
+    }
+  }
+
   function slugifyAscii(text) {
     return String(text)
       .toUpperCase()
@@ -1308,14 +1447,12 @@
         return;
       }
 
+      var orderTotalRub = getCartGrandTotal();
+
       sendZakazForm(phone)
         .then(function () {
           orderForm.reset();
-          cart = [];
-          deliveryCalcToken++;
-          resetDeliveryState();
-          renderCart();
-          alert('Заявка отправлена!');
+          showSbpPayModal(orderTotalRub);
         })
         .catch(function (err) {
           console.error(err);

@@ -1644,8 +1644,124 @@ h3.section__subtitle{
   }
 }
 
+/* Оплата СБП после отправки заказа */
+.sbp-pay{
+  position:fixed;
+  inset:0;
+  z-index:1200;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  opacity:0;
+  visibility:hidden;
+  transition: opacity .22s ease, visibility .22s ease;
+}
+.sbp-pay--open{
+  opacity:1;
+  visibility:visible;
+}
+.sbp-pay__backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(6, 8, 12, 0.78);
+  backdrop-filter: blur(6px);
+}
+.sbp-pay__panel{
+  position:relative;
+  z-index:1;
+  width:min(100%, 400px);
+  max-height:calc(100vh - 32px);
+  overflow:auto;
+  padding:22px 20px 20px;
+  border-radius: var(--radius2);
+  border:1px solid var(--accent-border);
+  background:linear-gradient(165deg, rgba(28, 32, 40, 0.98), rgba(14, 16, 20, 0.98));
+  box-shadow:0 24px 80px rgba(0, 0, 0, 0.55);
+  text-align:center;
+  transform:translateY(12px) scale(0.98);
+  transition: transform .22s ease;
+}
+.sbp-pay--open .sbp-pay__panel{
+  transform:translateY(0) scale(1);
+}
+.sbp-pay__close-x{
+  position:absolute;
+  top:10px;
+  right:12px;
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+}
+.sbp-pay__close-x:hover{
+  background:rgba(255,255,255,.12);
+}
+.sbp-pay__title{
+  margin:0 28px 10px 0;
+  font-size: clamp(18px, 4.5vw, 22px);
+  line-height:1.25;
+  letter-spacing:-0.2px;
+}
+.sbp-pay__text{
+  margin:0 0 14px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.55;
+}
+.sbp-pay__qr-wrap{
+  display:inline-flex;
+  padding:10px;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 8px 28px rgba(0,0,0,.28);
+}
+.sbp-pay__qr{
+  display:block;
+  width:min(72vw, 260px);
+  height:auto;
+  border-radius:8px;
+}
+.sbp-pay__sum{
+  margin:14px 0 4px;
+  font-size:20px;
+  font-weight:950;
+  color:var(--primary);
+}
+.sbp-pay__hint{
+  margin:0 0 16px;
+  font-size:12px;
+  color:var(--muted2);
+}
+.sbp-pay__done{
+  width:100%;
+  max-width:100%;
+}
+
+@media (max-width: 480px){
+  .sbp-pay{
+    padding:10px;
+    align-items:flex-end;
+  }
+  .sbp-pay__panel{
+    width:100%;
+    border-bottom-left-radius:0;
+    border-bottom-right-radius:0;
+    padding:18px 16px 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce){
   .btn:hover{ transform:none; }
   .page-bg{ will-change: auto; }
+  .sbp-pay,
+  .sbp-pay__panel{
+    transition:none;
+  }
 }
 
