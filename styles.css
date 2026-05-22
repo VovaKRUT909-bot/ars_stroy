@@ -478,6 +478,10 @@ main{
   resize:vertical;
   min-height:88px;
 }
+.order-field__optional{
+  font-weight:600;
+  color:var(--muted2);
+}
 .order-field__hint{
   margin:0;
   font-size:12px;
