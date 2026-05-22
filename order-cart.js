@@ -563,12 +563,9 @@
   var FORM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  function getTelegramApiUrl(botToken) {
-    return 'https://teleapi.ru/bot' + botToken + '/sendMessage';
-  }
-
   function sendToTelegram(botToken, htmlText) {
-    return fetch(getTelegramApiUrl(botToken), {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
