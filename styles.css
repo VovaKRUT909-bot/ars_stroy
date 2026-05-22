@@ -1,3 +1,10 @@
+/* Мобильные телефоны: плавный скролл по якорям каталога → прайс */
+@media (max-width: 768px) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 :root{
   --scroll-bg0: rgb(14, 16, 20);
   --scroll-bg1: rgb(21, 25, 32);
@@ -1571,6 +1578,37 @@ h3.section__subtitle{
   }
   .brand__text{
     min-width:0;
+  }
+}
+
+@media (max-width: 768px) {
+  #catalog .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  #catalog .cat-card {
+    padding: 10px 12px;
+    gap: 4px;
+  }
+
+  #catalog .cat-card__title {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  #catalog .cat-card__meta {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  #catalog .cat-card__arrow {
+    margin-top: 2px;
+    font-size: 14px;
+  }
+
+  #catalog .section__head {
+    margin-bottom: 12px;
   }
 }
 
