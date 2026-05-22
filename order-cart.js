@@ -628,37 +628,88 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var SBP_PAY_PHONE = '79258387248';
+  var PAY_PHONE_DISPLAY = '+7 (925) 838-72-48';
+  var PAY_BANK_SBER_URL = 'https://sberbank.ru';
+  var PAY_BANK_ALFA_URL = 'https://alfabank.ru';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
+  var sbpPayToastTimer = null;
 
-  /** Целые рубли без копеек и пробелов — для totalSum в ссылке сбора денег Сбера. */
+  /** Целые рубли без копеек и пробелов — для копирования в буфер обмена. */
   function getPayTotalSum(sumRub) {
     return String(Math.max(1, Math.round(Number(sumRub) || 0)));
   }
 
-  /** Сбер: официальный шлюз сбора денег по номеру телефона (remittance/collect). */
-  function buildSberRemittanceCollectUrl(sumRub) {
-    var totalSum = getPayTotalSum(sumRub);
-    return (
-      'https://online.sberbank.ru/remittance/collect?' +
-      'requisiteNumber=' +
-      encodeURIComponent(SBP_PAY_PHONE) +
-      '&totalSum=' +
-      encodeURIComponent(totalSum)
-    );
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return copyTextToClipboardFallback(text);
+      });
+    }
+    return copyTextToClipboardFallback(text);
   }
 
-  function getSbpQrImageUrl(paymentUrl) {
-    return (
-      'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=' +
-      encodeURIComponent(paymentUrl)
-    );
+  function copyTextToClipboardFallback(text) {
+    return new Promise(function (resolve, reject) {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.left = '-9999px';
+      document.body.appendChild(area);
+      area.select();
+      try {
+        var ok = document.execCommand('copy');
+        document.body.removeChild(area);
+        if (ok) {
+          resolve();
+        } else {
+          reject(new Error('copy failed'));
+        }
+      } catch (err) {
+        document.body.removeChild(area);
+        reject(err);
+      }
+    });
+  }
+
+  function showPayCopiedToast() {
+    var toast = document.getElementById('sbp-pay-toast');
+    if (!toast) {
+      return;
+    }
+    toast.hidden = false;
+    toast.classList.add('sbp-pay__toast--visible');
+    if (sbpPayToastTimer) {
+      clearTimeout(sbpPayToastTimer);
+    }
+    sbpPayToastTimer = setTimeout(function () {
+      toast.classList.remove('sbp-pay__toast--visible');
+      toast.hidden = true;
+    }, 2200);
+  }
+
+  function openBankAppAfterCopy(bankUrl, totalSum) {
+    copyTextToClipboard(totalSum)
+      .then(function () {
+        showPayCopiedToast();
+        window.setTimeout(function () {
+          window.location.href = bankUrl;
+        }, 380);
+      })
+      .catch(function () {
+        showPayCopiedToast();
+        window.location.href = bankUrl;
+      });
   }
 
   function ensureSbpPayModal() {
-    if (sbpPayModalEl) {
+    if (sbpPayModalEl && document.getElementById('sbp-pay-sber')) {
       return sbpPayModalEl;
+    }
+    if (sbpPayModalEl) {
+      sbpPayModalEl.remove();
+      sbpPayModalEl = null;
     }
 
     var root = document.createElement('div');
@@ -673,25 +724,45 @@
       '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
       '<div class="sbp-pay__panel">' +
       '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
-      '<h2 class="sbp-pay__title" id="sbp-pay-title">Быстрая оплата заказа через СБП ⚡</h2>' +
-      '<p class="sbp-pay__text sbp-pay__text--desktop">Отсканируйте QR-код в приложении вашего банка для моментальной оплаты.</p>' +
-      '<p class="sbp-pay__text sbp-pay__text--mobile">Нажмите кнопку — откроется Сбербанк Онлайн с уже указанными телефоном и суммой заказа.</p>' +
-      '<div class="sbp-pay__qr-wrap sbp-pay__desktop-only">' +
-      '<img class="sbp-pay__qr" id="sbp-pay-qr" width="260" height="260" alt="QR-код для оплаты через СБП" decoding="async" />' +
+      '<h2 class="sbp-pay__title" id="sbp-pay-title">Оплата заказа</h2>' +
+      '<div class="sbp-pay__card">' +
+      '<p class="sbp-pay__instruction">' +
+      'Перевод по номеру телефона: <strong>' +
+      PAY_PHONE_DISPLAY +
+      '</strong> (Получатель: Сбербанк / Альфа-Банк). Сумма заказа скопируется автоматически при нажатии на банк.' +
+      '</p>' +
+      '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
       '</div>' +
       '<div class="sbp-pay__banks sbp-pay__mobile-only">' +
-      '<a class="sbp-pay__bank sbp-pay__bank--sber" id="sbp-pay-mobile" href="#" rel="noopener noreferrer">' +
-      '<span class="sbp-pay__bank-label">📲 Быстрая оплата заказа</span>' +
+      '<a class="sbp-pay__bank sbp-pay__bank--sber" id="sbp-pay-sber" href="' +
+      PAY_BANK_SBER_URL +
+      '" rel="noopener noreferrer">' +
+      '<span class="sbp-pay__bank-label">📲 Открыть Сбербанк и скопировать сумму</span>' +
+      '</a>' +
+      '<a class="sbp-pay__bank sbp-pay__bank--alfa" id="sbp-pay-alfa" href="' +
+      PAY_BANK_ALFA_URL +
+      '" rel="noopener noreferrer">' +
+      '<span class="sbp-pay__bank-label">📲 Открыть Альфа-Банк и скопировать сумму</span>' +
       '</a>' +
       '</div>' +
-      '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
-      '<p class="sbp-pay__hint sbp-pay__hint--desktop">Сканируйте QR в любом банке с поддержкой СБП</p>' +
+      '<p class="sbp-pay__toast" id="sbp-pay-toast" role="status" aria-live="polite" hidden>Сумма скопирована!</p>' +
       '<button type="button" class="btn btn--primary sbp-pay__done" data-sbp-close>Закрыть и очистить корзину</button>' +
       '</div>';
 
     root.addEventListener('click', function (e) {
       if (e.target.closest('[data-sbp-close]')) {
         closeSbpPayModalAndClearCart();
+        return;
+      }
+      var sberBtn = e.target.closest('#sbp-pay-sber');
+      var alfaBtn = e.target.closest('#sbp-pay-alfa');
+      if (sberBtn || alfaBtn) {
+        e.preventDefault();
+        var totalSum = root.getAttribute('data-pay-total-sum') || '';
+        openBankAppAfterCopy(
+          sberBtn ? PAY_BANK_SBER_URL : PAY_BANK_ALFA_URL,
+          totalSum
+        );
       }
     });
 
@@ -709,19 +780,12 @@
   function showSbpPayModal(sumRub) {
     var modal = ensureSbpPayModal();
     var sum = Math.max(1, Math.round(Number(sumRub) || 0));
-    var qrImg = document.getElementById('sbp-pay-qr');
+    var totalSum = getPayTotalSum(sum);
     var sumEl = document.getElementById('sbp-pay-sum');
-    var mobilePayLink = document.getElementById('sbp-pay-mobile');
-    var collectUrl = buildSberRemittanceCollectUrl(sum);
 
-    if (qrImg) {
-      qrImg.src = getSbpQrImageUrl(collectUrl);
-    }
-    if (mobilePayLink) {
-      mobilePayLink.href = collectUrl;
-    }
+    modal.setAttribute('data-pay-total-sum', totalSum);
     if (sumEl) {
-      sumEl.textContent = 'К оплате: ' + formatMoney(sum) + ' ₽';
+      sumEl.textContent = 'Сумма к переводу: ' + formatMoney(sum) + ' ₽';
     }
 
     sbpPayPrevBodyOverflow = document.body.style.overflow;
