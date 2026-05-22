@@ -628,61 +628,21 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var SBP_BANK_SBER = '100000000111';
   var SBP_PAY_PHONE = '79258387248';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
 
-  /** Целые рубли без копеек и пробелов — для totalSum в ссылках банков. */
+  /** Целые рубли без копеек и пробелов — для totalSum в ссылке сбора денег Сбера. */
   function getPayTotalSum(sumRub) {
     return String(Math.max(1, Math.round(Number(sumRub) || 0)));
   }
 
-  function computeNspkCrc(query) {
-    var crc = 0xffff;
-    var polynomial = 0x1021;
-    var i;
-    var j;
-
-    for (i = 0; i < query.length; i++) {
-      crc ^= query.charCodeAt(i) << 8;
-      for (j = 0; j < 8; j++) {
-        if (crc & 0x8000) {
-          crc = ((crc << 1) ^ polynomial) & 0xffff;
-        } else {
-          crc = (crc << 1) & 0xffff;
-        }
-      }
-    }
-
-    var hex = (crc & 0xffff).toString(16).toUpperCase();
-    while (hex.length < 4) {
-      hex = '0' + hex;
-    }
-    return hex;
-  }
-
-  /** Универсальная ссылка СБП (qr.nspk.ru): сумма в параметре sum — в копейках. */
-  function buildSbpUniversalLink(sumRub) {
-    var totalSum = getPayTotalSum(sumRub);
-    var sumInKopecks = Math.round(parseFloat(totalSum) * 100);
-    var query =
-      'bank=' +
-      SBP_BANK_SBER +
-      '&phone=' +
-      SBP_PAY_PHONE +
-      '&sum=' +
-      String(sumInKopecks) +
-      '&cur=RUB';
-    return 'https://qr.nspk.ru/proxyapp?' + query + '&crc=' + computeNspkCrc(query);
-  }
-
-  /** Альфа-Банк: перевод на карту по номеру телефона. */
-  function buildAlfaCard2PhoneUrl(sumRub) {
+  /** Сбер: официальный шлюз сбора денег по номеру телефона (remittance/collect). */
+  function buildSberRemittanceCollectUrl(sumRub) {
     var totalSum = getPayTotalSum(sumRub);
     return (
-      'https://alfabank.ru/transfer/card2phone?' +
-      'phone=' +
+      'https://online.sberbank.ru/remittance/collect?' +
+      'requisiteNumber=' +
       encodeURIComponent(SBP_PAY_PHONE) +
       '&totalSum=' +
       encodeURIComponent(totalSum)
@@ -715,22 +675,13 @@
       '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
       '<h2 class="sbp-pay__title" id="sbp-pay-title">Быстрая оплата заказа через СБП ⚡</h2>' +
       '<p class="sbp-pay__text sbp-pay__text--desktop">Отсканируйте QR-код в приложении вашего банка для моментальной оплаты.</p>' +
-      '<p class="sbp-pay__text sbp-pay__text--mobile">Нажмите кнопку вашего банка — откроется приложение для оплаты через СБП.</p>' +
+      '<p class="sbp-pay__text sbp-pay__text--mobile">Нажмите кнопку — откроется Сбербанк Онлайн с уже указанными телефоном и суммой заказа.</p>' +
       '<div class="sbp-pay__qr-wrap sbp-pay__desktop-only">' +
       '<img class="sbp-pay__qr" id="sbp-pay-qr" width="260" height="260" alt="QR-код для оплаты через СБП" decoding="async" />' +
       '</div>' +
       '<div class="sbp-pay__banks sbp-pay__mobile-only">' +
-      '<a class="sbp-pay__bank sbp-pay__bank--sber" id="sbp-pay-sber" href="#" rel="noopener noreferrer">' +
-      '<span class="sbp-pay__bank-icon" aria-hidden="true">' +
-      '<svg viewBox="0 0 32 32" width="32" height="32"><circle cx="16" cy="16" r="16" fill="#fff" fill-opacity=".18"/><path fill="#fff" d="M8 16.5h3.2l1.1-6.2h2.4l-1.1 6.2H18l.5-2.8h2.3l-.5 2.8H24v2.3h-3.6l-.4 2.5h-2.4l.4-2.5h-2.9l-1.2 6.7h-2.4l1.2-6.7H11l-.6 3.2H8v-2.3z"/></svg>' +
-      '</span>' +
-      '<span class="sbp-pay__bank-label">📲 Оплатить через Сбербанк</span>' +
-      '</a>' +
-      '<a class="sbp-pay__bank sbp-pay__bank--alfa" id="sbp-pay-alfa" href="#" rel="noopener noreferrer">' +
-      '<span class="sbp-pay__bank-icon" aria-hidden="true">' +
-      '<svg viewBox="0 0 32 32" width="32" height="32"><circle cx="16" cy="16" r="16" fill="#fff" fill-opacity=".18"/><path fill="#fff" d="M9 22V10h4.6c2.5 0 4.1 1.3 4.1 3.4 0 1.4-.7 2.5-1.9 3l2.2 5.6h-2.8l-1.9-5h-1.8v5H9zm4.3-7.1c1 0 1.6-.5 1.6-1.4s-.6-1.4-1.6-1.4h-1.5v2.8h1.5z"/></svg>' +
-      '</span>' +
-      '<span class="sbp-pay__bank-label">📲 Оплатить через Альфа-Банк</span>' +
+      '<a class="sbp-pay__bank sbp-pay__bank--sber" id="sbp-pay-mobile" href="#" rel="noopener noreferrer">' +
+      '<span class="sbp-pay__bank-label">📲 Быстрая оплата заказа</span>' +
       '</a>' +
       '</div>' +
       '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
@@ -760,20 +711,14 @@
     var sum = Math.max(1, Math.round(Number(sumRub) || 0));
     var qrImg = document.getElementById('sbp-pay-qr');
     var sumEl = document.getElementById('sbp-pay-sum');
-    var sberLink = document.getElementById('sbp-pay-sber');
-    var alfaLink = document.getElementById('sbp-pay-alfa');
-
-    var sbpUniversalLink = buildSbpUniversalLink(sum);
-    var alfaPayUrl = buildAlfaCard2PhoneUrl(sum);
+    var mobilePayLink = document.getElementById('sbp-pay-mobile');
+    var collectUrl = buildSberRemittanceCollectUrl(sum);
 
     if (qrImg) {
-      qrImg.src = getSbpQrImageUrl(sbpUniversalLink);
+      qrImg.src = getSbpQrImageUrl(collectUrl);
     }
-    if (sberLink) {
-      sberLink.href = sbpUniversalLink;
-    }
-    if (alfaLink) {
-      alfaLink.href = alfaPayUrl;
+    if (mobilePayLink) {
+      mobilePayLink.href = collectUrl;
     }
     if (sumEl) {
       sumEl.textContent = 'К оплате: ' + formatMoney(sum) + ' ₽';

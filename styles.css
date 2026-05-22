@@ -1749,6 +1749,7 @@ h3.section__subtitle{
   transform:scale(0.98);
 }
 .sbp-pay__bank--sber{
+  justify-content:center;
   background:linear-gradient(135deg, #1a9c3a, #21a038 55%, #1d8f34);
 }
 .sbp-pay__bank--sber:hover{
