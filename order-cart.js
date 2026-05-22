@@ -628,6 +628,7 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
+  var SBP_BANK_SBER = '100000000111';
   var SBP_PAY_PHONE = '79258387248';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
@@ -637,16 +638,43 @@
     return String(Math.max(1, Math.round(Number(sumRub) || 0)));
   }
 
-  /** Сбер: сбор/перевод по номеру телефона (SMS-шлюз collect → pbpn). */
-  function buildSberCollectUrl(sumRub) {
+  function computeNspkCrc(query) {
+    var crc = 0xffff;
+    var polynomial = 0x1021;
+    var i;
+    var j;
+
+    for (i = 0; i < query.length; i++) {
+      crc ^= query.charCodeAt(i) << 8;
+      for (j = 0; j < 8; j++) {
+        if (crc & 0x8000) {
+          crc = ((crc << 1) ^ polynomial) & 0xffff;
+        } else {
+          crc = (crc << 1) & 0xffff;
+        }
+      }
+    }
+
+    var hex = (crc & 0xffff).toString(16).toUpperCase();
+    while (hex.length < 4) {
+      hex = '0' + hex;
+    }
+    return hex;
+  }
+
+  /** Универсальная ссылка СБП (qr.nspk.ru): сумма в параметре sum — в копейках. */
+  function buildSbpUniversalLink(sumRub) {
     var totalSum = getPayTotalSum(sumRub);
-    return (
-      'https://www.sberbank.com/sms/pbpn?' +
-      'requisiteNumber=' +
-      encodeURIComponent(SBP_PAY_PHONE) +
-      '&totalSum=' +
-      encodeURIComponent(totalSum)
-    );
+    var sumInKopecks = Math.round(parseFloat(totalSum) * 100);
+    var query =
+      'bank=' +
+      SBP_BANK_SBER +
+      '&phone=' +
+      SBP_PAY_PHONE +
+      '&sum=' +
+      String(sumInKopecks) +
+      '&cur=RUB';
+    return 'https://qr.nspk.ru/proxyapp?' + query + '&crc=' + computeNspkCrc(query);
   }
 
   /** Альфа-Банк: перевод на карту по номеру телефона. */
@@ -735,14 +763,14 @@
     var sberLink = document.getElementById('sbp-pay-sber');
     var alfaLink = document.getElementById('sbp-pay-alfa');
 
-    var sberPayUrl = buildSberCollectUrl(sum);
+    var sbpUniversalLink = buildSbpUniversalLink(sum);
     var alfaPayUrl = buildAlfaCard2PhoneUrl(sum);
 
     if (qrImg) {
-      qrImg.src = getSbpQrImageUrl(sberPayUrl);
+      qrImg.src = getSbpQrImageUrl(sbpUniversalLink);
     }
     if (sberLink) {
-      sberLink.href = sberPayUrl;
+      sberLink.href = sbpUniversalLink;
     }
     if (alfaLink) {
       alfaLink.href = alfaPayUrl;
