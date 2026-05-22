@@ -557,107 +557,78 @@
       .replace(/>/g, '&gt;');
   }
 
-  var WEB3FORMS_SUBMIT_URL = 'https://api.web3forms.com/submit';
-  var WEB3FORMS_ACCESS_KEY = '411809c1-ac7f-4bb1-88d5-7eca267d88b7';
+  var TELEGRAM_CHAT_ID = '7667524051';
+  var TOKEN_ZAMERSHIK = '8393208986:AAHAHR9EYg_CbntUgT7E8wJdKZ75rFo-miM';
+  var TOKEN_ZAKAZ = '8659364210:AAFEzSO8hxk3ZBs3k0tJQAbkXF5p2FQcHhI';
   var FORM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  function getWeb3FormsAccessKey() {
-    if (typeof window !== 'undefined' && window.ARS_STROY_WEB3FORMS_KEY) {
-      return String(window.ARS_STROY_WEB3FORMS_KEY).trim();
-    }
-    return WEB3FORMS_ACCESS_KEY;
+  function getTelegramApiUrl(botToken) {
+    return 'https://api.telegram.org/bot' + botToken + '/sendMessage';
   }
 
-  function plainFormText(html) {
-    return String(html)
-      .replace(/<b>/gi, '')
-      .replace(/<\/b>/gi, '')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>');
-  }
-
-  function postToWeb3Forms(fields) {
-    var payload = Object.assign({ access_key: getWeb3FormsAccessKey() }, fields);
-
-    return fetch(WEB3FORMS_SUBMIT_URL, {
+  function sendTelegramMessage(botToken, htmlText) {
+    return fetch(getTelegramApiUrl(botToken), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: htmlText,
+        parse_mode: 'HTML'
+      })
     }).then(function (res) {
       return res.json().then(function (data) {
-        if (!res.ok || !data.success) {
-          throw new Error(data.message || 'web3forms_send_failed');
+        if (!res.ok || !data.ok) {
+          throw new Error(data.description || 'telegram_send_failed');
         }
-        return { ok: true, data: data };
+        return data;
       });
     });
   }
 
-  /** Замер: Web3Forms — три поля Имя, Телефон, Адрес. */
-  function sendUkladkaForm(name, phone, address) {
-    return postToWeb3Forms({
-      subject: 'Заявка на замер',
-      Имя: name || '—',
-      Телефон: phone,
-      Адрес: address
-    });
+  /** Заявка на замер → бот замерщика. */
+  function sendZamershikForm(name, phone, address) {
+    var text =
+      '📏 <b>Заявка на замер тротуарной плитки</b>\n\n' +
+      '<b>Имя:</b> ' +
+      escapeHtml(name || '—') +
+      '\n<b>Телефон:</b> ' +
+      escapeHtml(phone) +
+      '\n<b>Адрес:</b> ' +
+      escapeHtml(address);
+    return sendTelegramMessage(TOKEN_ZAMERSHIK, text);
   }
 
-  /** Заказ из каталога: Web3Forms, текст заявки в message. */
-  function sendTelegram(text, options) {
-    options = options || {};
-    var payload = {
-      subject: options.subject || 'Заявка с сайта oooarsstroy.ru',
-      message: plainFormText(text)
-    };
-    if (options.replyTo) {
-      payload.email = options.replyTo;
-    }
-    return postToWeb3Forms(payload);
+  function formatCartLinesForTelegram() {
+    return cart
+      .map(function (item, index) {
+        var measure = item.qtyMeasure || 'шт.';
+        return (
+          (index + 1) +
+          '. ' +
+          escapeHtml(item.productName) +
+          ' — ' +
+          escapeHtml(item.colorRu || item.color) +
+          ', ' +
+          escapeHtml(item.size) +
+          '\n   <b>Количество:</b> ' +
+          item.qty +
+          ' ' +
+          escapeHtml(measure)
+        );
+      })
+      .join('\n');
   }
 
-  function handleFormSendError(error, callbacks) {
-    console.error(error);
-    alert(FORM_SEND_FAIL_MSG);
-    if (callbacks.onError) callbacks.onError(error);
-  }
-
-  function submitTelegramForm(text, callbacks) {
-    callbacks = callbacks || {};
-    return sendTelegram(text, {
-      subject: callbacks.subject,
-      replyTo: callbacks.replyTo
-    })
-      .then(function (data) {
-        if (callbacks.onSuccess) callbacks.onSuccess(data);
-        return data;
-      })
-      .catch(function (error) {
-        handleFormSendError(error, callbacks);
-      })
-      .then(function () {
-        if (callbacks.onFinally) callbacks.onFinally();
-      });
-  }
-
-  function submitUkladkaForm(name, phone, address, callbacks) {
-    callbacks = callbacks || {};
-    return sendUkladkaForm(name, phone, address)
-      .then(function (data) {
-        if (callbacks.onSuccess) callbacks.onSuccess(data);
-        return data;
-      })
-      .catch(function (error) {
-        handleFormSendError(error, callbacks);
-      })
-      .then(function () {
-        if (callbacks.onFinally) callbacks.onFinally();
-      });
+  /** Заказ из корзины → бот заказов. */
+  function sendZakazForm(phone) {
+    var text =
+      '🛒 <b>Новый заказ брусчатки</b>\n\n' +
+      '<b>Выбранная брусчатка:</b>\n' +
+      formatCartLinesForTelegram() +
+      '\n\n<b>Телефон:</b> ' +
+      escapeHtml(phone);
+    return sendTelegramMessage(TOKEN_ZAKAZ, text);
   }
 
   function slugifyAscii(text) {
@@ -1315,6 +1286,11 @@
     orderForm.addEventListener('submit', function (e) {
       e.preventDefault();
 
+      if (!orderForm.checkValidity()) {
+        orderForm.reportValidity();
+        return;
+      }
+
       if (cart.length === 0) {
         alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
         return;
@@ -1324,106 +1300,30 @@
         return;
       }
 
-      var nameEl = document.getElementById('order-name');
       var phoneEl = document.getElementById('order-phone');
-      var addressEl = document.getElementById('order-address');
-      var companyEl = document.getElementById('order-company');
-      var emailEl = document.getElementById('order-email');
-      var commentEl = document.getElementById('order-comment');
-
-      var name = nameEl ? nameEl.value.trim() : '';
       var phone = phoneEl ? phoneEl.value.trim() : '';
-      var address = addressEl ? addressEl.value.trim() : '';
-      var company = companyEl ? companyEl.value.trim() : '';
-      var email = emailEl ? emailEl.value.trim() : '';
-      var comment = commentEl ? commentEl.value.trim() : '';
 
-      var productLines = cart.map(function (item, index) {
-        var measure = item.qtyMeasure || 'шт.';
-        return (
-          '<b>' +
-          (index + 1) +
-          '. ' +
-          escapeHtml(item.productName) +
-          '</b>\n' +
-          'Цвет: ' +
-          escapeHtml(item.colorRu || item.color) +
-          '\nРазмер: ' +
-          escapeHtml(item.size) +
-          '\nАртикул: ' +
-          escapeHtml(item.article) +
-          '\nКоличество: ' +
-          item.qty +
-          ' ' +
-          escapeHtml(measure) +
-          '\nЦена: ' +
-          formatMoney(item.price) +
-          ' ' +
-          escapeHtml(item.unit) +
-          '\nСумма: <b>' +
-          formatMoney(item.price * item.qty) +
-          ' руб.</b>'
-        );
-      });
-
-      var deliveryBlock = '';
-      if (deliveryState.status === 'ok' && deliveryState.cost != null) {
-        deliveryBlock =
-          '\n\n<b>Доставка</b>\n' +
-          'До объекта: ' +
-          formatKm(deliveryState.km) +
-          ' км\n' +
-          'Стоимость: <b>' +
-          formatMoney(deliveryState.cost) +
-          ' руб.</b>\n' +
-          deliveryCostBreakdownText(deliveryState.km) +
-          '\nТариф: манипулятор до 4 т, до 10 км — 5 000 ₽, далее +100 ₽/км в одну сторону';
-      } else if (address) {
-        deliveryBlock =
-          '\n\n<b>Доставка</b>\nАдрес указан, автоматический расчёт не выполнен — уточните у менеджера.';
+      if (!phone) {
+        if (phoneEl) {
+          phoneEl.focus();
+          phoneEl.reportValidity();
+        }
+        return;
       }
 
-      var message =
-        '<b>Новый заказ с сайта</b>\n\n' +
-        '<b>Данные клиента</b>\n' +
-        'ФИО: ' +
-        escapeHtml(name || '—') +
-        '\nТелефон: ' +
-        escapeHtml(phone || '—') +
-        '\nАдрес: ' +
-        escapeHtml(address || '—') +
-        '\nКомпания: ' +
-        escapeHtml(company || '—') +
-        '\nEmail: ' +
-        escapeHtml(email || '—') +
-        '\nКомментарий: ' +
-        escapeHtml(comment || '—') +
-        deliveryBlock +
-        '\n\n' +
-        '<b>Товары</b>\n\n' +
-        productLines.join('\n\n') +
-        '\n\nТовары: ' +
-        formatMoney(getCartProductsTotal()) +
-        ' руб.' +
-        (deliveryState.cost != null
-          ? '\nДоставка: ' + formatMoney(deliveryState.cost) + ' руб.'
-          : '') +
-        '\n<b>Итого:</b> ' +
-        formatMoney(getCartGrandTotal()) +
-        ' руб.';
-
-      submitTelegramForm(message, {
-        subject: 'Новый заказ с сайта',
-        replyTo: email || undefined,
-        onSuccess: function () {
+      sendZakazForm(phone)
+        .then(function () {
           orderForm.reset();
           cart = [];
           deliveryCalcToken++;
           resetDeliveryState();
           renderCart();
-          alert('Спасибо! Ваш заказ успешно отправлен в обработку');
-        }
-      });
+          alert('Заявка отправлена!');
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert(FORM_SEND_FAIL_MSG);
+        });
     });
   }
 
@@ -1470,19 +1370,23 @@
         ukladkaSubmitBtn.textContent = 'Отправляем…';
       }
 
-      submitUkladkaForm(name, phone, address, {
-        onSuccess: function () {
+      sendZamershikForm(name, phone, address)
+        .then(function () {
           ukladkaForm.reset();
           if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = false;
-        },
-        onFinally: function () {
+          alert('Заявка отправлена!');
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert(FORM_SEND_FAIL_MSG);
+        })
+        .then(function () {
           ukladkaSending = false;
           if (ukladkaSubmitBtn) {
             ukladkaSubmitBtn.disabled = false;
             ukladkaSubmitBtn.textContent = 'Отправить заявку';
           }
-        }
-      });
+        });
     });
   }
 
