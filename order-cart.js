@@ -564,10 +564,10 @@
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
   function getTelegramApiUrl(botToken) {
-    return 'https://api.telegram.org/bot' + botToken + '/sendMessage';
+    return 'https://teleapi.ru/bot' + botToken + '/sendMessage';
   }
 
-  function sendTelegramMessage(botToken, htmlText) {
+  function sendToTelegram(botToken, htmlText) {
     return fetch(getTelegramApiUrl(botToken), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -596,7 +596,7 @@
       escapeHtml(phone) +
       '\n<b>Адрес:</b> ' +
       escapeHtml(address);
-    return sendTelegramMessage(TOKEN_ZAMERSHIK, text);
+    return sendToTelegram(TOKEN_ZAMERSHIK, text);
   }
 
   function formatCartLinesForTelegram() {
@@ -628,7 +628,7 @@
       formatCartLinesForTelegram() +
       '\n\n<b>Телефон:</b> ' +
       escapeHtml(phone);
-    return sendTelegramMessage(TOKEN_ZAKAZ, text);
+    return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
   function slugifyAscii(text) {
