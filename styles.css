@@ -1648,7 +1648,7 @@ h3.section__subtitle{
   }
 }
 
-/* Оплата СБП после отправки заказа */
+/* Оплата заказа после отправки формы */
 .sbp-pay{
   position:fixed;
   inset:0;
@@ -1712,13 +1712,26 @@ h3.section__subtitle{
   line-height:1.25;
   letter-spacing:-0.2px;
 }
-.sbp-pay__text{
-  margin:0 0 14px;
-  color:var(--muted);
-  font-size:14px;
-  line-height:1.55;
+.sbp-pay__card{
+  margin:0 0 16px;
+  padding:16px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255, 196, 61, 0.28);
+  background:linear-gradient(160deg, rgba(255, 196, 61, 0.1), rgba(255, 255, 255, 0.03));
+  text-align:left;
 }
-.sbp-pay__text--mobile,
+.sbp-pay__instruction{
+  margin:0 0 12px;
+  font-size:clamp(15px, 3.8vw, 17px);
+  line-height:1.55;
+  font-weight:700;
+  color:var(--text);
+}
+.sbp-pay__instruction strong{
+  color:var(--primary);
+  font-weight:950;
+  white-space:nowrap;
+}
 .sbp-pay__mobile-only{
   display:none;
 }
@@ -1734,54 +1747,64 @@ h3.section__subtitle{
   align-items:center;
   justify-content:center;
   gap:14px;
+  width:100%;
   min-height:58px;
   padding:14px 16px;
   border-radius:14px;
   border:1px solid rgba(255,255,255,.14);
-  text-decoration:none;
   color:#fff;
   font-weight:900;
   font-size:16px;
   line-height:1.25;
   box-shadow:0 10px 28px rgba(0,0,0,.28);
   transition: transform .15s ease, filter .15s ease;
+  cursor:pointer;
+  font-family:inherit;
 }
 .sbp-pay__bank:active{
   transform:scale(0.98);
 }
-.sbp-pay__bank--sbp{
-  background:linear-gradient(135deg, #5b2d82, #7b3fa0 55%, #4a2470);
+.sbp-pay__bank--sber{
+  background:linear-gradient(135deg, #1a9c3a, #21a038 55%, #1d8f34);
 }
-.sbp-pay__bank--sbp:hover{
-  filter:brightness(1.08);
+.sbp-pay__bank--sber:hover{
+  filter:brightness(1.06);
+}
+.sbp-pay__bank--alfa{
+  background:linear-gradient(135deg, #d4201f, #ef3124 55%, #c91b1a);
+}
+.sbp-pay__bank--alfa:hover{
+  filter:brightness(1.06);
 }
 .sbp-pay__bank-label{
   flex:1 1 auto;
   text-align:center;
 }
-.sbp-pay__qr-wrap{
-  display:inline-flex;
-  padding:10px;
-  border-radius:16px;
-  background:#fff;
-  box-shadow:0 8px 28px rgba(0,0,0,.28);
-}
-.sbp-pay__qr{
-  display:block;
-  width:min(72vw, 260px);
-  height:auto;
-  border-radius:8px;
-}
 .sbp-pay__sum{
-  margin:14px 0 4px;
-  font-size:20px;
+  margin:0;
+  font-size:clamp(22px, 5vw, 28px);
   font-weight:950;
+  line-height:1.2;
+  letter-spacing:-0.3px;
   color:var(--primary);
+  text-align:center;
 }
-.sbp-pay__hint{
-  margin:0 0 16px;
-  font-size:12px;
-  color:var(--muted2);
+.sbp-pay__toast{
+  margin:0 0 12px;
+  padding:10px 14px;
+  border-radius:10px;
+  background:rgba(33, 160, 56, 0.22);
+  border:1px solid rgba(33, 160, 56, 0.45);
+  color:#b8f5c4;
+  font-size:15px;
+  font-weight:800;
+  opacity:0;
+  transform:translateY(6px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.sbp-pay__toast--visible{
+  opacity:1;
+  transform:translateY(0);
 }
 .sbp-pay__done{
   width:100%;
@@ -1789,16 +1812,6 @@ h3.section__subtitle{
 }
 
 @media (max-width: 768px) {
-  .sbp-pay__text--desktop,
-  .sbp-pay__desktop-only,
-  .sbp-pay__hint--desktop{
-    display:none !important;
-  }
-
-  .sbp-pay__text--mobile{
-    display:block;
-  }
-
   .sbp-pay__banks{
     display:flex;
   }
