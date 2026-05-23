@@ -550,24 +550,6 @@
     }, 700);
   }
 
-  var FORM_SEND_FAIL_MSG =
-    'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
-
-  function submitToFormspree(form) {
-    return fetch(form.action, {
-      method: 'POST',
-      body: new FormData(form),
-      headers: { Accept: 'application/json' }
-    }).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok) {
-          throw new Error((data && data.error) || 'formspree_send_failed');
-        }
-        return data;
-      });
-    });
-  }
-
   function formatCartLinesForForm() {
     return cart
       .map(function (item, index) {
@@ -589,18 +571,6 @@
       .join('\n');
   }
 
-  function fillOrderFormspreeFields() {
-    var cartField = document.getElementById('order-cart-data');
-    var totalField = document.getElementById('order-total');
-    var totalRub = getCartGrandTotal();
-    if (cartField) {
-      cartField.value = formatCartLinesForForm();
-    }
-    if (totalField) {
-      totalField.value = formatMoney(totalRub) + ' руб.';
-    }
-  }
-
   function clearOrderAfterSubmit() {
     cart = [];
     deliveryCalcToken++;
@@ -608,6 +578,72 @@
     renderCart();
     if (orderForm) {
       orderForm.reset();
+    }
+  }
+
+  /** Отправка заказа плитки (корзины) → Formspree. */
+  async function sendFormspreeOrder(orderData) {
+    try {
+      var domain = 'https://formspree.io';
+      var path = '/f/xgoqzaey';
+      var response = await fetch(domain + path, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify(orderData)
+      });
+      if (response.ok) {
+        alert('Заказ плитки успешно отправлен!');
+        clearOrderAfterSubmit();
+        if (typeof closeCartModal === 'function') {
+          closeCartModal();
+        }
+        return true;
+      }
+      alert('Ошибка при отправке заказа.');
+      return false;
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Произошла ошибка соединения.');
+      return false;
+    }
+  }
+
+  /** Отправка заявки на замерщика → Formspree. */
+  async function sendFormspreeZamershik(zamershikData) {
+    try {
+      var domain = 'https://formspree.io';
+      var path = '/f/xjgzoybd';
+      var response = await fetch(domain + path, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify(zamershikData)
+      });
+      if (response.ok) {
+        alert('Заявка на замерщика успешно отправлена!');
+        if (ukladkaForm) {
+          ukladkaForm.reset();
+        }
+        var successEl = document.getElementById('ukladka-success');
+        if (successEl) {
+          successEl.hidden = false;
+        }
+        if (typeof closeZamershikModal === 'function') {
+          closeZamershikModal();
+        }
+        return true;
+      }
+      alert('Ошибка при отправке заявки.');
+      return false;
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Произошла ошибка соединения.');
+      return false;
     }
   }
 
@@ -1256,7 +1292,7 @@
   }
 
   if (orderForm) {
-    orderForm.addEventListener('submit', function (e) {
+    orderForm.addEventListener('submit', async function (e) {
       e.preventDefault();
 
       if (!orderForm.checkValidity()) {
@@ -1273,7 +1309,12 @@
         return;
       }
 
+      var nameEl = document.getElementById('order-name');
+      var companyEl = document.getElementById('order-company');
       var phoneEl = document.getElementById('order-phone');
+      var emailEl = document.getElementById('order-email');
+      var addressEl = document.getElementById('order-address');
+      var commentEl = document.getElementById('order-comment');
       var phone = phoneEl ? phoneEl.value.trim() : '';
 
       if (!phone) {
@@ -1290,23 +1331,23 @@
         submitBtn.classList.add('order-form__submit--loading');
       }
 
-      fillOrderFormspreeFields();
+      var orderData = {
+        name: nameEl ? nameEl.value.trim() : '',
+        company: companyEl ? companyEl.value.trim() : '',
+        phone: phone,
+        email: emailEl ? emailEl.value.trim() : '',
+        address: addressEl ? addressEl.value.trim() : '',
+        comment: commentEl ? commentEl.value.trim() : '',
+        cart: formatCartLinesForForm(),
+        total: formatMoney(getCartGrandTotal()) + ' руб.'
+      };
 
-      submitToFormspree(orderForm)
-        .then(function () {
-          clearOrderAfterSubmit();
-          alert('Заказ отправлен! Мы свяжемся с вами.');
-        })
-        .catch(function (err) {
-          console.error(err);
-          alert(FORM_SEND_FAIL_MSG);
-        })
-        .finally(function () {
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('order-form__submit--loading');
-          }
-        });
+      await sendFormspreeOrder(orderData);
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('order-form__submit--loading');
+      }
     });
   }
 
@@ -1318,7 +1359,7 @@
     var ukladkaSubmitBtn = document.getElementById('ukladka-submit');
     var ukladkaSending = false;
 
-    ukladkaForm.addEventListener('submit', function (e) {
+    ukladkaForm.addEventListener('submit', async function (e) {
       e.preventDefault();
       if (ukladkaSending) return;
       if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = true;
@@ -1328,6 +1369,7 @@
         return;
       }
 
+      var name = ukladkaNameEl ? ukladkaNameEl.value.trim() : '';
       var phone = ukladkaPhoneEl ? ukladkaPhoneEl.value.trim() : '';
       var address = ukladkaAddressEl ? ukladkaAddressEl.value.trim() : '';
 
@@ -1352,23 +1394,19 @@
         ukladkaSubmitBtn.textContent = 'Отправляем…';
       }
 
-      submitToFormspree(ukladkaForm)
-        .then(function () {
-          ukladkaForm.reset();
-          if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = false;
-          alert('Заявка отправлена!');
-        })
-        .catch(function (err) {
-          console.error(err);
-          alert(FORM_SEND_FAIL_MSG);
-        })
-        .then(function () {
-          ukladkaSending = false;
-          if (ukladkaSubmitBtn) {
-            ukladkaSubmitBtn.disabled = false;
-            ukladkaSubmitBtn.textContent = 'Отправить заявку';
-          }
-        });
+      var zamershikData = {
+        name: name,
+        phone: phone,
+        address: address
+      };
+
+      await sendFormspreeZamershik(zamershikData);
+
+      ukladkaSending = false;
+      if (ukladkaSubmitBtn) {
+        ukladkaSubmitBtn.disabled = false;
+        ukladkaSubmitBtn.textContent = 'Отправить заявку';
+      }
     });
   }
 
