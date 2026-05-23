@@ -619,26 +619,6 @@
     });
   }
 
-  function openMobileBankScheme(schemeUrl) {
-    var link = document.createElement('a');
-    link.href = schemeUrl;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  function isMobilePayDevice() {
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
-  }
-
-  function getSberAppScheme() {
-    if (isMobilePayDevice()) {
-      return 'sberbankonline' + '://';
-    }
-    return 'sberbank' + '://';
-  }
-
   function applyInlineStyles(el, styles) {
     Object.keys(styles).forEach(function (key) {
       el.style[key] = styles[key];
@@ -727,13 +707,16 @@
   }
 
   function createOrderPaymentModal() {
+    if (orderPaymentModalEl && orderPaymentModalEl.getAttribute('data-pay-modal-v') !== '2') {
+      orderPaymentModalEl.remove();
+      orderPaymentModalEl = null;
+    }
     if (orderPaymentModalEl) {
       return orderPaymentModalEl;
     }
 
-    var alfaAppUrl = 'alfabank' + '://';
-
     var overlay = document.createElement('div');
+    overlay.setAttribute('data-pay-modal-v', '2');
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'order-pay-modal-title');
@@ -799,56 +782,23 @@
     copyBlock.appendChild(createPayCopyRow('Номер для перевода', 'order-pay-phone-field', 'Скопировать номер'));
     copyBlock.appendChild(createPayCopyRow('Сумма заказа', 'order-pay-sum-field', 'Скопировать сумму'));
 
-    var banks = document.createElement('div');
-    applyInlineStyles(banks, {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      marginBottom: '18px'
-    });
-
-    var sberBtn = document.createElement('button');
-    sberBtn.type = 'button';
-    sberBtn.textContent = 'Открыть приложение Сбербанк';
-    applyInlineStyles(sberBtn, {
-      width: '100%',
-      boxSizing: 'border-box',
+    var payGuide = document.createElement('div');
+    payGuide.textContent =
+      'Как оплатить заказ:\n' +
+      '1. Нажмите кнопки выше, чтобы скопировать номер и сумму.\n' +
+      '2. Сверните браузер и откройте приложение вашего банка (Сбербанк, Альфа-Банк или любой другой).\n' +
+      '3. Выберите перевод по номеру телефона (через СБП) и вставьте скопированные данные.';
+    applyInlineStyles(payGuide, {
+      marginBottom: '18px',
       padding: '16px 14px',
-      border: 'none',
       borderRadius: '12px',
-      fontSize: '16px',
-      fontWeight: '700',
-      lineHeight: '1.35',
-      cursor: 'pointer',
-      color: '#fff',
-      background: 'linear-gradient(135deg, #21a038 0%, #178a2f 100%)',
-      boxShadow: '0 8px 24px rgba(33, 160, 56, 0.35)',
-      transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-    });
-    sberBtn.addEventListener('click', function () {
-      openMobileBankScheme(getSberAppScheme());
-    });
-
-    var alfaBtn = document.createElement('button');
-    alfaBtn.type = 'button';
-    alfaBtn.textContent = 'Открыть приложение Альфа-Банк';
-    applyInlineStyles(alfaBtn, {
-      width: '100%',
-      boxSizing: 'border-box',
-      padding: '16px 14px',
-      border: 'none',
-      borderRadius: '12px',
-      fontSize: '16px',
-      fontWeight: '700',
-      lineHeight: '1.35',
-      cursor: 'pointer',
-      color: '#fff',
-      background: 'linear-gradient(135deg, #ef3124 0%, #c41f14 100%)',
-      boxShadow: '0 8px 24px rgba(239, 49, 36, 0.35)',
-      transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-    });
-    alfaBtn.addEventListener('click', function () {
-      openMobileBankScheme(alfaAppUrl);
+      border: '1px solid rgba(255, 255, 255, 0.12)',
+      background: 'rgba(255, 255, 255, 0.05)',
+      fontSize: '15px',
+      fontWeight: '600',
+      lineHeight: '1.65',
+      color: 'rgba(244, 247, 255, 0.95)',
+      whiteSpace: 'pre-line'
     });
 
     var closeBtn = document.createElement('button');
@@ -886,12 +836,10 @@
       }
     });
 
-    banks.appendChild(sberBtn);
-    banks.appendChild(alfaBtn);
     panel.appendChild(title);
     panel.appendChild(text);
     panel.appendChild(copyBlock);
-    panel.appendChild(banks);
+    panel.appendChild(payGuide);
     panel.appendChild(closeBtn);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
