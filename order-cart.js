@@ -619,10 +619,15 @@
 
   /** Заказ из корзины → бот заказов. */
   function sendZakazForm(phone) {
+    var totalRub = getCartProductsTotal();
+
     var text =
       '🛒 <b>Новый заказ брусчатки</b>\n\n' +
       '<b>Выбранная брусчатка:</b>\n' +
       formatCartLinesForTelegram() +
+      '\n💰 Итоговая цена: ' +
+      formatMoney(totalRub) +
+      ' руб.' +
       '\n\n<b>Телефон:</b> ' +
       escapeHtml(phone);
     return sendToTelegram(TOKEN_ZAKAZ, text);
