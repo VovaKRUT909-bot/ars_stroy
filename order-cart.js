@@ -586,7 +586,6 @@
   }
 
   var PAY_PHONE_COPY = '+79258387248';
-  var PAY_PHONE_DISPLAY = '+7 (925) 838-72-48';
   var orderPaymentModalEl = null;
   var orderPaymentModalPrevOverflow = '';
   var orderPaymentAmountRub = 0;
@@ -620,27 +619,24 @@
     });
   }
 
-  function openPayBankLink(url) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
-
-  function tryOpenBankApp(appUrl, webUrl) {
+  function openMobileBankScheme(schemeUrl) {
     var link = document.createElement('a');
-    link.href = appUrl;
+    link.href = schemeUrl;
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    window.setTimeout(function () {
-      openPayBankLink(webUrl);
-    }, 450);
   }
 
-  function copyPhoneAndSumForPay() {
-    var sumText = formatMoney(Math.max(0, Math.round(orderPaymentAmountRub)));
-    return copyTextToClipboard(PAY_PHONE_COPY).then(function () {
-      return copyTextToClipboard(sumText);
-    });
+  function isMobilePayDevice() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  }
+
+  function getSberAppScheme() {
+    if (isMobilePayDevice()) {
+      return 'sberbankonline' + '://';
+    }
+    return 'sberbank' + '://';
   }
 
   function applyInlineStyles(el, styles) {
@@ -717,7 +713,8 @@
       whiteSpace: 'nowrap'
     });
     copyBtn.addEventListener('click', function () {
-      copyTextToClipboard(input.value).then(function () {
+      var copyValue = copyBtn.getAttribute('data-copy-value') || input.value;
+      copyTextToClipboard(copyValue).then(function () {
         flashCopyButton(copyBtn);
       });
     });
@@ -734,10 +731,7 @@
       return orderPaymentModalEl;
     }
 
-    var sberAppUrl = 'sberbank' + '://';
-    var sberWebUrl = 'https://' + 'sberbank.ru';
     var alfaAppUrl = 'alfabank' + '://';
-    var alfaWebUrl = 'https://' + 'alfabank.ru';
 
     var overlay = document.createElement('div');
     overlay.setAttribute('role', 'dialog');
@@ -788,6 +782,8 @@
 
     var text = document.createElement('p');
     text.id = 'order-pay-modal-text';
+    text.textContent =
+      'Ваш заказ успешно принят! Для оплаты скопируйте реквизиты ниже и переведите их в приложении вашего банка:';
     applyInlineStyles(text, {
       margin: '0 0 18px',
       fontSize: '15px',
@@ -813,7 +809,7 @@
 
     var sberBtn = document.createElement('button');
     sberBtn.type = 'button';
-    sberBtn.textContent = 'Оплатить через Сбербанк';
+    sberBtn.textContent = 'Открыть приложение Сбербанк';
     applyInlineStyles(sberBtn, {
       width: '100%',
       boxSizing: 'border-box',
@@ -830,14 +826,12 @@
       transition: 'transform 0.15s ease, box-shadow 0.15s ease'
     });
     sberBtn.addEventListener('click', function () {
-      copyPhoneAndSumForPay().finally(function () {
-        tryOpenBankApp(sberAppUrl, sberWebUrl);
-      });
+      openMobileBankScheme(getSberAppScheme());
     });
 
     var alfaBtn = document.createElement('button');
     alfaBtn.type = 'button';
-    alfaBtn.textContent = 'Оплатить через Альфа-Банк';
+    alfaBtn.textContent = 'Открыть приложение Альфа-Банк';
     applyInlineStyles(alfaBtn, {
       width: '100%',
       boxSizing: 'border-box',
@@ -854,9 +848,7 @@
       transition: 'transform 0.15s ease, box-shadow 0.15s ease'
     });
     alfaBtn.addEventListener('click', function () {
-      copyPhoneAndSumForPay().finally(function () {
-        tryOpenBankApp(alfaAppUrl, alfaWebUrl);
-      });
+      openMobileBankScheme(alfaAppUrl);
     });
 
     var closeBtn = document.createElement('button');
@@ -912,18 +904,11 @@
     var sumFormatted = formatMoney(orderPaymentAmountRub);
 
     var modal = createOrderPaymentModal();
-    var textEl = document.getElementById('order-pay-modal-text');
     var phoneField = document.getElementById('order-pay-phone-field');
     var sumField = document.getElementById('order-pay-sum-field');
 
-    if (textEl) {
-      textEl.textContent =
-        'Ваш заказ успешно принят! Сумма к оплате: ' +
-        sumFormatted +
-        ' руб. Нажмите на нужный банк ниже — номер телефона и сумма заказа автоматически скопируются в буфер обмена, и откроется приложение:';
-    }
     if (phoneField) {
-      phoneField.value = PAY_PHONE_DISPLAY;
+      phoneField.value = PAY_PHONE_COPY;
     }
     if (sumField) {
       sumField.value = sumFormatted;
