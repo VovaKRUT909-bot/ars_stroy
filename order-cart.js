@@ -550,88 +550,55 @@
     }, 700);
   }
 
-  function escapeHtml(text) {
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
-  var TELEGRAM_API_BASE = 'https://telegram-api-proxy-anonymous.pages.dev/api';
-  var TELEGRAM_CHAT_ID = '7667524051';
-  var TOKEN_ZAMERSHIK = '8393208986:AAHAHR9EYg_CbntUgT7E8wJdKZ75rFo-miM';
-  var TOKEN_ZAKAZ = '8659364210:AAFEzSO8hxk3ZBs3k0tJQAbkXF5p2FQcHhI';
   var FORM_SEND_FAIL_MSG =
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
-  function sendToTelegram(botToken, htmlText) {
-    const url = TELEGRAM_API_BASE + '/bot' + botToken + '/sendMessage';
-    return fetch(url, {
+  function submitToFormspree(form) {
+    return fetch(form.action, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: htmlText,
-        parse_mode: 'HTML'
-      })
+      body: new FormData(form),
+      headers: { Accept: 'application/json' }
     }).then(function (res) {
       return res.json().then(function (data) {
-        if (!res.ok || !data.ok) {
-          throw new Error(data.description || 'telegram_send_failed');
+        if (!res.ok) {
+          throw new Error((data && data.error) || 'formspree_send_failed');
         }
         return data;
       });
     });
   }
 
-  /** Заявка на замер → бот замерщика. */
-  function sendZamershikForm(name, phone, address) {
-    var text =
-      '📏 <b>Заявка на замер тротуарной плитки</b>\n\n' +
-      '<b>Имя:</b> ' +
-      escapeHtml(name || '—') +
-      '\n<b>Телефон:</b> ' +
-      escapeHtml(phone) +
-      '\n<b>Адрес:</b> ' +
-      escapeHtml(address);
-    return sendToTelegram(TOKEN_ZAMERSHIK, text);
-  }
-
-  function formatCartLinesForTelegram() {
+  function formatCartLinesForForm() {
     return cart
       .map(function (item, index) {
         var measure = item.qtyMeasure || 'шт.';
         return (
           (index + 1) +
           '. ' +
-          escapeHtml(item.productName) +
+          item.productName +
           ' — ' +
-          escapeHtml(item.colorRu || item.color) +
+          (item.colorRu || item.color) +
           ', ' +
-          escapeHtml(item.size) +
-          '\n   <b>Количество:</b> ' +
+          item.size +
+          ' — ' +
           item.qty +
           ' ' +
-          escapeHtml(measure)
+          measure
         );
       })
       .join('\n');
   }
 
-  /** Заказ из корзины → бот заказов. */
-  function sendZakazForm(phone) {
+  function fillOrderFormspreeFields() {
+    var cartField = document.getElementById('order-cart-data');
+    var totalField = document.getElementById('order-total');
     var totalRub = getCartGrandTotal();
-
-    var text =
-      '🛒 <b>Новый заказ брусчатки</b>\n\n' +
-      '<b>Выбранная брусчатка:</b>\n' +
-      formatCartLinesForTelegram() +
-      '\n💰 Итоговая цена: ' +
-      formatMoney(totalRub) +
-      ' руб.' +
-      '\n\n<b>Телефон:</b> ' +
-      escapeHtml(phone);
-    return sendToTelegram(TOKEN_ZAKAZ, text);
+    if (cartField) {
+      cartField.value = formatCartLinesForForm();
+    }
+    if (totalField) {
+      totalField.value = formatMoney(totalRub) + ' руб.';
+    }
   }
 
   function clearOrderAfterSubmit() {
@@ -1323,7 +1290,9 @@
         submitBtn.classList.add('order-form__submit--loading');
       }
 
-      sendZakazForm(phone)
+      fillOrderFormspreeFields();
+
+      submitToFormspree(orderForm)
         .then(function () {
           clearOrderAfterSubmit();
           alert('Заказ отправлен! Мы свяжемся с вами.');
@@ -1359,7 +1328,6 @@
         return;
       }
 
-      var name = ukladkaNameEl ? ukladkaNameEl.value.trim() : '';
       var phone = ukladkaPhoneEl ? ukladkaPhoneEl.value.trim() : '';
       var address = ukladkaAddressEl ? ukladkaAddressEl.value.trim() : '';
 
@@ -1384,7 +1352,7 @@
         ukladkaSubmitBtn.textContent = 'Отправляем…';
       }
 
-      sendZamershikForm(name, phone, address)
+      submitToFormspree(ukladkaForm)
         .then(function () {
           ukladkaForm.reset();
           if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = false;

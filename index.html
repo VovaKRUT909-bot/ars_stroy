@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=tg-proxy-v7" />
+    <link rel="stylesheet" href="styles.css?v=formspree-v8" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -453,7 +453,14 @@
             <p class="ukladka-request__note">
               Выезд замерщика бесплатно на расстоянии до 10&nbsp;км. При выезде дальше 10&nbsp;км — от 2&nbsp;999&nbsp;₽.
             </p>
-          <form class="ukladka-request__form" id="ukladka-form" novalidate>
+          <form
+            class="ukladka-request__form"
+            id="ukladka-form"
+            action="https://formspree.io/f/xjgzoybd"
+            method="POST"
+            novalidate
+          >
+            <input type="hidden" name="_subject" value="Заявка на замер тротуарной плитки" />
             <label class="order-field ukladka-request__field">
               <span class="order-field__label">Имя</span>
               <input class="order-field__input ukladka-request__input" type="text" name="name" id="ukladka-name" required autocomplete="name" />
@@ -524,7 +531,16 @@
               <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
             </div>
 
-            <form class="order-form" id="order-form" novalidate>
+            <form
+              class="order-form"
+              id="order-form"
+              action="https://formspree.io/f/xgoqzaey"
+              method="POST"
+              novalidate
+            >
+              <input type="hidden" name="_subject" value="Новый заказ тротуарной плитки" />
+              <input type="hidden" name="cart" id="order-cart-data" value="" />
+              <input type="hidden" name="total" id="order-total" value="" />
               <div class="order-cart" id="order-cart" hidden>
                 <div class="order-cart__head">
                   <div class="order-cart__title">Ваш заказ</div>
@@ -997,7 +1013,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=tg-proxy-v7" defer></script>
+    <script src="order-cart.js?v=formspree-v8" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
