@@ -633,49 +633,10 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var SBP_PAY_PHONE = '79258387248';
-  var SBP_BANK_SBER = '100000000111';
-  var SBP_BANK_ALFA = '100000000008';
+  var PAY_LINK_SBER = 'https://www.sberbank.ru/sms/pbpn?num=89258387248';
+  var PAY_LINK_ALFA = 'https://alfa.me/';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
-
-  function getPayTotalSum(sumRub) {
-    return String(Math.max(1, Math.round(Number(sumRub) || 0)));
-  }
-
-  function computeNspkCrc(query) {
-    var crc = 0xffff;
-    var polynomial = 0x1021;
-    var i;
-    var j;
-
-    for (i = 0; i < query.length; i++) {
-      crc ^= query.charCodeAt(i) << 8;
-      for (j = 0; j < 8; j++) {
-        if (crc & 0x8000) {
-          crc = ((crc << 1) ^ polynomial) & 0xffff;
-        } else {
-          crc = (crc << 1) & 0xffff;
-        }
-      }
-    }
-    return crc.toString(16).toUpperCase().padStart(4, '0');
-  }
-
-  /** Динамическая ссылка СБП (qr.nspk.ru): сумма в копейках. */
-  function buildSbpUniversalLink(sumRub, bankId) {
-    var totalSum = getPayTotalSum(sumRub);
-    var sbpSumInKopecks = Math.round(parseFloat(totalSum) * 100);
-    var query =
-      'bank=' +
-      (bankId || SBP_BANK_SBER) +
-      '&phone=' +
-      SBP_PAY_PHONE +
-      '&sum=' +
-      String(sbpSumInKopecks) +
-      '&cur=RUB';
-    return 'https://qr.nspk.ru/proxyapp?' + query + '&crc=' + computeNspkCrc(query);
-  }
 
   function isMobilePayDevice() {
     if (typeof window.matchMedia === 'function') {
@@ -698,6 +659,10 @@
   }
 
   function ensureSbpPayModal() {
+    if (sbpPayModalEl && document.getElementById('sbp-pay-open')) {
+      sbpPayModalEl.remove();
+      sbpPayModalEl = null;
+    }
     if (sbpPayModalEl && document.getElementById('sbp-pay-sber')) {
       return sbpPayModalEl;
     }
@@ -730,15 +695,16 @@
       '<div class="sbp-pay__pay-block" id="sbp-pay-block" hidden>' +
       '<div class="sbp-pay__desktop-only">' +
       '<div class="sbp-pay__qr-wrap"><canvas class="sbp-pay__qr-canvas" id="sbp-pay-qr-canvas" aria-label="QR-код для оплаты через СБП"></canvas></div>' +
-      '<p class="sbp-pay__qr-hint">Отсканируйте QR-код в приложении банка — сумма подставится автоматически</p>' +
+      '<p class="sbp-pay__qr-hint">Отсканируйте QR-код — откроется перевод в Сбербанк Онлайн</p>' +
       '</div>' +
-      '<div class="sbp-pay__mobile-only">' +
-      '<a class="sbp-pay__btn sbp-pay__btn--sbp" id="sbp-pay-open" href="#" rel="noopener noreferrer">' +
-      '<svg class="sbp-pay__btn-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="rgba(255,255,255,0.2)"/><path fill="#fff" d="M10 16h12M16 10v12" stroke="#fff" stroke-width="2"/></svg>' +
-      'Оплатить через СБП</a>' +
-      '<a class="sbp-pay__btn sbp-pay__btn--sber" id="sbp-pay-sber" href="#" rel="noopener noreferrer">' +
+      '<div class="sbp-pay__banks">' +
+      '<a class="sbp-pay__btn sbp-pay__btn--sber" id="sbp-pay-sber" href="' +
+      PAY_LINK_SBER +
+      '" target="_blank" rel="noopener noreferrer">' +
       '<span class="sbp-pay__bank-icon" aria-hidden="true">С</span>Открыть в Сбербанк Онлайн</a>' +
-      '<a class="sbp-pay__btn sbp-pay__btn--alfa" id="sbp-pay-alfa" href="#" rel="noopener noreferrer">' +
+      '<a class="sbp-pay__btn sbp-pay__btn--alfa" id="sbp-pay-alfa" href="' +
+      PAY_LINK_ALFA +
+      '" target="_blank" rel="noopener noreferrer">' +
       '<span class="sbp-pay__bank-icon" aria-hidden="true">А</span>Открыть в Альфа-Банк</a>' +
       '</div>' +
       '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
@@ -806,15 +772,11 @@
   function showSbpPayModal(sumRub) {
     var modal = ensureSbpPayModal();
     var sum = Math.max(1, Math.round(Number(sumRub) || 0));
-    var sbpLink = buildSbpUniversalLink(sum, SBP_BANK_SBER);
-    var sberLink = buildSbpUniversalLink(sum, SBP_BANK_SBER);
-    var alfaLink = buildSbpUniversalLink(sum, SBP_BANK_ALFA);
 
     var successEl = document.getElementById('sbp-pay-success');
     var loaderEl = document.getElementById('sbp-pay-loader');
     var blockEl = document.getElementById('sbp-pay-block');
     var sumEl = document.getElementById('sbp-pay-sum');
-    var openBtn = document.getElementById('sbp-pay-open');
     var sberBtn = document.getElementById('sbp-pay-sber');
     var alfaBtn = document.getElementById('sbp-pay-alfa');
 
@@ -824,11 +786,19 @@
     }
     if (sumEl) {
       sumEl.innerHTML =
-        formatMoney(sum) + ' ₽<small>перевод по СБП на номер +7 (925) 838-72-48</small>';
+        formatMoney(sum) +
+        ' ₽<small>укажите эту сумму при переводе на +7 (925) 838-72-48</small>';
     }
-    if (openBtn) openBtn.href = sbpLink;
-    if (sberBtn) sberBtn.href = sberLink;
-    if (alfaBtn) alfaBtn.href = alfaLink;
+    if (sberBtn) {
+      sberBtn.href = PAY_LINK_SBER;
+      sberBtn.setAttribute('target', '_blank');
+      sberBtn.setAttribute('rel', 'noopener noreferrer');
+    }
+    if (alfaBtn) {
+      alfaBtn.href = PAY_LINK_ALFA;
+      alfaBtn.setAttribute('target', '_blank');
+      alfaBtn.setAttribute('rel', 'noopener noreferrer');
+    }
 
     if (loaderEl) loaderEl.hidden = false;
     if (blockEl) blockEl.hidden = true;
@@ -842,7 +812,7 @@
 
     var qrPromise = isMobilePayDevice()
       ? Promise.resolve()
-      : renderSbpQrCode(sbpLink);
+      : renderSbpQrCode(PAY_LINK_SBER);
 
     qrPromise
       .catch(function (err) {

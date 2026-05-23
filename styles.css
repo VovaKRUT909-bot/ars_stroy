@@ -1827,8 +1827,8 @@ h3.section__subtitle{
   font-weight:600;
   color:var(--muted2);
 }
-.sbp-pay__mobile-only{
-  display:none;
+.sbp-pay__banks{
+  display:flex;
   flex-direction:column;
   gap:10px;
   margin-bottom:14px;
@@ -1857,16 +1857,6 @@ h3.section__subtitle{
 .sbp-pay__btn:hover{
   transform:translateY(-1px);
   filter:brightness(1.06);
-}
-.sbp-pay__btn--sbp{
-  background:linear-gradient(135deg, #6d28d9 0%, #4f46e5 45%, #2563eb 100%);
-  color:#fff;
-  box-shadow:0 10px 28px rgba(79,70,229,0.45);
-}
-.sbp-pay__btn--sbp .sbp-pay__btn-icon{
-  width:28px;
-  height:28px;
-  flex-shrink:0;
 }
 .sbp-pay__btn--sber{
   background:linear-gradient(135deg, #1a9b3e 0%, #21a038 50%, #0d7a2c 100%);
@@ -1897,9 +1887,6 @@ h3.section__subtitle{
 @media (max-width:768px){
   .sbp-pay__desktop-only{
     display:none !important;
-  }
-  .sbp-pay__mobile-only{
-    display:flex;
   }
   .sbp-pay__panel{
     padding:20px 16px 16px;
