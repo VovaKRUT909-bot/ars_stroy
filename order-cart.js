@@ -557,6 +557,7 @@
       .replace(/>/g, '&gt;');
   }
 
+  var TELEGRAM_API_BASE = 'https://api.telegram-proxy.org';
   var TELEGRAM_CHAT_ID = '7667524051';
   var TOKEN_ZAMERSHIK = '8393208986:AAHAHR9EYg_CbntUgT7E8wJdKZ75rFo-miM';
   var TOKEN_ZAKAZ = '8659364210:AAFEzSO8hxk3ZBs3k0tJQAbkXF5p2FQcHhI';
@@ -564,7 +565,7 @@
     'Не удалось отправить заявку. Позвоните: +7 (925) 805-63-08';
 
   function sendToTelegram(botToken, htmlText) {
-    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const url = TELEGRAM_API_BASE + '/bot' + botToken + '/sendMessage';
     return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
