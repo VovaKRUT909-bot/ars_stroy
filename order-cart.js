@@ -633,13 +633,14 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var PAY_LINK_SBER = 'https://www.sberbank.ru/sms/pbpn?num=89258387248';
+  var PAY_LINK_SBER =
+    'https://www.sberbank.ru/ru/person/dl/open?meta__pageId=cust_appeal&type=transfer_phone&phone=89258387248';
   var PAY_LINK_ALFA = 'https://alfa.me/';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
 
   function ensureSbpPayModal() {
-    if (sbpPayModalEl && sbpPayModalEl.getAttribute('data-pay-ui-v') !== '3') {
+    if (sbpPayModalEl && sbpPayModalEl.getAttribute('data-pay-ui-v') !== '4') {
       sbpPayModalEl.remove();
       sbpPayModalEl = null;
     }
@@ -658,7 +659,7 @@
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-modal', 'true');
     root.setAttribute('aria-labelledby', 'sbp-pay-brand-title');
-    root.setAttribute('data-pay-ui-v', '3');
+    root.setAttribute('data-pay-ui-v', '4');
 
     root.innerHTML =
       '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
