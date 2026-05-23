@@ -586,22 +586,25 @@
   }
 
   var PAY_PHONE_COPY = '+79258387248';
+  var PAY_PHONE_DISPLAY = '+7 (925) 838-72-48';
   var orderPaymentModalEl = null;
   var orderPaymentModalPrevOverflow = '';
+  var orderPaymentAmountRub = 0;
 
-  function copyPayPhoneToClipboard() {
+  function copyTextToClipboard(text) {
+    var value = String(text);
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(PAY_PHONE_COPY).catch(function () {
-        return copyPayPhoneFallback();
+      return navigator.clipboard.writeText(value).catch(function () {
+        return copyTextToClipboardFallback(value);
       });
     }
-    return copyPayPhoneFallback();
+    return copyTextToClipboardFallback(value);
   }
 
-  function copyPayPhoneFallback() {
+  function copyTextToClipboardFallback(text) {
     return new Promise(function (resolve) {
       var ta = document.createElement('textarea');
-      ta.value = PAY_PHONE_COPY;
+      ta.value = text;
       ta.setAttribute('readonly', '');
       ta.style.position = 'fixed';
       ta.style.left = '-9999px';
@@ -621,10 +624,109 @@
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  function tryOpenBankApp(appUrl, webUrl) {
+    var link = document.createElement('a');
+    link.href = appUrl;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(function () {
+      openPayBankLink(webUrl);
+    }, 450);
+  }
+
+  function copyPhoneAndSumForPay() {
+    var sumText = formatMoney(Math.max(0, Math.round(orderPaymentAmountRub)));
+    return copyTextToClipboard(PAY_PHONE_COPY).then(function () {
+      return copyTextToClipboard(sumText);
+    });
+  }
+
   function applyInlineStyles(el, styles) {
     Object.keys(styles).forEach(function (key) {
       el.style[key] = styles[key];
     });
+  }
+
+  function flashCopyButton(btn) {
+    if (!btn) return;
+    var prev = btn.textContent;
+    btn.textContent = 'Скопировано!';
+    btn.style.opacity = '0.85';
+    window.setTimeout(function () {
+      btn.textContent = prev;
+      btn.style.opacity = '1';
+    }, 1200);
+  }
+
+  function createPayCopyRow(labelText, inputId, buttonLabel) {
+    var wrap = document.createElement('div');
+    applyInlineStyles(wrap, {
+      marginBottom: '12px'
+    });
+
+    var label = document.createElement('div');
+    label.textContent = labelText;
+    applyInlineStyles(label, {
+      marginBottom: '6px',
+      fontSize: '13px',
+      fontWeight: '600',
+      color: 'rgba(244, 247, 255, 0.75)'
+    });
+
+    var row = document.createElement('div');
+    applyInlineStyles(row, {
+      display: 'flex',
+      gap: '8px',
+      alignItems: 'stretch'
+    });
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.id = inputId;
+    input.readOnly = true;
+    applyInlineStyles(input, {
+      flex: '1 1 auto',
+      minWidth: '0',
+      boxSizing: 'border-box',
+      padding: '12px 14px',
+      borderRadius: '10px',
+      border: '1px solid rgba(255, 255, 255, 0.14)',
+      background: 'rgba(0, 0, 0, 0.22)',
+      color: '#ffffff',
+      fontSize: '16px',
+      fontWeight: '700',
+      fontFamily: 'inherit'
+    });
+
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.textContent = buttonLabel;
+    applyInlineStyles(copyBtn, {
+      flex: '0 0 auto',
+      boxSizing: 'border-box',
+      padding: '12px 12px',
+      border: 'none',
+      borderRadius: '10px',
+      fontSize: '13px',
+      fontWeight: '700',
+      cursor: 'pointer',
+      color: '#0f1524',
+      background: '#e8eeff',
+      whiteSpace: 'nowrap'
+    });
+    copyBtn.addEventListener('click', function () {
+      copyTextToClipboard(input.value).then(function () {
+        flashCopyButton(copyBtn);
+      });
+    });
+
+    row.appendChild(input);
+    row.appendChild(copyBtn);
+    wrap.appendChild(label);
+    wrap.appendChild(row);
+    return wrap;
   }
 
   function createOrderPaymentModal() {
@@ -632,8 +734,10 @@
       return orderPaymentModalEl;
     }
 
-    var sberUrl = 'https://' + 'www.sberbank.ru' + '/ru/person/dist_services/inner_sbol';
-    var alfaUrl = 'https://' + 'alfabank.ru';
+    var sberAppUrl = 'sberbank' + '://';
+    var sberWebUrl = 'https://' + 'sberbank.ru';
+    var alfaAppUrl = 'alfabank' + '://';
+    var alfaWebUrl = 'https://' + 'alfabank.ru';
 
     var overlay = document.createElement('div');
     overlay.setAttribute('role', 'dialog');
@@ -648,7 +752,7 @@
       justifyContent: 'center',
       padding: '16px',
       boxSizing: 'border-box',
-      background: 'rgba(8, 12, 22, 0.72)',
+      background: 'rgba(8, 12, 22, 0.75)',
       backdropFilter: 'blur(5px)',
       WebkitBackdropFilter: 'blur(5px)'
     });
@@ -656,15 +760,15 @@
     var panel = document.createElement('div');
     applyInlineStyles(panel, {
       width: '100%',
-      maxWidth: '440px',
-      maxHeight: 'min(92vh, 640px)',
+      maxWidth: '460px',
+      maxHeight: 'min(94vh, 720px)',
       overflowY: 'auto',
       boxSizing: 'border-box',
       padding: '28px 22px 22px',
-      borderRadius: '12px',
+      borderRadius: '15px',
       background: 'linear-gradient(165deg, #1c2438 0%, #121826 100%)',
       border: '1px solid rgba(255, 255, 255, 0.1)',
-      boxShadow: '0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04) inset',
+      boxShadow: '0 28px 72px rgba(0, 0, 0, 0.58), 0 0 0 1px rgba(255,255,255,0.04) inset',
       color: '#f4f7ff',
       fontFamily: 'inherit'
     });
@@ -674,7 +778,7 @@
     title.textContent = 'Арс Строй';
     applyInlineStyles(title, {
       margin: '0 0 14px',
-      fontSize: 'clamp(1.75rem, 5vw, 2.1rem)',
+      fontSize: 'clamp(1.75rem, 5vw, 2.15rem)',
       fontWeight: '800',
       lineHeight: '1.15',
       letterSpacing: '0.02em',
@@ -683,15 +787,21 @@
     });
 
     var text = document.createElement('p');
-    text.textContent =
-      'Ваш заказ успешно принят! Для оплаты нажмите на нужный банк ниже — номер телефона автоматически скопируется, и откроется приложение для быстрого перевода:';
+    text.id = 'order-pay-modal-text';
     applyInlineStyles(text, {
-      margin: '0 0 20px',
+      margin: '0 0 18px',
       fontSize: '15px',
       lineHeight: '1.55',
-      color: 'rgba(244, 247, 255, 0.88)',
+      color: 'rgba(244, 247, 255, 0.9)',
       textAlign: 'center'
     });
+
+    var copyBlock = document.createElement('div');
+    applyInlineStyles(copyBlock, {
+      marginBottom: '16px'
+    });
+    copyBlock.appendChild(createPayCopyRow('Номер для перевода', 'order-pay-phone-field', 'Скопировать номер'));
+    copyBlock.appendChild(createPayCopyRow('Сумма заказа', 'order-pay-sum-field', 'Скопировать сумму'));
 
     var banks = document.createElement('div');
     applyInlineStyles(banks, {
@@ -703,47 +813,49 @@
 
     var sberBtn = document.createElement('button');
     sberBtn.type = 'button';
-    sberBtn.textContent = 'Оплатить через Сбербанк (+7 925 838-72-48)';
+    sberBtn.textContent = 'Оплатить через Сбербанк';
     applyInlineStyles(sberBtn, {
       width: '100%',
       boxSizing: 'border-box',
       padding: '16px 14px',
       border: 'none',
       borderRadius: '12px',
-      fontSize: '15px',
+      fontSize: '16px',
       fontWeight: '700',
       lineHeight: '1.35',
       cursor: 'pointer',
       color: '#fff',
       background: 'linear-gradient(135deg, #21a038 0%, #178a2f 100%)',
-      boxShadow: '0 8px 24px rgba(33, 160, 56, 0.35)'
+      boxShadow: '0 8px 24px rgba(33, 160, 56, 0.35)',
+      transition: 'transform 0.15s ease, box-shadow 0.15s ease'
     });
     sberBtn.addEventListener('click', function () {
-      copyPayPhoneToClipboard().finally(function () {
-        openPayBankLink(sberUrl);
+      copyPhoneAndSumForPay().finally(function () {
+        tryOpenBankApp(sberAppUrl, sberWebUrl);
       });
     });
 
     var alfaBtn = document.createElement('button');
     alfaBtn.type = 'button';
-    alfaBtn.textContent = 'Оплатить через Альфа-Банк (+7 925 838-72-48)';
+    alfaBtn.textContent = 'Оплатить через Альфа-Банк';
     applyInlineStyles(alfaBtn, {
       width: '100%',
       boxSizing: 'border-box',
       padding: '16px 14px',
       border: 'none',
       borderRadius: '12px',
-      fontSize: '15px',
+      fontSize: '16px',
       fontWeight: '700',
       lineHeight: '1.35',
       cursor: 'pointer',
       color: '#fff',
       background: 'linear-gradient(135deg, #ef3124 0%, #c41f14 100%)',
-      boxShadow: '0 8px 24px rgba(239, 49, 36, 0.35)'
+      boxShadow: '0 8px 24px rgba(239, 49, 36, 0.35)',
+      transition: 'transform 0.15s ease, box-shadow 0.15s ease'
     });
     alfaBtn.addEventListener('click', function () {
-      copyPayPhoneToClipboard().finally(function () {
-        openPayBankLink(alfaUrl);
+      copyPhoneAndSumForPay().finally(function () {
+        tryOpenBankApp(alfaAppUrl, alfaWebUrl);
       });
     });
 
@@ -786,6 +898,7 @@
     banks.appendChild(alfaBtn);
     panel.appendChild(title);
     panel.appendChild(text);
+    panel.appendChild(copyBlock);
     panel.appendChild(banks);
     panel.appendChild(closeBtn);
     overlay.appendChild(panel);
@@ -794,8 +907,28 @@
     return orderPaymentModalEl;
   }
 
-  function showOrderPaymentModal() {
+  function showOrderPaymentModal(totalRub) {
+    orderPaymentAmountRub = Math.max(0, Math.round(Number(totalRub) || 0));
+    var sumFormatted = formatMoney(orderPaymentAmountRub);
+
     var modal = createOrderPaymentModal();
+    var textEl = document.getElementById('order-pay-modal-text');
+    var phoneField = document.getElementById('order-pay-phone-field');
+    var sumField = document.getElementById('order-pay-sum-field');
+
+    if (textEl) {
+      textEl.textContent =
+        'Ваш заказ успешно принят! Сумма к оплате: ' +
+        sumFormatted +
+        ' руб. Нажмите на нужный банк ниже — номер телефона и сумма заказа автоматически скопируются в буфер обмена, и откроется приложение:';
+    }
+    if (phoneField) {
+      phoneField.value = PAY_PHONE_DISPLAY;
+    }
+    if (sumField) {
+      sumField.value = sumFormatted;
+    }
+
     orderPaymentModalPrevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     modal.style.display = 'flex';
@@ -830,7 +963,17 @@
         body: JSON.stringify(orderData)
       });
       if (response.ok) {
-        showOrderPaymentModal();
+        var totalRub = 0;
+        if (orderData && orderData.total) {
+          var parsed = parseInt(String(orderData.total).replace(/\D/g, ''), 10);
+          if (!isNaN(parsed)) {
+            totalRub = parsed;
+          }
+        }
+        if (!totalRub) {
+          totalRub = getCartGrandTotal();
+        }
+        showOrderPaymentModal(totalRub);
         return true;
       }
       alert('Ошибка при отправке заказа.');
