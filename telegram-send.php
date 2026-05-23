@@ -49,7 +49,7 @@ if ($text === '') {
     exit;
 }
 
-$apiUrl = 'https://api.telegram-proxy.org/bot' . $botToken . '/sendMessage';
+$apiUrl = 'https://telegram-api-proxy-anonymous.pages.dev/api/bot' . $botToken . '/sendMessage';
 
 $postFields = http_build_query(
     [
