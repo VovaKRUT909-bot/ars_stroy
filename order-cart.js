@@ -633,22 +633,13 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var PAY_LINK_SBER =
-    'https://www.sberbank.ru/ru/person/dl/open?meta__pageId=cust_appeal&type=transfer_phone&phone=89258387248';
+  var PAY_LINK_SBER = 'https://www.sberbank.ru/sms/pbpn?num=89258387248';
   var PAY_LINK_ALFA = 'https://alfa.me/';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
 
-  function isMobilePayDevice() {
-    if (typeof window.matchMedia === 'function') {
-      if (window.matchMedia('(max-width: 768px)').matches) return true;
-    }
-    var ua = navigator.userAgent || '';
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-  }
-
   function ensureSbpPayModal() {
-    if (sbpPayModalEl && sbpPayModalEl.getAttribute('data-pay-ui-v') !== '2') {
+    if (sbpPayModalEl && sbpPayModalEl.getAttribute('data-pay-ui-v') !== '3') {
       sbpPayModalEl.remove();
       sbpPayModalEl = null;
     }
@@ -667,7 +658,7 @@
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-modal', 'true');
     root.setAttribute('aria-labelledby', 'sbp-pay-brand-title');
-    root.setAttribute('data-pay-ui-v', '2');
+    root.setAttribute('data-pay-ui-v', '3');
 
     root.innerHTML =
       '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
@@ -678,15 +669,7 @@
       '<h2 class="sbp-pay__brand-title" id="sbp-pay-brand-title">Оплата заказа в Арс Строй</h2>' +
       '</div>' +
       '<p class="sbp-pay__success" id="sbp-pay-success"></p>' +
-      '<div class="sbp-pay__loader" id="sbp-pay-loader">' +
-      '<div class="sbp-pay__spinner" aria-hidden="true"></div>' +
-      '<span>Формируем платёж…</span>' +
-      '</div>' +
-      '<div class="sbp-pay__pay-block" id="sbp-pay-block" hidden>' +
-      '<div class="sbp-pay__desktop-only">' +
-      '<div class="sbp-pay__qr-wrap"><canvas class="sbp-pay__qr-canvas" id="sbp-pay-qr-canvas" aria-label="QR-код для оплаты через СБП"></canvas></div>' +
-      '<p class="sbp-pay__qr-hint">Отсканируйте QR-код — откроется перевод в Сбербанк Онлайн</p>' +
-      '</div>' +
+      '<div class="sbp-pay__pay-block" id="sbp-pay-block">' +
       '<div class="sbp-pay__banks">' +
       '<a class="sbp-pay__btn sbp-pay__btn--sber" id="sbp-pay-sber" href="' +
       PAY_LINK_SBER +
@@ -717,101 +700,46 @@
     return sbpPayModalEl;
   }
 
-  function renderSbpQrCode(paymentUrl) {
-    var canvas = document.getElementById('sbp-pay-qr-canvas');
-    if (!canvas || !paymentUrl) return Promise.resolve();
-
-    function draw() {
-      if (typeof window.QRCode === 'undefined') {
-        return Promise.reject(new Error('qrcode_lib_missing'));
-      }
-      return window.QRCode.toCanvas(canvas, paymentUrl, {
-        width: 240,
-        margin: 1,
-        color: { dark: '#0f172a', light: '#ffffff' }
-      });
-    }
-
-    if (typeof window.QRCode !== 'undefined') {
-      return draw();
-    }
-
-    return new Promise(function (resolve, reject) {
-      var existing = document.querySelector('script[data-qrcode-lib]');
-      if (existing) {
-        existing.addEventListener('load', function () {
-          draw().then(resolve).catch(reject);
-        });
-        existing.addEventListener('error', reject);
-        return;
-      }
-      var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-      script.defer = true;
-      script.setAttribute('data-qrcode-lib', '1');
-      script.onload = function () {
-        draw().then(resolve).catch(reject);
-      };
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
-
   function showSbpPayModal(sumRub) {
     var modal = ensureSbpPayModal();
     var sum = Math.max(1, Math.round(Number(sumRub) || 0));
 
     var successEl = document.getElementById('sbp-pay-success');
-    var loaderEl = document.getElementById('sbp-pay-loader');
-    var blockEl = document.getElementById('sbp-pay-block');
     var sumEl = document.getElementById('sbp-pay-sum');
     var sberBtn = document.getElementById('sbp-pay-sber');
     var alfaBtn = document.getElementById('sbp-pay-alfa');
 
     if (successEl) {
       successEl.innerHTML =
-        'Заказ оформлен! К оплате: <strong>' + formatMoney(sum) + ' ₽</strong>';
+        'Заказ оформлен! К оплате: <strong>' +
+        formatMoney(sum) +
+        ' ₽</strong><br><span class="sbp-pay__manual-hint">Сумму перевода введите вручную в приложении банка.</span>';
     }
     if (sumEl) {
       sumEl.innerHTML =
+        'Получатель: <strong>+7 (925) 838-72-48</strong><small>после перехода в банк укажите сумму ' +
         formatMoney(sum) +
-        ' ₽<small>укажите эту сумму при переводе на +7 (925) 838-72-48</small>';
+        ' ₽</small>';
     }
     if (sberBtn) {
       sberBtn.href = PAY_LINK_SBER;
-      sberBtn.setAttribute('target', '_blank');
-      sberBtn.setAttribute('rel', 'noopener noreferrer');
+      sberBtn.target = '_blank';
+      sberBtn.rel = 'noopener noreferrer';
     }
     if (alfaBtn) {
       alfaBtn.href = PAY_LINK_ALFA;
-      alfaBtn.setAttribute('target', '_blank');
-      alfaBtn.setAttribute('rel', 'noopener noreferrer');
+      alfaBtn.target = '_blank';
+      alfaBtn.rel = 'noopener noreferrer';
     }
-
-    if (loaderEl) loaderEl.hidden = false;
-    if (blockEl) blockEl.hidden = true;
 
     sbpPayPrevBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     modal.hidden = false;
     requestAnimationFrame(function () {
       modal.classList.add('sbp-pay--open');
+      var doneBtn = modal.querySelector('.sbp-pay__done');
+      if (doneBtn) doneBtn.focus();
     });
-
-    var qrPromise = isMobilePayDevice()
-      ? Promise.resolve()
-      : renderSbpQrCode(PAY_LINK_SBER);
-
-    qrPromise
-      .catch(function (err) {
-        console.warn('sbp_qr_render', err);
-      })
-      .then(function () {
-        if (loaderEl) loaderEl.hidden = true;
-        if (blockEl) blockEl.hidden = false;
-        var doneBtn = modal.querySelector('.sbp-pay__done');
-        if (doneBtn) doneBtn.focus();
-      });
   }
 
   function closeSbpPayModalAndClearCart() {

@@ -1766,6 +1766,13 @@ h3.section__subtitle{
   color:#e8d4a8;
   font-weight:800;
 }
+.sbp-pay__manual-hint{
+  display:block;
+  margin-top:8px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--muted2);
+}
 .sbp-pay__loader{
   display:flex;
   flex-direction:column;
