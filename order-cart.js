@@ -581,6 +581,241 @@
     }
   }
 
+  function clearCart() {
+    clearOrderAfterSubmit();
+  }
+
+  var PAY_PHONE_COPY = '+79258387248';
+  var orderPaymentModalEl = null;
+  var orderPaymentModalPrevOverflow = '';
+
+  function copyPayPhoneToClipboard() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(PAY_PHONE_COPY).catch(function () {
+        return copyPayPhoneFallback();
+      });
+    }
+    return copyPayPhoneFallback();
+  }
+
+  function copyPayPhoneFallback() {
+    return new Promise(function (resolve) {
+      var ta = document.createElement('textarea');
+      ta.value = PAY_PHONE_COPY;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        /* ignore */
+      }
+      document.body.removeChild(ta);
+      resolve();
+    });
+  }
+
+  function openPayBankLink(url) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function applyInlineStyles(el, styles) {
+    Object.keys(styles).forEach(function (key) {
+      el.style[key] = styles[key];
+    });
+  }
+
+  function createOrderPaymentModal() {
+    if (orderPaymentModalEl) {
+      return orderPaymentModalEl;
+    }
+
+    var sberUrl = 'https://' + 'www.sberbank.ru' + '/ru/person/dist_services/inner_sbol';
+    var alfaUrl = 'https://' + 'alfabank.ru';
+
+    var overlay = document.createElement('div');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'order-pay-modal-title');
+    applyInlineStyles(overlay, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '10000',
+      display: 'none',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '16px',
+      boxSizing: 'border-box',
+      background: 'rgba(8, 12, 22, 0.72)',
+      backdropFilter: 'blur(5px)',
+      WebkitBackdropFilter: 'blur(5px)'
+    });
+
+    var panel = document.createElement('div');
+    applyInlineStyles(panel, {
+      width: '100%',
+      maxWidth: '440px',
+      maxHeight: 'min(92vh, 640px)',
+      overflowY: 'auto',
+      boxSizing: 'border-box',
+      padding: '28px 22px 22px',
+      borderRadius: '12px',
+      background: 'linear-gradient(165deg, #1c2438 0%, #121826 100%)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      boxShadow: '0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04) inset',
+      color: '#f4f7ff',
+      fontFamily: 'inherit'
+    });
+
+    var title = document.createElement('h2');
+    title.id = 'order-pay-modal-title';
+    title.textContent = 'Арс Строй';
+    applyInlineStyles(title, {
+      margin: '0 0 14px',
+      fontSize: 'clamp(1.75rem, 5vw, 2.1rem)',
+      fontWeight: '800',
+      lineHeight: '1.15',
+      letterSpacing: '0.02em',
+      textAlign: 'center',
+      color: '#ffffff'
+    });
+
+    var text = document.createElement('p');
+    text.textContent =
+      'Ваш заказ успешно принят! Для оплаты нажмите на нужный банк ниже — номер телефона автоматически скопируется, и откроется приложение для быстрого перевода:';
+    applyInlineStyles(text, {
+      margin: '0 0 20px',
+      fontSize: '15px',
+      lineHeight: '1.55',
+      color: 'rgba(244, 247, 255, 0.88)',
+      textAlign: 'center'
+    });
+
+    var banks = document.createElement('div');
+    applyInlineStyles(banks, {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+      marginBottom: '18px'
+    });
+
+    var sberBtn = document.createElement('button');
+    sberBtn.type = 'button';
+    sberBtn.textContent = 'Оплатить через Сбербанк (+7 925 838-72-48)';
+    applyInlineStyles(sberBtn, {
+      width: '100%',
+      boxSizing: 'border-box',
+      padding: '16px 14px',
+      border: 'none',
+      borderRadius: '12px',
+      fontSize: '15px',
+      fontWeight: '700',
+      lineHeight: '1.35',
+      cursor: 'pointer',
+      color: '#fff',
+      background: 'linear-gradient(135deg, #21a038 0%, #178a2f 100%)',
+      boxShadow: '0 8px 24px rgba(33, 160, 56, 0.35)'
+    });
+    sberBtn.addEventListener('click', function () {
+      copyPayPhoneToClipboard().finally(function () {
+        openPayBankLink(sberUrl);
+      });
+    });
+
+    var alfaBtn = document.createElement('button');
+    alfaBtn.type = 'button';
+    alfaBtn.textContent = 'Оплатить через Альфа-Банк (+7 925 838-72-48)';
+    applyInlineStyles(alfaBtn, {
+      width: '100%',
+      boxSizing: 'border-box',
+      padding: '16px 14px',
+      border: 'none',
+      borderRadius: '12px',
+      fontSize: '15px',
+      fontWeight: '700',
+      lineHeight: '1.35',
+      cursor: 'pointer',
+      color: '#fff',
+      background: 'linear-gradient(135deg, #ef3124 0%, #c41f14 100%)',
+      boxShadow: '0 8px 24px rgba(239, 49, 36, 0.35)'
+    });
+    alfaBtn.addEventListener('click', function () {
+      copyPayPhoneToClipboard().finally(function () {
+        openPayBankLink(alfaUrl);
+      });
+    });
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.id = 'order-pay-close-btn';
+    closeBtn.textContent = 'Закрыть и очистить корзину';
+    applyInlineStyles(closeBtn, {
+      width: '100%',
+      boxSizing: 'border-box',
+      padding: '14px 14px',
+      border: '1px solid rgba(255, 255, 255, 0.18)',
+      borderRadius: '12px',
+      fontSize: '15px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      color: '#e8ecff',
+      background: 'rgba(255, 255, 255, 0.06)'
+    });
+    closeBtn.addEventListener('click', function () {
+      hideOrderPaymentModal();
+      clearCart();
+    });
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        hideOrderPaymentModal();
+        clearCart();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && orderPaymentModalEl && orderPaymentModalEl.style.display === 'flex') {
+        hideOrderPaymentModal();
+        clearCart();
+      }
+    });
+
+    banks.appendChild(sberBtn);
+    banks.appendChild(alfaBtn);
+    panel.appendChild(title);
+    panel.appendChild(text);
+    panel.appendChild(banks);
+    panel.appendChild(closeBtn);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    orderPaymentModalEl = overlay;
+    return orderPaymentModalEl;
+  }
+
+  function showOrderPaymentModal() {
+    var modal = createOrderPaymentModal();
+    orderPaymentModalPrevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+    var focusCloseBtn = document.getElementById('order-pay-close-btn');
+    if (focusCloseBtn) {
+      focusCloseBtn.focus();
+    }
+  }
+
+  function hideOrderPaymentModal() {
+    if (!orderPaymentModalEl) {
+      return;
+    }
+    orderPaymentModalEl.style.display = 'none';
+    document.body.style.overflow = orderPaymentModalPrevOverflow;
+    if (typeof closeCartModal === 'function') {
+      closeCartModal();
+    }
+  }
+
   /** Отправка заказа плитки (корзины) → Formspree. */
   async function sendFormspreeOrder(orderData) {
     try {
@@ -595,11 +830,7 @@
         body: JSON.stringify(orderData)
       });
       if (response.ok) {
-        alert('Заказ плитки успешно отправлен!');
-        clearOrderAfterSubmit();
-        if (typeof closeCartModal === 'function') {
-          closeCartModal();
-        }
+        showOrderPaymentModal();
         return true;
       }
       alert('Ошибка при отправке заказа.');
