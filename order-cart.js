@@ -619,7 +619,7 @@
 
   /** Заказ из корзины → бот заказов. */
   function sendZakazForm(phone) {
-    var totalRub = getCartProductsTotal();
+    var totalRub = getCartGrandTotal();
 
     var text =
       '🛒 <b>Новый заказ брусчатки</b>\n\n' +
@@ -631,6 +631,247 @@
       '\n\n<b>Телефон:</b> ' +
       escapeHtml(phone);
     return sendToTelegram(TOKEN_ZAKAZ, text);
+  }
+
+  var SBP_PAY_PHONE = '79258387248';
+  var SBP_BANK_SBER = '100000000111';
+  var SBP_BANK_ALFA = '100000000008';
+  var sbpPayModalEl = null;
+  var sbpPayPrevBodyOverflow = '';
+
+  function getPayTotalSum(sumRub) {
+    return String(Math.max(1, Math.round(Number(sumRub) || 0)));
+  }
+
+  function computeNspkCrc(query) {
+    var crc = 0xffff;
+    var polynomial = 0x1021;
+    var i;
+    var j;
+
+    for (i = 0; i < query.length; i++) {
+      crc ^= query.charCodeAt(i) << 8;
+      for (j = 0; j < 8; j++) {
+        if (crc & 0x8000) {
+          crc = ((crc << 1) ^ polynomial) & 0xffff;
+        } else {
+          crc = (crc << 1) & 0xffff;
+        }
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+
+  /** Динамическая ссылка СБП (qr.nspk.ru): сумма в копейках. */
+  function buildSbpUniversalLink(sumRub, bankId) {
+    var totalSum = getPayTotalSum(sumRub);
+    var sbpSumInKopecks = Math.round(parseFloat(totalSum) * 100);
+    var query =
+      'bank=' +
+      (bankId || SBP_BANK_SBER) +
+      '&phone=' +
+      SBP_PAY_PHONE +
+      '&sum=' +
+      String(sbpSumInKopecks) +
+      '&cur=RUB';
+    return 'https://qr.nspk.ru/proxyapp?' + query + '&crc=' + computeNspkCrc(query);
+  }
+
+  function isMobilePayDevice() {
+    if (typeof window.matchMedia === 'function') {
+      if (window.matchMedia('(max-width: 768px)').matches) return true;
+    }
+    var ua = navigator.userAgent || '';
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  }
+
+  function getSbpLogoSvg() {
+    return (
+      '<svg class="sbp-pay__sbp-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64" role="img" aria-label="Система быстрых платежей">' +
+      '<rect width="200" height="64" rx="12" fill="#fff"/>' +
+      '<path fill="#5B57A2" d="M28 14h14v36H28V14zm24 0h10l18 24V14h10v36H72L54 26v24H52V14z"/>' +
+      '<path fill="#E4003D" d="M98 14h10v14l20-14h12l-18 14 20 22h-12l-14-18v18h-10V14z"/>' +
+      '<path fill="#00A651" d="M152 14h22c8 0 14 5 14 14s-6 14-14 14h-10v12h-14V14zm10 22h10c4 0 6-2 6-6s-2-6-6-6h-10v12z"/>' +
+      '<text x="100" y="58" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="11" font-weight="700" fill="#1a1a2e">сбп</text>' +
+      '</svg>'
+    );
+  }
+
+  function ensureSbpPayModal() {
+    if (sbpPayModalEl && document.getElementById('sbp-pay-sber')) {
+      return sbpPayModalEl;
+    }
+    if (sbpPayModalEl) {
+      sbpPayModalEl.remove();
+      sbpPayModalEl = null;
+    }
+
+    var root = document.createElement('div');
+    root.id = 'sbp-pay-modal';
+    root.className = 'sbp-pay';
+    root.hidden = true;
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.setAttribute('aria-labelledby', 'sbp-pay-brand-title');
+
+    root.innerHTML =
+      '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
+      '<div class="sbp-pay__panel">' +
+      '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
+      '<div class="sbp-pay__brand">' +
+      getSbpLogoSvg() +
+      '<h2 class="sbp-pay__brand-title" id="sbp-pay-brand-title">Оплата заказа в Арс Строй</h2>' +
+      '</div>' +
+      '<p class="sbp-pay__success" id="sbp-pay-success"></p>' +
+      '<div class="sbp-pay__loader" id="sbp-pay-loader">' +
+      '<div class="sbp-pay__spinner" aria-hidden="true"></div>' +
+      '<span>Формируем платёж…</span>' +
+      '</div>' +
+      '<div class="sbp-pay__pay-block" id="sbp-pay-block" hidden>' +
+      '<div class="sbp-pay__desktop-only">' +
+      '<div class="sbp-pay__qr-wrap"><canvas class="sbp-pay__qr-canvas" id="sbp-pay-qr-canvas" aria-label="QR-код для оплаты через СБП"></canvas></div>' +
+      '<p class="sbp-pay__qr-hint">Отсканируйте QR-код в приложении банка — сумма подставится автоматически</p>' +
+      '</div>' +
+      '<div class="sbp-pay__mobile-only">' +
+      '<a class="sbp-pay__btn sbp-pay__btn--sbp" id="sbp-pay-open" href="#" rel="noopener noreferrer">' +
+      '<svg class="sbp-pay__btn-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="rgba(255,255,255,0.2)"/><path fill="#fff" d="M10 16h12M16 10v12" stroke="#fff" stroke-width="2"/></svg>' +
+      'Оплатить через СБП</a>' +
+      '<a class="sbp-pay__btn sbp-pay__btn--sber" id="sbp-pay-sber" href="#" rel="noopener noreferrer">' +
+      '<span class="sbp-pay__bank-icon" aria-hidden="true">С</span>Открыть в Сбербанк Онлайн</a>' +
+      '<a class="sbp-pay__btn sbp-pay__btn--alfa" id="sbp-pay-alfa" href="#" rel="noopener noreferrer">' +
+      '<span class="sbp-pay__bank-icon" aria-hidden="true">А</span>Открыть в Альфа-Банк</a>' +
+      '</div>' +
+      '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
+      '</div>' +
+      '<button type="button" class="btn btn--ghost sbp-pay__done" data-sbp-close>Закрыть</button>' +
+      '</div>';
+
+    root.addEventListener('click', function (e) {
+      if (e.target.closest('[data-sbp-close]')) {
+        closeSbpPayModalAndClearCart();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && sbpPayModalEl && !sbpPayModalEl.hidden) {
+        closeSbpPayModalAndClearCart();
+      }
+    });
+
+    document.body.appendChild(root);
+    sbpPayModalEl = root;
+    return sbpPayModalEl;
+  }
+
+  function renderSbpQrCode(paymentUrl) {
+    var canvas = document.getElementById('sbp-pay-qr-canvas');
+    if (!canvas || !paymentUrl) return Promise.resolve();
+
+    function draw() {
+      if (typeof window.QRCode === 'undefined') {
+        return Promise.reject(new Error('qrcode_lib_missing'));
+      }
+      return window.QRCode.toCanvas(canvas, paymentUrl, {
+        width: 240,
+        margin: 1,
+        color: { dark: '#0f172a', light: '#ffffff' }
+      });
+    }
+
+    if (typeof window.QRCode !== 'undefined') {
+      return draw();
+    }
+
+    return new Promise(function (resolve, reject) {
+      var existing = document.querySelector('script[data-qrcode-lib]');
+      if (existing) {
+        existing.addEventListener('load', function () {
+          draw().then(resolve).catch(reject);
+        });
+        existing.addEventListener('error', reject);
+        return;
+      }
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+      script.defer = true;
+      script.setAttribute('data-qrcode-lib', '1');
+      script.onload = function () {
+        draw().then(resolve).catch(reject);
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  function showSbpPayModal(sumRub) {
+    var modal = ensureSbpPayModal();
+    var sum = Math.max(1, Math.round(Number(sumRub) || 0));
+    var sbpLink = buildSbpUniversalLink(sum, SBP_BANK_SBER);
+    var sberLink = buildSbpUniversalLink(sum, SBP_BANK_SBER);
+    var alfaLink = buildSbpUniversalLink(sum, SBP_BANK_ALFA);
+
+    var successEl = document.getElementById('sbp-pay-success');
+    var loaderEl = document.getElementById('sbp-pay-loader');
+    var blockEl = document.getElementById('sbp-pay-block');
+    var sumEl = document.getElementById('sbp-pay-sum');
+    var openBtn = document.getElementById('sbp-pay-open');
+    var sberBtn = document.getElementById('sbp-pay-sber');
+    var alfaBtn = document.getElementById('sbp-pay-alfa');
+
+    if (successEl) {
+      successEl.innerHTML =
+        'Заказ оформлен! К оплате: <strong>' + formatMoney(sum) + ' ₽</strong>';
+    }
+    if (sumEl) {
+      sumEl.innerHTML =
+        formatMoney(sum) + ' ₽<small>перевод по СБП на номер +7 (925) 838-72-48</small>';
+    }
+    if (openBtn) openBtn.href = sbpLink;
+    if (sberBtn) sberBtn.href = sberLink;
+    if (alfaBtn) alfaBtn.href = alfaLink;
+
+    if (loaderEl) loaderEl.hidden = false;
+    if (blockEl) blockEl.hidden = true;
+
+    sbpPayPrevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    modal.hidden = false;
+    requestAnimationFrame(function () {
+      modal.classList.add('sbp-pay--open');
+    });
+
+    var qrPromise = isMobilePayDevice()
+      ? Promise.resolve()
+      : renderSbpQrCode(sbpLink);
+
+    qrPromise
+      .catch(function (err) {
+        console.warn('sbp_qr_render', err);
+      })
+      .then(function () {
+        if (loaderEl) loaderEl.hidden = true;
+        if (blockEl) blockEl.hidden = false;
+        var doneBtn = modal.querySelector('.sbp-pay__done');
+        if (doneBtn) doneBtn.focus();
+      });
+  }
+
+  function closeSbpPayModalAndClearCart() {
+    if (!sbpPayModalEl) {
+      return;
+    }
+
+    sbpPayModalEl.classList.remove('sbp-pay--open');
+    sbpPayModalEl.hidden = true;
+    document.body.style.overflow = sbpPayPrevBodyOverflow;
+
+    cart = [];
+    deliveryCalcToken++;
+    resetDeliveryState();
+    renderCart();
+    if (orderForm) {
+      orderForm.reset();
+    }
   }
 
   function clearOrderAfterSubmit() {
@@ -1316,14 +1557,27 @@
         return;
       }
 
+      var submitBtn = orderForm.querySelector('.order-form__submit');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('order-form__submit--loading');
+      }
+
+      var orderTotalRub = getCartGrandTotal();
+
       sendZakazForm(phone)
         .then(function () {
-          clearOrderAfterSubmit();
-          alert('Заказ отправлен! Мы свяжемся с вами.');
+          showSbpPayModal(orderTotalRub);
         })
         .catch(function (err) {
           console.error(err);
           alert(FORM_SEND_FAIL_MSG);
+        })
+        .finally(function () {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('order-form__submit--loading');
+          }
         });
     });
   }
