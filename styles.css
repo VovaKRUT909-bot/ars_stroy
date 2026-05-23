@@ -333,6 +333,16 @@ main{
   flex-direction:column;
   gap:8px;
 }
+.catalog-actions{
+  margin-top:18px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.catalog-actions__btn{
+  flex:1 1 240px;
+  min-height:52px;
+}
 .cart-item__qty-label{
   display:block;
   margin-bottom:8px;

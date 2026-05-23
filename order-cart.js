@@ -1265,13 +1265,6 @@
   document.querySelectorAll('.subprices__row').forEach(wrapSubpriceRow);
   initBlockCards();
 
-  document.querySelectorAll('[data-ukladka-scroll]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var target = document.getElementById('ukladka-request');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  });
-
   if (cartClearBtn) {
     cartClearBtn.addEventListener('click', function () {
       cart = [];
