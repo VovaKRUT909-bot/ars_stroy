@@ -633,134 +633,6 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var PAY_LINK_SBER =
-    'https://www.sberbank.ru/ru/person/dl/open?meta__pageId=cust_appeal&type=transfer_phone&phone=89258387248';
-  var PAY_LINK_ALFA = 'https://alfa.me/';
-  var sbpPayModalEl = null;
-  var sbpPayPrevBodyOverflow = '';
-
-  function ensureSbpPayModal() {
-    if (sbpPayModalEl && sbpPayModalEl.getAttribute('data-pay-ui-v') !== '4') {
-      sbpPayModalEl.remove();
-      sbpPayModalEl = null;
-    }
-    if (sbpPayModalEl && document.getElementById('sbp-pay-sber')) {
-      return sbpPayModalEl;
-    }
-    if (sbpPayModalEl) {
-      sbpPayModalEl.remove();
-      sbpPayModalEl = null;
-    }
-
-    var root = document.createElement('div');
-    root.id = 'sbp-pay-modal';
-    root.className = 'sbp-pay';
-    root.hidden = true;
-    root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-modal', 'true');
-    root.setAttribute('aria-labelledby', 'sbp-pay-brand-title');
-    root.setAttribute('data-pay-ui-v', '4');
-
-    root.innerHTML =
-      '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
-      '<div class="sbp-pay__panel">' +
-      '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
-      '<div class="sbp-pay__brand">' +
-      '<div class="sbp-pay__brand-emoji" aria-hidden="true">💳</div>' +
-      '<h2 class="sbp-pay__brand-title" id="sbp-pay-brand-title">Оплата заказа в Арс Строй</h2>' +
-      '</div>' +
-      '<p class="sbp-pay__success" id="sbp-pay-success"></p>' +
-      '<div class="sbp-pay__pay-block" id="sbp-pay-block">' +
-      '<div class="sbp-pay__banks">' +
-      '<a class="sbp-pay__btn sbp-pay__btn--sber" id="sbp-pay-sber" href="' +
-      PAY_LINK_SBER +
-      '" target="_blank" rel="noopener noreferrer">🟢 Открыть в Сбербанк Онлайн</a>' +
-      '<a class="sbp-pay__btn sbp-pay__btn--alfa" id="sbp-pay-alfa" href="' +
-      PAY_LINK_ALFA +
-      '" target="_blank" rel="noopener noreferrer">🔴 Открыть в Альфа-Банк</a>' +
-      '</div>' +
-      '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
-      '</div>' +
-      '<button type="button" class="btn btn--ghost sbp-pay__done" data-sbp-close>Закрыть</button>' +
-      '</div>';
-
-    root.addEventListener('click', function (e) {
-      if (e.target.closest('[data-sbp-close]')) {
-        closeSbpPayModalAndClearCart();
-      }
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && sbpPayModalEl && !sbpPayModalEl.hidden) {
-        closeSbpPayModalAndClearCart();
-      }
-    });
-
-    document.body.appendChild(root);
-    sbpPayModalEl = root;
-    return sbpPayModalEl;
-  }
-
-  function showSbpPayModal(sumRub) {
-    var modal = ensureSbpPayModal();
-    var sum = Math.max(1, Math.round(Number(sumRub) || 0));
-
-    var successEl = document.getElementById('sbp-pay-success');
-    var sumEl = document.getElementById('sbp-pay-sum');
-    var sberBtn = document.getElementById('sbp-pay-sber');
-    var alfaBtn = document.getElementById('sbp-pay-alfa');
-
-    if (successEl) {
-      successEl.innerHTML =
-        'Заказ оформлен! К оплате: <strong>' +
-        formatMoney(sum) +
-        ' ₽</strong><br><span class="sbp-pay__manual-hint">Сумму перевода введите вручную в приложении банка.</span>';
-    }
-    if (sumEl) {
-      sumEl.innerHTML =
-        'Получатель: <strong>+7 (925) 838-72-48</strong><small>после перехода в банк укажите сумму ' +
-        formatMoney(sum) +
-        ' ₽</small>';
-    }
-    if (sberBtn) {
-      sberBtn.href = PAY_LINK_SBER;
-      sberBtn.target = '_blank';
-      sberBtn.rel = 'noopener noreferrer';
-    }
-    if (alfaBtn) {
-      alfaBtn.href = PAY_LINK_ALFA;
-      alfaBtn.target = '_blank';
-      alfaBtn.rel = 'noopener noreferrer';
-    }
-
-    sbpPayPrevBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    modal.hidden = false;
-    requestAnimationFrame(function () {
-      modal.classList.add('sbp-pay--open');
-      var doneBtn = modal.querySelector('.sbp-pay__done');
-      if (doneBtn) doneBtn.focus();
-    });
-  }
-
-  function closeSbpPayModalAndClearCart() {
-    if (!sbpPayModalEl) {
-      return;
-    }
-
-    sbpPayModalEl.classList.remove('sbp-pay--open');
-    sbpPayModalEl.hidden = true;
-    document.body.style.overflow = sbpPayPrevBodyOverflow;
-
-    cart = [];
-    deliveryCalcToken++;
-    resetDeliveryState();
-    renderCart();
-    if (orderForm) {
-      orderForm.reset();
-    }
-  }
-
   function clearOrderAfterSubmit() {
     cart = [];
     deliveryCalcToken++;
@@ -1450,11 +1322,10 @@
         submitBtn.classList.add('order-form__submit--loading');
       }
 
-      var orderTotalRub = getCartGrandTotal();
-
       sendZakazForm(phone)
         .then(function () {
-          showSbpPayModal(orderTotalRub);
+          clearOrderAfterSubmit();
+          alert('Заказ отправлен! Мы свяжемся с вами.');
         })
         .catch(function (err) {
           console.error(err);
