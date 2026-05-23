@@ -1741,10 +1741,10 @@ h3.section__subtitle{
   margin-bottom:18px;
   padding-top:4px;
 }
-.sbp-pay__sbp-logo{
-  width:88px;
-  height:auto;
-  display:block;
+.sbp-pay__brand-emoji{
+  font-size:42px;
+  line-height:1;
+  margin-bottom:4px;
 }
 .sbp-pay__brand-title{
   margin:0;
@@ -1867,18 +1867,6 @@ h3.section__subtitle{
   background:linear-gradient(135deg, #ef3124 0%, #d8191f 55%, #b80f14 100%);
   color:#fff;
   box-shadow:0 10px 28px rgba(239,49,36,0.38);
-}
-.sbp-pay__bank-icon{
-  width:26px;
-  height:26px;
-  border-radius:8px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:14px;
-  font-weight:900;
-  background:rgba(255,255,255,0.2);
-  flex-shrink:0;
 }
 .sbp-pay__done{
   width:100%;

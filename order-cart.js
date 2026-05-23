@@ -633,7 +633,8 @@
     return sendToTelegram(TOKEN_ZAKAZ, text);
   }
 
-  var PAY_LINK_SBER = 'https://www.sberbank.ru/sms/pbpn?num=89258387248';
+  var PAY_LINK_SBER =
+    'https://www.sberbank.ru/ru/person/dl/open?meta__pageId=cust_appeal&type=transfer_phone&phone=89258387248';
   var PAY_LINK_ALFA = 'https://alfa.me/';
   var sbpPayModalEl = null;
   var sbpPayPrevBodyOverflow = '';
@@ -646,20 +647,8 @@
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   }
 
-  function getSbpLogoSvg() {
-    return (
-      '<svg class="sbp-pay__sbp-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64" role="img" aria-label="Система быстрых платежей">' +
-      '<rect width="200" height="64" rx="12" fill="#fff"/>' +
-      '<path fill="#5B57A2" d="M28 14h14v36H28V14zm24 0h10l18 24V14h10v36H72L54 26v24H52V14z"/>' +
-      '<path fill="#E4003D" d="M98 14h10v14l20-14h12l-18 14 20 22h-12l-14-18v18h-10V14z"/>' +
-      '<path fill="#00A651" d="M152 14h22c8 0 14 5 14 14s-6 14-14 14h-10v12h-14V14zm10 22h10c4 0 6-2 6-6s-2-6-6-6h-10v12z"/>' +
-      '<text x="100" y="58" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="11" font-weight="700" fill="#1a1a2e">сбп</text>' +
-      '</svg>'
-    );
-  }
-
   function ensureSbpPayModal() {
-    if (sbpPayModalEl && document.getElementById('sbp-pay-open')) {
+    if (sbpPayModalEl && sbpPayModalEl.getAttribute('data-pay-ui-v') !== '2') {
       sbpPayModalEl.remove();
       sbpPayModalEl = null;
     }
@@ -678,13 +667,14 @@
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-modal', 'true');
     root.setAttribute('aria-labelledby', 'sbp-pay-brand-title');
+    root.setAttribute('data-pay-ui-v', '2');
 
     root.innerHTML =
       '<div class="sbp-pay__backdrop" data-sbp-close tabindex="-1" aria-hidden="true"></div>' +
       '<div class="sbp-pay__panel">' +
       '<button type="button" class="sbp-pay__close-x" data-sbp-close aria-label="Закрыть">×</button>' +
       '<div class="sbp-pay__brand">' +
-      getSbpLogoSvg() +
+      '<div class="sbp-pay__brand-emoji" aria-hidden="true">💳</div>' +
       '<h2 class="sbp-pay__brand-title" id="sbp-pay-brand-title">Оплата заказа в Арс Строй</h2>' +
       '</div>' +
       '<p class="sbp-pay__success" id="sbp-pay-success"></p>' +
@@ -700,12 +690,10 @@
       '<div class="sbp-pay__banks">' +
       '<a class="sbp-pay__btn sbp-pay__btn--sber" id="sbp-pay-sber" href="' +
       PAY_LINK_SBER +
-      '" target="_blank" rel="noopener noreferrer">' +
-      '<span class="sbp-pay__bank-icon" aria-hidden="true">С</span>Открыть в Сбербанк Онлайн</a>' +
+      '" target="_blank" rel="noopener noreferrer">🟢 Открыть в Сбербанк Онлайн</a>' +
       '<a class="sbp-pay__btn sbp-pay__btn--alfa" id="sbp-pay-alfa" href="' +
       PAY_LINK_ALFA +
-      '" target="_blank" rel="noopener noreferrer">' +
-      '<span class="sbp-pay__bank-icon" aria-hidden="true">А</span>Открыть в Альфа-Банк</a>' +
+      '" target="_blank" rel="noopener noreferrer">🔴 Открыть в Альфа-Банк</a>' +
       '</div>' +
       '<p class="sbp-pay__sum" id="sbp-pay-sum"></p>' +
       '</div>' +
