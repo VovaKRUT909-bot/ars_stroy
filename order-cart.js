@@ -590,256 +590,218 @@
   var orderPaymentModalPrevOverflow = '';
   var orderPaymentAmountRub = 0;
 
-  function copyTextToClipboard(text) {
-    var value = String(text);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(value).catch(function () {
-        return copyTextToClipboardFallback(value);
-      });
+  var orderPayCopyPhoneBtn = null;
+  var orderPayCopySumBtn = null;
+  var PAY_MODAL_VERSION = '3';
+
+  function safeCopy(text) {
+    var el = document.createElement('textarea');
+    el.value = String(text);
+    el.style.position = 'absolute';
+    el.style.left = '-9999px';
+    document.body.appendChild(el);
+    el.select();
+    try {
+      document.execCommand('copy');
+    } catch (err) {
+      /* ignore */
     }
-    return copyTextToClipboardFallback(value);
+    document.body.removeChild(el);
   }
 
-  function copyTextToClipboardFallback(text) {
-    return new Promise(function (resolve) {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-      } catch (err) {
-        /* ignore */
-      }
-      document.body.removeChild(ta);
-      resolve();
-    });
+  function flashPayCopyButton(btn, defaultLabel) {
+    if (!btn) return;
+    btn.textContent = 'Скопировано! ✓';
+    window.setTimeout(function () {
+      btn.textContent = defaultLabel;
+    }, 1600);
   }
 
-  function applyInlineStyles(el, styles) {
+  function stylePayEl(el, styles) {
     Object.keys(styles).forEach(function (key) {
       el.style[key] = styles[key];
     });
   }
 
-  function flashCopyButton(btn) {
-    if (!btn) return;
-    var prev = btn.textContent;
-    btn.textContent = 'Скопировано!';
-    btn.style.opacity = '0.85';
-    window.setTimeout(function () {
-      btn.textContent = prev;
-      btn.style.opacity = '1';
-    }, 1200);
-  }
-
-  function createPayCopyRow(labelText, inputId, buttonLabel) {
-    var wrap = document.createElement('div');
-    applyInlineStyles(wrap, {
-      marginBottom: '12px'
-    });
-
-    var label = document.createElement('div');
-    label.textContent = labelText;
-    applyInlineStyles(label, {
-      marginBottom: '6px',
-      fontSize: '13px',
-      fontWeight: '600',
-      color: 'rgba(244, 247, 255, 0.75)'
-    });
-
-    var row = document.createElement('div');
-    applyInlineStyles(row, {
-      display: 'flex',
-      gap: '8px',
-      alignItems: 'stretch'
-    });
-
-    var input = document.createElement('input');
-    input.type = 'text';
-    input.id = inputId;
-    input.readOnly = true;
-    applyInlineStyles(input, {
-      flex: '1 1 auto',
-      minWidth: '0',
+  function createPayActionButton(label, variant) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = label;
+    stylePayEl(btn, {
+      width: '100%',
       boxSizing: 'border-box',
-      padding: '12px 14px',
-      borderRadius: '10px',
-      border: '1px solid rgba(255, 255, 255, 0.14)',
-      background: 'rgba(0, 0, 0, 0.22)',
-      color: '#ffffff',
+      display: 'block',
+      margin: '0 0 12px',
+      padding: '16px 14px',
+      border: 'none',
+      borderRadius: '12px',
       fontSize: '16px',
       fontWeight: '700',
-      fontFamily: 'inherit'
-    });
-
-    var copyBtn = document.createElement('button');
-    copyBtn.type = 'button';
-    copyBtn.textContent = buttonLabel;
-    applyInlineStyles(copyBtn, {
-      flex: '0 0 auto',
-      boxSizing: 'border-box',
-      padding: '12px 12px',
-      border: 'none',
-      borderRadius: '10px',
-      fontSize: '13px',
-      fontWeight: '700',
+      lineHeight: '1.35',
       cursor: 'pointer',
-      color: '#0f1524',
-      background: '#e8eeff',
-      whiteSpace: 'nowrap'
+      fontFamily: 'inherit',
+      WebkitTapHighlightColor: 'transparent',
+      touchAction: 'manipulation',
+      pointerEvents: 'auto'
     });
-    copyBtn.addEventListener('click', function () {
-      var copyValue = copyBtn.getAttribute('data-copy-value') || input.value;
-      copyTextToClipboard(copyValue).then(function () {
-        flashCopyButton(copyBtn);
+    if (variant === 'close') {
+      stylePayEl(btn, {
+        marginBottom: '0',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        color: '#e8ecff',
+        background: 'rgba(255, 255, 255, 0.08)'
       });
-    });
+    } else if (variant === 'sum') {
+      stylePayEl(btn, {
+        color: '#0f1524',
+        background: 'linear-gradient(135deg, #ffd76a 0%, #f5b942 100%)',
+        boxShadow: '0 8px 20px rgba(245, 185, 66, 0.28)'
+      });
+    } else {
+      stylePayEl(btn, {
+        color: '#ffffff',
+        background: 'linear-gradient(135deg, #3d7cff 0%, #2b5fd9 100%)',
+        boxShadow: '0 8px 20px rgba(61, 124, 255, 0.28)'
+      });
+    }
+    return btn;
+  }
 
-    row.appendChild(input);
-    row.appendChild(copyBtn);
-    wrap.appendChild(label);
-    wrap.appendChild(row);
-    return wrap;
+  function destroyOrderPaymentModal() {
+    if (orderPaymentModalEl) {
+      orderPaymentModalEl.remove();
+      orderPaymentModalEl = null;
+    }
+    orderPayCopyPhoneBtn = null;
+    orderPayCopySumBtn = null;
   }
 
   function createOrderPaymentModal() {
-    if (orderPaymentModalEl && orderPaymentModalEl.getAttribute('data-pay-modal-v') !== '2') {
-      orderPaymentModalEl.remove();
-      orderPaymentModalEl = null;
+    if (orderPaymentModalEl && orderPaymentModalEl.getAttribute('data-pay-modal-v') !== PAY_MODAL_VERSION) {
+      destroyOrderPaymentModal();
     }
     if (orderPaymentModalEl) {
       return orderPaymentModalEl;
     }
 
     var overlay = document.createElement('div');
-    overlay.setAttribute('data-pay-modal-v', '2');
+    overlay.id = 'order-pay-overlay';
+    overlay.setAttribute('data-pay-modal-v', PAY_MODAL_VERSION);
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'order-pay-modal-title');
-    applyInlineStyles(overlay, {
+    stylePayEl(overlay, {
       position: 'fixed',
       inset: '0',
-      zIndex: '10000',
+      zIndex: '999999',
       display: 'none',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '16px',
       boxSizing: 'border-box',
-      background: 'rgba(8, 12, 22, 0.75)',
-      backdropFilter: 'blur(5px)',
-      WebkitBackdropFilter: 'blur(5px)'
+      background: 'rgba(6, 10, 20, 0.78)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      pointerEvents: 'auto'
     });
 
     var panel = document.createElement('div');
-    applyInlineStyles(panel, {
+    panel.id = 'order-pay-panel';
+    stylePayEl(panel, {
+      position: 'relative',
+      zIndex: '1000000',
       width: '100%',
-      maxWidth: '460px',
-      maxHeight: 'min(94vh, 720px)',
+      maxWidth: '420px',
+      maxHeight: 'min(92vh, 680px)',
       overflowY: 'auto',
       boxSizing: 'border-box',
-      padding: '28px 22px 22px',
+      padding: '26px 20px 20px',
       borderRadius: '15px',
-      background: 'linear-gradient(165deg, #1c2438 0%, #121826 100%)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      boxShadow: '0 28px 72px rgba(0, 0, 0, 0.58), 0 0 0 1px rgba(255,255,255,0.04) inset',
+      background: 'linear-gradient(165deg, #1e2740 0%, #111827 100%)',
+      border: '1px solid rgba(255, 255, 255, 0.12)',
+      boxShadow: '0 32px 80px rgba(0, 0, 0, 0.62)',
       color: '#f4f7ff',
-      fontFamily: 'inherit'
+      fontFamily: 'inherit',
+      pointerEvents: 'auto'
     });
 
     var title = document.createElement('h2');
     title.id = 'order-pay-modal-title';
     title.textContent = 'Арс Строй';
-    applyInlineStyles(title, {
-      margin: '0 0 14px',
-      fontSize: 'clamp(1.75rem, 5vw, 2.15rem)',
+    stylePayEl(title, {
+      margin: '0 0 10px',
+      fontSize: 'clamp(1.7rem, 5vw, 2rem)',
       fontWeight: '800',
       lineHeight: '1.15',
-      letterSpacing: '0.02em',
       textAlign: 'center',
       color: '#ffffff'
     });
 
-    var text = document.createElement('p');
-    text.id = 'order-pay-modal-text';
-    text.textContent =
-      'Ваш заказ успешно принят! Для оплаты скопируйте реквизиты ниже и переведите их в приложении вашего банка:';
-    applyInlineStyles(text, {
+    var lead = document.createElement('p');
+    lead.textContent = 'Ваш заказ успешно принят! Скопируйте реквизиты для оплаты:';
+    stylePayEl(lead, {
       margin: '0 0 18px',
       fontSize: '15px',
-      lineHeight: '1.55',
-      color: 'rgba(244, 247, 255, 0.9)',
-      textAlign: 'center'
+      lineHeight: '1.5',
+      textAlign: 'center',
+      color: 'rgba(244, 247, 255, 0.9)'
     });
 
-    var copyBlock = document.createElement('div');
-    applyInlineStyles(copyBlock, {
-      marginBottom: '16px'
+    orderPayCopyPhoneBtn = createPayActionButton('Скопировать номер телефона', 'phone');
+    orderPayCopyPhoneBtn.id = 'order-pay-copy-phone-btn';
+    orderPayCopyPhoneBtn.addEventListener('click', function () {
+      safeCopy(PAY_PHONE_COPY);
+      flashPayCopyButton(orderPayCopyPhoneBtn, 'Скопировать номер телефона');
     });
-    copyBlock.appendChild(createPayCopyRow('Номер для перевода', 'order-pay-phone-field', 'Скопировать номер'));
-    copyBlock.appendChild(createPayCopyRow('Сумма заказа', 'order-pay-sum-field', 'Скопировать сумму'));
 
-    var payGuide = document.createElement('div');
-    payGuide.textContent =
+    orderPayCopySumBtn = createPayActionButton('Скопировать сумму заказа', 'sum');
+    orderPayCopySumBtn.id = 'order-pay-copy-sum-btn';
+    orderPayCopySumBtn.addEventListener('click', function () {
+      safeCopy(formatMoney(Math.max(0, Math.round(orderPaymentAmountRub))));
+      flashPayCopyButton(orderPayCopySumBtn, 'Скопировать сумму заказа');
+    });
+
+    var guide = document.createElement('div');
+    guide.textContent =
       'Как оплатить заказ:\n' +
-      '1. Нажмите кнопки выше, чтобы скопировать номер и сумму.\n' +
-      '2. Сверните браузер и откройте приложение вашего банка (Сбербанк, Альфа-Банк или любой другой).\n' +
-      '3. Выберите перевод по номеру телефона (через СБП) и вставьте скопированные данные.';
-    applyInlineStyles(payGuide, {
-      marginBottom: '18px',
-      padding: '16px 14px',
+      '1. Скопируйте номер телефона и сумму кнопками выше.\n' +
+      '2. Откройте приложение вашего любимого банка (Сбербанк, Альфа-Банк, Т-Банк и др.).\n' +
+      '3. Сделайте перевод по номеру телефона через СБП.';
+    stylePayEl(guide, {
+      margin: '4px 0 16px',
+      padding: '14px 12px',
       borderRadius: '12px',
-      border: '1px solid rgba(255, 255, 255, 0.12)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
       background: 'rgba(255, 255, 255, 0.05)',
-      fontSize: '15px',
+      fontSize: '14px',
       fontWeight: '600',
-      lineHeight: '1.65',
-      color: 'rgba(244, 247, 255, 0.95)',
+      lineHeight: '1.6',
+      color: 'rgba(244, 247, 255, 0.92)',
       whiteSpace: 'pre-line'
     });
 
-    var closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
+    var closeBtn = createPayActionButton('Закрыть и очистить корзину', 'close');
     closeBtn.id = 'order-pay-close-btn';
-    closeBtn.textContent = 'Закрыть и очистить корзину';
-    applyInlineStyles(closeBtn, {
-      width: '100%',
-      boxSizing: 'border-box',
-      padding: '14px 14px',
-      border: '1px solid rgba(255, 255, 255, 0.18)',
-      borderRadius: '12px',
-      fontSize: '15px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      color: '#e8ecff',
-      background: 'rgba(255, 255, 255, 0.06)'
-    });
     closeBtn.addEventListener('click', function () {
       hideOrderPaymentModal();
       clearCart();
     });
 
-    overlay.addEventListener('click', function (e) {
-      if (e.target === overlay) {
-        hideOrderPaymentModal();
-        clearCart();
-      }
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && orderPaymentModalEl && orderPaymentModalEl.style.display === 'flex') {
-        hideOrderPaymentModal();
-        clearCart();
-      }
-    });
+    if (!window.__orderPayEscBound) {
+      window.__orderPayEscBound = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && orderPaymentModalEl && orderPaymentModalEl.style.display === 'flex') {
+          hideOrderPaymentModal();
+          clearCart();
+        }
+      });
+    }
 
     panel.appendChild(title);
-    panel.appendChild(text);
-    panel.appendChild(copyBlock);
-    panel.appendChild(payGuide);
+    panel.appendChild(lead);
+    panel.appendChild(orderPayCopyPhoneBtn);
+    panel.appendChild(orderPayCopySumBtn);
+    panel.appendChild(guide);
     panel.appendChild(closeBtn);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
@@ -849,25 +811,12 @@
 
   function showOrderPaymentModal(totalRub) {
     orderPaymentAmountRub = Math.max(0, Math.round(Number(totalRub) || 0));
-    var sumFormatted = formatMoney(orderPaymentAmountRub);
-
     var modal = createOrderPaymentModal();
-    var phoneField = document.getElementById('order-pay-phone-field');
-    var sumField = document.getElementById('order-pay-sum-field');
-
-    if (phoneField) {
-      phoneField.value = PAY_PHONE_COPY;
-    }
-    if (sumField) {
-      sumField.value = sumFormatted;
-    }
-
     orderPaymentModalPrevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     modal.style.display = 'flex';
-    var focusCloseBtn = document.getElementById('order-pay-close-btn');
-    if (focusCloseBtn) {
-      focusCloseBtn.focus();
+    if (orderPayCopyPhoneBtn) {
+      orderPayCopyPhoneBtn.focus();
     }
   }
 
