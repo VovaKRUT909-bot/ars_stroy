@@ -948,7 +948,7 @@ body.order-fs-open{
 .order-payment__panel{
   display:flex;
   flex-direction:column;
-  gap:18px;
+  gap:14px;
   padding:20px;
   border-radius:var(--radius2);
   border:1px solid rgba(255,255,255,.14);
@@ -975,6 +975,152 @@ body.order-fs-open{
   line-height:1.45;
   text-align:center;
   text-shadow:0 1px 0 rgba(0,0,0,.35);
+}
+.order-payment__flow{
+  margin:0;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid rgba(201,168,108,.22);
+  background:rgba(201,168,108,.08);
+  color:var(--muted);
+  font-size:clamp(.88rem, 3vw, .98rem);
+  font-weight:700;
+  line-height:1.45;
+  text-align:center;
+}
+.order-payment__flow strong{
+  color:#e8d4a8;
+}
+.order-payment__steps{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.order-payment__step{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+}
+.order-payment__step-num{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  border:1px solid rgba(201,168,108,.45);
+  background:rgba(201,168,108,.12);
+  color:#e8d4a8;
+  font-size:14px;
+  font-weight:950;
+  line-height:1;
+}
+.order-payment__step-body{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.order-payment__step-title{
+  margin:0;
+  font-size:clamp(.95rem, 3.2vw, 1.05rem);
+  font-weight:900;
+  color:#fff;
+  line-height:1.3;
+}
+.order-payment__step-hint{
+  margin:0;
+  font-size:clamp(.8rem, 2.8vw, .9rem);
+  font-weight:650;
+  line-height:1.4;
+  color:var(--muted);
+}
+.order-payment__pay-row{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.order-payment__qr-mini{
+  flex-shrink:0;
+  margin:0;
+  padding:6px;
+  border-radius:12px;
+  border:1px solid rgba(201,168,108,.28);
+  background:rgba(255,255,255,.06);
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.order-payment__qr-mini:hover,
+.order-payment__qr-mini:focus-within{
+  border-color:rgba(201,168,108,.5);
+  box-shadow:0 0 0 2px rgba(201,168,108,.18);
+}
+.order-payment__qr-mini .order-payment__qr-img{
+  display:block;
+  width:80px;
+  height:80px;
+  max-width:none;
+  margin:0;
+  border-radius:8px;
+  object-fit:cover;
+  background:#fff;
+}
+.order-payment__qr-caption{
+  display:block;
+  margin-top:4px;
+  font-size:10px;
+  font-weight:750;
+  line-height:1.2;
+  color:var(--muted);
+}
+.order-payment__pay-col{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.order-payment__confirm{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:52px;
+  padding:14px 16px;
+  border-radius:12px;
+  border:1px solid rgba(201,168,108,.35);
+  background:linear-gradient(135deg, rgba(201,168,108,.22) 0%, rgba(201,168,108,.1) 100%);
+  color:#f5ecd8;
+  font:inherit;
+  font-size:clamp(14px, 3.6vw, 16px);
+  font-weight:900;
+  line-height:1.35;
+  text-align:center;
+  cursor:pointer;
+  box-sizing:border-box;
+  transition:filter .15s ease, opacity .15s ease, border-color .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.order-payment__confirm:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+.order-payment__confirm--ready{
+  border-color:rgba(33,160,56,.55);
+  background:linear-gradient(135deg, #2ecc5a 0%, #21a038 55%, #1a8f30 100%);
+  color:#fff;
+  box-shadow:0 8px 22px rgba(33,160,56,.28);
+  animation:order-pay-pulse 2.4s ease-in-out infinite;
+}
+.order-payment__confirm--ready:hover:not(:disabled){
+  filter:brightness(1.07);
+}
+.order-payment__confirm--loading{
+  opacity:.75;
+  pointer-events:none;
 }
 .order-payment__mobile{
   display:flex;
@@ -1072,8 +1218,16 @@ body.order-fs-open{
     font-size:1rem;
   }
   .order-payment__sber{
-    min-height:60px;
-    font-size:16px;
+    min-height:54px;
+    font-size:15px;
+    padding:14px 12px;
+  }
+  .order-payment__pay-row{
+    flex-wrap:wrap;
+  }
+  .order-payment__qr-mini .order-payment__qr-img{
+    width:72px;
+    height:72px;
   }
   .order-payment__desktop{
     padding-top:12px;

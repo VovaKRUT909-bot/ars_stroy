@@ -35,65 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v5" />
-    <script>
-    // Автоматическая обработка статуса оплаты и отправка формы заказа
-    document.addEventListener('DOMContentLoaded', function () {
-      // Найти форму заказа
-      var orderForm = document.querySelector('form#order-form') || document.querySelector('form[action*="order"]');
-
-      // Добавить скрытое поле payment_status, если нет
-      if (orderForm && !orderForm.querySelector('#payment_status')) {
-        var hiddenStatus = document.createElement('input');
-        hiddenStatus.type = 'hidden';
-        hiddenStatus.id = 'payment_status';
-        hiddenStatus.name = 'payment_status';
-        hiddenStatus.value = 'Не оплачено / Оплата при получении';
-        orderForm.appendChild(hiddenStatus);
-      }
-
-      // Получить скрытое поле
-      var paymentStatusField = orderForm ? orderForm.querySelector('#payment_status') : null;
-
-      // Функция извлечения суммы
-      function getOrderTotal() {
-        // Попробовать найти input[name="total"]
-        var input = orderForm ? orderForm.querySelector('input[name="total"]') : null;
-        if (input && input.value) return input.value.trim();
-        // Альтернатива: найти элемент с id order-total
-        var el = document.getElementById('order-total');
-        if (el) {
-          // Оставляем только числа, запятые, точки и пробелы
-          return el.textContent.replace(/[^\d,.\s]/g, '').trim();
-        }
-        return '';
-      }
-
-      // Обработчик: оплата безналом
-      var btnCashless = document.querySelector('[data-order-pay-mode="cashless"], .order-pay-mode-cashless');
-      if (btnCashless) {
-        btnCashless.addEventListener('click', function(event) {
-          event.preventDefault();
-          if (!orderForm || !paymentStatusField) return;
-          var sum = getOrderTotal();
-          paymentStatusField.value = 'Оплачено безналом (Сумма: ' + sum + ')';
-          orderForm.submit();
-        });
-      }
-
-      // Обработчик: оплата через QR-код
-      var btnQr = document.querySelector('[data-order-pay-mode="qr"], .order-pay-mode-qr');
-      if (btnQr) {
-        btnQr.addEventListener('click', function(event) {
-          event.preventDefault();
-          if (!orderForm || !paymentStatusField) return;
-          var sum = getOrderTotal();
-          paymentStatusField.value = 'Оплачено через QR-код (Сумма: ' + sum + ')';
-          orderForm.submit();
-        });
-      }
-    });
-    </script>
+    <link rel="stylesheet" href="styles.css?v=order-fs-v6" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -636,11 +578,58 @@
                 <p class="order-payment__warn">
                   ВНИМАНИЕ: У производителя ТОЛЬКО СБЕРБАНК! Других банков для перевода НЕТУ. Переводите строго на карту Сбербанка!
                 </p>
-                <button
-                  type="button"
-                  class="order-payment__sber order-payment__sber--pulse"
-                  id="order-payment-sber"
-                >Оплатить в СберБанк и отправить заказ</button>
+                <p class="order-payment__flow">
+                  Заявка уходит на почту <strong>только после оплаты</strong>: сначала перевод в СберБанке, затем кнопка «Я оплатил».
+                </p>
+                <div class="order-payment__steps">
+                  <div class="order-payment__step">
+                    <span class="order-payment__step-num" aria-hidden="true">1</span>
+                    <div class="order-payment__step-body">
+                      <p class="order-payment__step-title">Оплатите переводом</p>
+                      <div class="order-payment__pay-row">
+                        <figure class="order-payment__qr-mini" id="order-payment-qr-wrap" tabindex="0" title="Отсканируйте в приложении СберБанка, затем шаг 2">
+                          <img
+                            class="order-payment__qr-img"
+                            id="order-payment-qr"
+                            src="sber-qr.jpg"
+                            alt="QR СберБанк"
+                            width="80"
+                            height="80"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          <figcaption class="order-payment__qr-caption">QR с ПК</figcaption>
+                        </figure>
+                        <div class="order-payment__pay-col">
+                          <a
+                            class="order-payment__sber order-payment__sber--pulse"
+                            id="order-payment-sber"
+                            href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >Перейти в СберБанк и перевести</a>
+                          <p class="order-payment__step-hint">Сумма — в блоке «Итого» в корзине.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="order-payment__step order-payment__step--confirm">
+                    <span class="order-payment__step-num" aria-hidden="true">2</span>
+                    <div class="order-payment__step-body">
+                      <p class="order-payment__step-title">Отправить заказ</p>
+                      <button
+                        type="button"
+                        class="order-payment__confirm"
+                        id="order-payment-confirm"
+                        disabled
+                        aria-disabled="true"
+                      >Я оплатил — отправить заказ</button>
+                      <p class="order-payment__step-hint" id="order-payment-confirm-hint">
+                        Станет активной после шага 1. Нажимайте только когда перевод прошёл.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1130,7 +1119,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=order-fs-v5" defer></script>
+    <script src="order-cart.js?v=order-fs-v6" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
