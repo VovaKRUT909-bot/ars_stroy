@@ -353,17 +353,27 @@
     });
   }
 
-  function geocodeAddressOsm(address) {
+  function geocodeAddressPhoton(address) {
+    var q = address + ', Московская область, Россия';
+    var photon =
+      'https://photon.komoot.io/api/?limit=1&lat=55.565621&lon=36.635938&q=' +
+      encodeURIComponent(q);
+    return fetchGeoJson(photon).then(function (ph) {
+      if (ph && ph.features && ph.features[0] && ph.features[0].geometry) {
+        var c = ph.features[0].geometry.coordinates;
+        return { lat: c[1], lon: c[0] };
+      }
+      throw new Error('photon_not_found');
+    });
+  }
+
+  function geocodeAddressNominatim(address) {
     var q = address + ', Московская область, Россия';
     var nominatim =
       'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ru&viewbox=' +
       NOMINATIM_VIEWBOX +
       '&bounded=0&q=' +
       encodeURIComponent(q);
-    var photon =
-      'https://photon.komoot.io/api/?limit=1&lang=ru&lat=55.565621&lon=36.635938&q=' +
-      encodeURIComponent(q);
-
     return fetchGeoJson(nominatim).then(function (data) {
       if (data && data[0]) {
         return {
@@ -371,12 +381,47 @@
           lon: parseFloat(data[0].lon)
         };
       }
-      return fetchGeoJson(photon).then(function (ph) {
-        if (!ph.features || !ph.features[0]) throw new Error('not_found');
-        var c = ph.features[0].geometry.coordinates;
-        return { lat: c[1], lon: c[0] };
-      });
+      throw new Error('nominatim_not_found');
     });
+  }
+
+  function geocodeAddressYandex(address) {
+    if (!YANDEX_MAPS_API_KEY) {
+      return Promise.reject(new Error('no_yandex_key'));
+    }
+    var q = encodeURIComponent(address + ', Московская область, Россия');
+    var url =
+      'https://geocode-maps.yandex.ru/1.x/?apikey=' +
+      encodeURIComponent(YANDEX_MAPS_API_KEY) +
+      '&geocode=' +
+      q +
+      '&format=json&results=1';
+    return fetch(url)
+      .then(function (res) {
+        if (!res.ok) throw new Error('yandex_geo_http');
+        return res.json();
+      })
+      .then(function (data) {
+        var members =
+          data &&
+          data.response &&
+          data.response.GeoObjectCollection &&
+          data.response.GeoObjectCollection.featureMember;
+        if (!members || !members[0]) throw new Error('yandex_geo_not_found');
+        var pos = members[0].GeoObject.Point.pos;
+        var parts = String(pos).split(' ');
+        return { lon: parseFloat(parts[0]), lat: parseFloat(parts[1]) };
+      });
+  }
+
+  function geocodeAddressOsm(address) {
+    return geocodeAddressPhoton(address)
+      .catch(function () {
+        return geocodeAddressYandex(address);
+      })
+      .catch(function () {
+        return geocodeAddressNominatim(address);
+      });
   }
 
   function geocodeAddress(address) {
@@ -409,11 +454,17 @@
   }
 
   function deliveryDistanceViaOsm(customerAddress) {
-    return geocodeAddress(customerAddress).then(function (point) {
-      return estimateDistanceKmOsm(point).then(function (km) {
-        return { km: km, source: 'osm' };
+    return geocodeAddress(customerAddress)
+      .then(function (point) {
+        return estimateDistanceKmOsm(point).then(function (km) {
+          if (km == null || isNaN(km) || km <= 0) throw new Error('bad_km');
+          return { km: km, source: 'osm' };
+        });
+      })
+      .catch(function (geoErr) {
+        console.warn('delivery_osm_fail', geoErr);
+        throw geoErr;
       });
-    });
   }
 
   function deliveryDistanceKm(customerAddress) {
@@ -429,7 +480,7 @@
         return { km: km, source: 'yandex' };
       })
       .catch(function (err) {
-        markYmapsUnavailable(err);
+        console.warn('ymaps_route_fail', err);
         return deliveryDistanceViaOsm(customerAddress);
       });
   }
@@ -464,6 +515,16 @@
       if (cartDeliveryTotalEl) cartDeliveryTotalEl.textContent = '…';
       if (cartDeliveryKmEl) {
         cartDeliveryKmEl.textContent = ' (считаем доставку)';
+      }
+      if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
+      return;
+    }
+
+    if (deliveryState.status === 'error' && deliveryState.address) {
+      cartDeliveryLine.hidden = false;
+      if (cartDeliveryTotalEl) cartDeliveryTotalEl.textContent = '—';
+      if (cartDeliveryKmEl) {
+        cartDeliveryKmEl.textContent = ' (уточните у менеджера)';
       }
       if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
       return;
@@ -626,6 +687,12 @@
 
   function openOrderCheckout() {
     showAnimatedBlock(orderCheckoutEl, 'is-visible');
+    if (orderAddressEl) {
+      var address = orderAddressEl.value.trim();
+      if (address.length >= DELIVERY_MIN_ADDRESS_LEN) {
+        scheduleDeliveryCalc();
+      }
+    }
   }
 
   function closeOrderCheckout() {
