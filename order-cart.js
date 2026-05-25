@@ -13,7 +13,7 @@
   var cartClearBtn = document.getElementById('cart-clear');
   var orderForm = document.getElementById('order-form');
   var orderCheckoutEl = document.getElementById('order-checkout');
-  var orderCompanyFieldEl = document.getElementById('order-company-field');
+  var orderInvoiceSoonEl = document.getElementById('order-invoice-soon');
   var orderPayModeHintEl = document.getElementById('order-pay-mode-hint');
   var orderPaymentEl = document.getElementById('order-payment');
   var orderPaymentSuccessEl = document.getElementById('order-payment-success');
@@ -590,7 +590,7 @@
           'Наличный расчёт: ниже откроется блок прямой оплаты в Сбербанк и форма заказа.';
       } else if (orderPayMode === 'invoice') {
         orderPayModeHintEl.textContent =
-          'Безналичный расчёт: при необходимости укажите компанию для счёта — поле необязательно.';
+          'Безналичного расчёта пока нет — скоро появится оформление через фирмы.';
       } else {
         orderPayModeHintEl.textContent =
           'Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.';
@@ -646,19 +646,15 @@
   function setOrderPaymentMode(mode) {
     if (mode !== 'cash' && mode !== 'invoice') return;
     orderPayMode = mode;
-    if (orderCompanyFieldEl) {
-      orderCompanyFieldEl.hidden = mode !== 'invoice';
-      if (mode !== 'invoice') {
-        var companyInput = document.getElementById('order-company');
-        if (companyInput) companyInput.value = '';
-      }
-    }
     if (mode === 'cash') {
+      hideAnimatedBlock(orderInvoiceSoonEl, 'is-open');
       openOrderPayment();
+      openOrderCheckout();
     } else {
       closeOrderPayment();
+      closeOrderCheckout();
+      showAnimatedBlock(orderInvoiceSoonEl, 'is-open');
     }
-    openOrderCheckout();
     updateOrderPayModeButtons();
     renderCart();
   }
@@ -667,9 +663,7 @@
     orderPayMode = null;
     closeOrderCheckout();
     closeOrderPayment();
-    if (orderCompanyFieldEl) orderCompanyFieldEl.hidden = true;
-    var companyInput = document.getElementById('order-company');
-    if (companyInput) companyInput.value = '';
+    hideAnimatedBlock(orderInvoiceSoonEl, 'is-open');
     updateOrderPayModeButtons();
   }
 
@@ -1428,6 +1422,11 @@
         return;
       }
 
+      if (orderPayMode === 'invoice') {
+        alert('Безналичного расчёта пока нет. Скоро будет — оформление заказа через фирмы.');
+        return;
+      }
+
       if (!orderForm.checkValidity()) {
         orderForm.reportValidity();
         return;
@@ -1443,7 +1442,6 @@
       }
 
       var nameEl = document.getElementById('order-name');
-      var companyEl = document.getElementById('order-company');
       var phoneEl = document.getElementById('order-phone');
       var emailEl = document.getElementById('order-email');
       var addressEl = document.getElementById('order-address');
@@ -1464,11 +1462,10 @@
         submitBtn.classList.add('order-form__submit--loading');
       }
 
-      var companyValue = companyEl ? companyEl.value.trim() : '';
       var orderData = {
-        payment: orderPayMode === 'cash' ? 'Нал' : 'Безнал',
+        payment: 'Нал',
         name: nameEl ? nameEl.value.trim() : '',
-        company: orderPayMode === 'invoice' ? companyValue : '',
+        company: '',
         phone: phone,
         email: emailEl ? emailEl.value.trim() : '',
         address: addressEl ? addressEl.value.trim() : '',

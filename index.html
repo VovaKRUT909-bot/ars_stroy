@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=pay-modal-v18" />
+    <link rel="stylesheet" href="styles.css?v=pay-modal-v20" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -540,6 +540,12 @@
               <p class="order-pay-mode__hint" id="order-pay-mode-hint">Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.</p>
             </div>
 
+            <div class="order-invoice-soon" id="order-invoice-soon" hidden aria-hidden="true">
+              <p class="order-invoice-soon__text">
+                Безналичного расчёта пока нет. Скоро будет — можно будет оформлять заказ через фирмы (юридические лица).
+              </p>
+            </div>
+
             <div class="order-payment" id="order-payment" hidden aria-hidden="true">
               <p class="order-payment__success" id="order-payment-success" hidden>Заказ принят! Оплатите удобным способом ниже.</p>
               <div class="order-payment__panel">
@@ -617,10 +623,6 @@
                 <label class="order-field">
                   <span class="order-field__label">ФИО</span>
                   <input class="order-field__input" type="text" name="name" id="order-name" required autocomplete="name" />
-                </label>
-                <label class="order-field order-field--company" id="order-company-field" hidden>
-                  <span class="order-field__label">Компания <span class="order-field__optional">(необязательно)</span></span>
-                  <input class="order-field__input" type="text" name="company" id="order-company" autocomplete="organization" placeholder="ООО или ИП — если нужен счёт" />
                 </label>
                 <label class="order-field">
                   <span class="order-field__label">Телефон</span>
@@ -1063,7 +1065,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=pay-modal-v18" defer></script>
+    <script src="order-cart.js?v=pay-modal-v20" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
