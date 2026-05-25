@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v1" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v3" />
     <script>
     // Автоматическая обработка статуса оплаты и отправка формы заказа
     document.addEventListener('DOMContentLoaded', function () {
@@ -603,6 +603,7 @@
         <div class="order-fs__body">
           <p class="order-fs__intro">Выберите способ оплаты и заполните данные — всё на одном экране.</p>
           <div class="order-layout order-layout--fullscreen">
+            <div class="order-checkout-card">
             <div class="order-pay-mode" id="order-pay-mode">
               <p class="order-pay-mode__title">Способ оплаты</p>
               <div class="order-pay-mode__buttons" role="group" aria-label="Способ оплаты">
@@ -616,6 +617,7 @@
               <p class="order-pay-mode__hint" id="order-pay-mode-hint">Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.</p>
             </div>
 
+            <div class="order-checkout" id="order-checkout" hidden>
             <div class="order-cash-info" id="order-cash-info" hidden aria-hidden="true">
               <div class="order-cash-info__panel">
                 <h3 class="order-cash-info__title">💵 Оплата наличными</h3>
@@ -663,7 +665,6 @@
               </div>
             </div>
 
-            <div class="order-checkout" id="order-checkout" hidden>
             <div class="order-selected" id="order-selected" aria-live="polite">
               <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
             </div>
@@ -735,6 +736,7 @@
 
               <button type="submit" class="btn btn--primary order-form__submit">Отправить заказ</button>
             </form>
+            </div>
             </div>
           </div>
         </div>
