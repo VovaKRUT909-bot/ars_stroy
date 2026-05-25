@@ -12,6 +12,13 @@
   var cartCountEl = document.getElementById('cart-count');
   var cartClearBtn = document.getElementById('cart-clear');
   var orderForm = document.getElementById('order-form');
+  var orderTotalEl = document.getElementById('order-total');
+  var orderCartDataEl = document.getElementById('order-cart-data');
+  var paymentStatusEl = document.getElementById('payment_status');
+  var orderPaymentSberBtn = document.getElementById('order-payment-sber');
+  var SBER_PAY_URL = 'https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308';
+  var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
+  var orderFormSending = false;
   var orderCheckoutEl = document.getElementById('order-checkout');
   var orderPayModeHintEl = document.getElementById('order-pay-mode-hint');
   var orderCashInfoEl = document.getElementById('order-cash-info');
@@ -550,6 +557,29 @@
     return total;
   }
 
+  function getOrderTotalText() {
+    return formatMoney(getCartGrandTotal()) + ' руб.';
+  }
+
+  function syncOrderHiddenFields() {
+    if (orderTotalEl) {
+      orderTotalEl.value = getOrderTotalText();
+    }
+    if (orderCartDataEl) {
+      orderCartDataEl.value = formatCartLinesForForm();
+    }
+  }
+
+  function setPaymentStatus(text) {
+    if (paymentStatusEl) {
+      paymentStatusEl.value = text;
+    }
+  }
+
+  function resetPaymentStatus() {
+    setPaymentStatus(PAYMENT_STATUS_DEFAULT);
+  }
+
   function updateOrderTotals() {
     if (cartSubtotalEl) {
       cartSubtotalEl.textContent = formatMoney(getCartProductsTotal());
@@ -557,6 +587,7 @@
     if (cartGrandTotal) {
       cartGrandTotal.textContent = formatMoney(getCartGrandTotal());
     }
+    syncOrderHiddenFields();
     renderDeliveryUi();
   }
 
@@ -751,6 +782,7 @@
     if (orderPaymentSuccessEl) {
       orderPaymentSuccessEl.hidden = true;
     }
+    resetPaymentStatus();
     updateOrderPayModeButtons();
   }
 
@@ -777,14 +809,15 @@
     if (orderForm) {
       orderForm.reset();
     }
+    resetPaymentStatus();
   }
 
   function clearCart() {
     clearOrderAfterSubmit();
   }
 
-  /** Отправка заказа плитки (корзины) → Formspree. */
-  async function sendFormspreeOrder(orderData, showPaymentSection) {
+  /** Отправка заказа плитки (корзины) → Formspree. postSubmit: cash | invoice-wait | none */
+  async function sendFormspreeOrder(orderData, postSubmit) {
     try {
       var domain = 'https://formspree.io';
       var path = '/f/xgoqzaey';
@@ -797,9 +830,9 @@
         body: JSON.stringify(orderData)
       });
       if (response.ok) {
-        if (showPaymentSection) {
+        if (postSubmit === 'invoice-wait') {
           showOrderPaymentAfterSubmit();
-        } else {
+        } else if (postSubmit === 'cash') {
           alert(
             'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
           );
@@ -1506,68 +1539,120 @@
     });
   });
 
+  function validateOrderBeforeSubmit() {
+    if (!orderPayMode) {
+      alert('Выберите способ оплаты: «Нал» или «Безнал».');
+      return false;
+    }
+    if (!orderForm.checkValidity()) {
+      orderForm.reportValidity();
+      return false;
+    }
+    if (cart.length === 0) {
+      alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
+      return false;
+    }
+    if (cartHasMissingQty()) {
+      alert('Укажите количество для каждой позиции (м² или шт.).');
+      return false;
+    }
+    var phoneEl = document.getElementById('order-phone');
+    var phone = phoneEl ? phoneEl.value.trim() : '';
+    if (!phone) {
+      if (phoneEl) {
+        phoneEl.focus();
+        phoneEl.reportValidity();
+      }
+      return false;
+    }
+    return true;
+  }
+
+  function buildOrderData() {
+    syncOrderHiddenFields();
+    var nameEl = document.getElementById('order-name');
+    var phoneEl = document.getElementById('order-phone');
+    var emailEl = document.getElementById('order-email');
+    var addressEl = document.getElementById('order-address');
+    var commentEl = document.getElementById('order-comment');
+    var totalText = getOrderTotalText();
+    return {
+      payment: orderPayMode === 'cash' ? 'Нал' : 'Безнал',
+      payment_status: paymentStatusEl ? paymentStatusEl.value : PAYMENT_STATUS_DEFAULT,
+      name: nameEl ? nameEl.value.trim() : '',
+      company: '',
+      phone: phoneEl ? phoneEl.value.trim() : '',
+      email: emailEl ? emailEl.value.trim() : '',
+      address: addressEl ? addressEl.value.trim() : '',
+      comment: commentEl ? commentEl.value.trim() : '',
+      cart: formatCartLinesForForm(),
+      total: totalText
+    };
+  }
+
+  async function submitOrderForm(options) {
+    options = options || {};
+    if (orderFormSending) return false;
+    if (!validateOrderBeforeSubmit()) return false;
+
+    orderFormSending = true;
+    var submitBtn = orderForm.querySelector('.order-form__submit');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('order-form__submit--loading');
+    }
+    if (orderPaymentSberBtn) {
+      orderPaymentSberBtn.setAttribute('aria-disabled', 'true');
+      orderPaymentSberBtn.style.pointerEvents = 'none';
+    }
+
+    var orderData = buildOrderData();
+    var ok = await sendFormspreeOrder(orderData, options.postSubmit || 'none');
+
+    orderFormSending = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('order-form__submit--loading');
+    }
+    if (orderPaymentSberBtn) {
+      orderPaymentSberBtn.removeAttribute('aria-disabled');
+      orderPaymentSberBtn.style.pointerEvents = '';
+    }
+    return ok;
+  }
+
+  async function handleBeznalPaymentClick(e) {
+    e.preventDefault();
+    if (orderPayMode !== 'invoice') {
+      alert('Для оплаты переводом выберите «Безнал».');
+      return;
+    }
+    var totalText = getOrderTotalText();
+    setPaymentStatus('Оплачено безналом (Сумма: ' + totalText + ')');
+    var ok = await submitOrderForm({ postSubmit: 'none' });
+    if (ok) {
+      window.open(SBER_PAY_URL, '_blank', 'noopener,noreferrer');
+      alert('Заказ отправлен! Откроется СберБанк — завершите перевод на указанную сумму.');
+      clearCart();
+    }
+  }
+
+  if (orderPaymentSberBtn) {
+    orderPaymentSberBtn.addEventListener('click', handleBeznalPaymentClick);
+  }
+
   if (orderForm) {
     orderForm.addEventListener('submit', async function (e) {
       e.preventDefault();
-
-      if (!orderPayMode) {
-        alert('Выберите способ оплаты: «Нал» или «Безнал».');
-        return;
+      var totalText = getOrderTotalText();
+      if (orderPayMode === 'cash') {
+        setPaymentStatus('Нал — оплата при получении (Сумма: ' + totalText + ')');
+      } else if (orderPayMode === 'invoice') {
+        setPaymentStatus('Безнал — ожидание оплаты (Сумма: ' + totalText + ')');
       }
-
-      if (!orderForm.checkValidity()) {
-        orderForm.reportValidity();
-        return;
-      }
-
-      if (cart.length === 0) {
-        alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
-        return;
-      }
-      if (cartHasMissingQty()) {
-        alert('Укажите количество для каждой позиции (м² или шт.).');
-        return;
-      }
-
-      var nameEl = document.getElementById('order-name');
-      var phoneEl = document.getElementById('order-phone');
-      var emailEl = document.getElementById('order-email');
-      var addressEl = document.getElementById('order-address');
-      var commentEl = document.getElementById('order-comment');
-      var phone = phoneEl ? phoneEl.value.trim() : '';
-
-      if (!phone) {
-        if (phoneEl) {
-          phoneEl.focus();
-          phoneEl.reportValidity();
-        }
-        return;
-      }
-
-      var submitBtn = orderForm.querySelector('.order-form__submit');
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.classList.add('order-form__submit--loading');
-      }
-
-      var orderData = {
-        payment: orderPayMode === 'cash' ? 'Нал' : 'Безнал',
-        name: nameEl ? nameEl.value.trim() : '',
-        company: '',
-        phone: phone,
-        email: emailEl ? emailEl.value.trim() : '',
-        address: addressEl ? addressEl.value.trim() : '',
-        comment: commentEl ? commentEl.value.trim() : '',
-        cart: formatCartLinesForForm(),
-        total: formatMoney(getCartGrandTotal()) + ' руб.'
-      };
-
-      await sendFormspreeOrder(orderData, orderPayMode === 'invoice');
-
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('order-form__submit--loading');
-      }
+      await submitOrderForm({
+        postSubmit: orderPayMode === 'invoice' ? 'invoice-wait' : 'cash'
+      });
     });
   }
 
