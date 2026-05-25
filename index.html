@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v7" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v8" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -579,13 +579,12 @@
                   ВНИМАНИЕ: У производителя ТОЛЬКО СБЕРБАНК! Других банков для перевода НЕТУ. Переводите строго на карту Сбербанка!
                 </p>
                 <p class="order-payment__flow" id="order-payment-flow-hint">
-                  Нажмите кнопку → в Сбере укажите сумму из «Итого» и нажмите <strong>«Перевести»</strong> → вернитесь на эту страницу — заказ уйдёт на почту сам.
+                  Сначала <strong>отправьте заказ</strong> — придёт на почту, проверьте состав. Затем ниже — <strong>переход в Сбер</strong> для перевода.
                 </p>
                 <div class="order-payment__pay-row">
-                  <figure class="order-payment__qr-mini" id="order-payment-qr-wrap" tabindex="0" title="QR для оплаты с компьютера">
+                  <figure class="order-payment__qr-mini" title="QR для оплаты с компьютера">
                     <img
                       class="order-payment__qr-img"
-                      id="order-payment-qr"
                       src="sber-qr.jpg"
                       alt="QR СберБанк"
                       width="80"
@@ -595,20 +594,24 @@
                     />
                     <figcaption class="order-payment__qr-caption">QR с ПК</figcaption>
                   </figure>
-                  <div class="order-payment__pay-col">
-                    <a
-                      class="order-payment__sber order-payment__sber--pulse"
-                      id="order-payment-sber"
-                      href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >Оплатить в СберБанк</a>
-                    <p class="order-payment__step-hint">Сумма — в блоке «Итого» в корзине.</p>
-                  </div>
+                  <p class="order-payment__step-hint order-payment__step-hint--side">
+                    Сумма для перевода — в блоке «Итого» в корзине.
+                  </p>
                 </div>
-                <p class="order-payment__waiting" id="order-payment-waiting" hidden aria-live="polite">
-                  Оплатите в СберБанке и вернитесь на эту вкладку — заказ отправится автоматически.
-                </p>
+                <div class="order-payment__actions">
+                  <button type="button" class="order-payment__send-order" id="order-payment-send">
+                    Отправить заказ
+                  </button>
+                  <a
+                    class="order-payment__sber order-payment__sber--disabled"
+                    id="order-payment-sber"
+                    href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled="true"
+                    tabindex="-1"
+                  >Перейти в СберБанк и перевести</a>
+                </div>
               </div>
             </div>
 
@@ -1098,7 +1101,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=order-fs-v7" defer></script>
+    <script src="order-cart.js?v=order-fs-v8" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

@@ -15,16 +15,11 @@
   var orderTotalEl = document.getElementById('order-total');
   var orderCartDataEl = document.getElementById('order-cart-data');
   var paymentStatusEl = document.getElementById('payment_status');
+  var orderPaymentSendBtn = document.getElementById('order-payment-send');
   var orderPaymentSberBtn = document.getElementById('order-payment-sber');
   var orderPaymentFlowHintEl = document.getElementById('order-payment-flow-hint');
-  var orderPaymentWaitingEl = document.getElementById('order-payment-waiting');
-  var orderPaymentQrImg = document.getElementById('order-payment-qr');
-  var orderPaymentQrWrap = document.getElementById('order-payment-qr-wrap');
   var SBER_PAY_URL = 'https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308';
-  var invoiceAwaitingReturn = false;
-  var invoicePageWasHidden = false;
-  var invoiceAutoSubmitDone = false;
-  var invoiceAutoSubmitTimer = null;
+  var invoiceOrderSent = false;
   var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
   var orderFormSending = false;
   var orderCheckoutEl = document.getElementById('order-checkout');
@@ -697,7 +692,7 @@
           'Наличные: при доставке — водителю в руки. Ниже откроется форма заказа.';
       } else if (orderPayMode === 'invoice') {
         orderPayModeHintEl.textContent =
-          'Безнал: заполните форму и нажмите «Оплатить в СберБанк» — после перевода вернитесь сюда, заказ уйдёт на почту сам.';
+          'Безнал: сначала «Отправить заказ» (на почту), проверьте состав, затем «Перейти в СберБанк» для перевода.';
       } else {
         orderPayModeHintEl.textContent =
           'Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.';
@@ -865,77 +860,40 @@
   }
 
   function resetInvoicePayFlow() {
-    invoiceAwaitingReturn = false;
-    invoicePageWasHidden = false;
-    invoiceAutoSubmitDone = false;
-    if (invoiceAutoSubmitTimer) {
-      clearTimeout(invoiceAutoSubmitTimer);
-      invoiceAutoSubmitTimer = null;
+    invoiceOrderSent = false;
+    if (orderPaymentSendBtn) {
+      orderPaymentSendBtn.disabled = false;
+      orderPaymentSendBtn.textContent = 'Отправить заказ';
+      orderPaymentSendBtn.classList.remove('order-payment__send-order--done', 'order-payment__send-order--loading');
     }
-    if (orderPaymentWaitingEl) {
-      orderPaymentWaitingEl.hidden = true;
+    if (orderPaymentSberBtn) {
+      orderPaymentSberBtn.classList.add('order-payment__sber--disabled');
+      orderPaymentSberBtn.classList.remove('order-payment__sber--pulse');
+      orderPaymentSberBtn.setAttribute('aria-disabled', 'true');
+      orderPaymentSberBtn.setAttribute('tabindex', '-1');
     }
     if (orderPaymentFlowHintEl) {
       orderPaymentFlowHintEl.innerHTML =
-        'Нажмите кнопку → в Сбере укажите сумму из «Итого» и нажмите <strong>«Перевести»</strong> → вернитесь на эту страницу — заказ уйдёт на почту сам.';
-    }
-    if (orderPaymentSberBtn) {
-      orderPaymentSberBtn.classList.remove('order-payment__sber--waiting');
+        'Сначала <strong>отправьте заказ</strong> — придёт на почту, проверьте состав. Затем ниже — <strong>переход в Сбер</strong> для перевода.';
     }
   }
 
-  function showInvoicePayWaiting() {
-    if (orderPaymentWaitingEl) {
-      orderPaymentWaitingEl.hidden = false;
+  function markInvoiceOrderSent() {
+    invoiceOrderSent = true;
+    if (orderPaymentSendBtn) {
+      orderPaymentSendBtn.disabled = true;
+      orderPaymentSendBtn.classList.add('order-payment__send-order--done');
+      orderPaymentSendBtn.textContent = 'Заказ отправлен на почту';
+    }
+    if (orderPaymentSberBtn) {
+      orderPaymentSberBtn.classList.remove('order-payment__sber--disabled');
+      orderPaymentSberBtn.classList.add('order-payment__sber--pulse');
+      orderPaymentSberBtn.setAttribute('aria-disabled', 'false');
+      orderPaymentSberBtn.removeAttribute('tabindex');
     }
     if (orderPaymentFlowHintEl) {
       orderPaymentFlowHintEl.textContent =
-        'Сейчас оплатите в СберБанке. После «Перевести» вернитесь на эту вкладку.';
-    }
-    if (orderPaymentSberBtn) {
-      orderPaymentSberBtn.classList.add('order-payment__sber--waiting');
-    }
-  }
-
-  function startInvoicePayFlow() {
-    if (orderPayMode !== 'invoice') return false;
-    if (!validateOrderBeforeSubmit()) return false;
-    invoiceAwaitingReturn = true;
-    invoicePageWasHidden = false;
-    invoiceAutoSubmitDone = false;
-    showInvoicePayWaiting();
-    return true;
-  }
-
-  async function tryAutoSubmitInvoiceAfterPay() {
-    if (!invoiceAwaitingReturn || invoiceAutoSubmitDone || orderPayMode !== 'invoice' || orderFormSending) {
-      return;
-    }
-    if (!invoicePageWasHidden) return;
-    if (!validateOrderBeforeSubmit()) return;
-
-    if (invoiceAutoSubmitTimer) clearTimeout(invoiceAutoSubmitTimer);
-    invoiceAutoSubmitTimer = setTimeout(async function () {
-      invoiceAutoSubmitTimer = null;
-      if (!invoiceAwaitingReturn || invoiceAutoSubmitDone || orderPayMode !== 'invoice') return;
-      if (!validateOrderBeforeSubmit()) return;
-
-      invoiceAutoSubmitDone = true;
-      invoiceAwaitingReturn = false;
-      var totalText = getOrderTotalText();
-      setPaymentStatus('Безнал — оплата в СберБанке (Сумма: ' + totalText + ')');
-      await submitOrderForm({ postSubmit: 'invoice' });
-      resetInvoicePayFlow();
-    }, 450);
-  }
-
-  function onInvoicePageHidden() {
-    if (invoiceAwaitingReturn) invoicePageWasHidden = true;
-  }
-
-  function onInvoicePageVisible() {
-    if (document.visibilityState === 'visible') {
-      tryAutoSubmitInvoiceAfterPay();
+        'Заказ на почте. Проверьте состав заказа, затем нажмите зелёную кнопку — перевод в СберБанке.';
     }
   }
 
@@ -976,9 +934,11 @@
             'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
           );
           clearCart();
-        } else if (postSubmit === 'invoice') {
-          alert('Заказ отправлен! Спасибо — мы получили подтверждение оплаты безналом.');
-          clearCart();
+        } else if (postSubmit === 'invoice-sent') {
+          alert(
+            'Заказ отправлен на почту! Проверьте письмо с составом заказа, затем нажмите «Перейти в СберБанк и перевести».'
+          );
+          markInvoiceOrderSent();
         }
         return true;
       }
@@ -1778,8 +1738,9 @@
       submitBtn.disabled = true;
       submitBtn.classList.add('order-form__submit--loading');
     }
-    if (orderPaymentSberBtn && invoiceAwaitingReturn) {
-      orderPaymentSberBtn.classList.add('order-payment__sber--loading');
+    if (orderPaymentSendBtn && orderPayMode === 'invoice') {
+      orderPaymentSendBtn.classList.add('order-payment__send-order--loading');
+      orderPaymentSendBtn.disabled = true;
     }
 
     var orderData = buildOrderData();
@@ -1790,57 +1751,53 @@
       submitBtn.disabled = false;
       submitBtn.classList.remove('order-form__submit--loading');
     }
-    if (orderPaymentSberBtn) {
-      orderPaymentSberBtn.classList.remove('order-payment__sber--loading');
+    if (orderPaymentSendBtn) {
+      orderPaymentSendBtn.classList.remove('order-payment__send-order--loading');
+      if (!invoiceOrderSent) {
+        orderPaymentSendBtn.disabled = false;
+      }
     }
     return ok;
   }
 
+  async function handleInvoiceSendOrder() {
+    if (orderPayMode !== 'invoice') {
+      alert('Для безнала выберите способ оплаты «Безнал».');
+      return;
+    }
+    if (invoiceOrderSent) {
+      alert('Заказ уже отправлен. Нажмите «Перейти в СберБанк и перевести» ниже.');
+      return;
+    }
+    if (orderFormSending) return;
+    var totalText = getOrderTotalText();
+    setPaymentStatus('Безнал — заказ отправлен, ожидается перевод (Сумма: ' + totalText + ')');
+    await submitOrderForm({ postSubmit: 'invoice-sent' });
+  }
+
   function handleSberPayClick(e) {
     if (orderPayMode !== 'invoice') return;
-    if (!startInvoicePayFlow()) {
+    if (!invoiceOrderSent) {
       e.preventDefault();
+      alert('Сначала нажмите «Отправить заказ» — проверьте письмо на почте, затем переходите в СберБанк.');
+      return;
     }
+    var totalText = getOrderTotalText();
+    setPaymentStatus('Безнал — переход к оплате в СберБанке (Сумма: ' + totalText + ')');
   }
 
-  function handleQrPayStart() {
-    if (orderPayMode !== 'invoice') return;
-    if (!startInvoicePayFlow()) return;
-    invoicePageWasHidden = true;
-    alert('Отсканируйте QR в СберБанке, нажмите «Перевести» и снова откройте эту вкладку — заказ уйдёт на почту сам.');
+  if (orderPaymentSendBtn) {
+    orderPaymentSendBtn.addEventListener('click', handleInvoiceSendOrder);
   }
-
   if (orderPaymentSberBtn) {
     orderPaymentSberBtn.addEventListener('click', handleSberPayClick);
   }
-  if (orderPaymentQrImg) {
-    orderPaymentQrImg.addEventListener('click', handleQrPayStart);
-  }
-  if (orderPaymentQrWrap) {
-    orderPaymentQrWrap.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleQrPayStart();
-      }
-    });
-  }
-
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'hidden') {
-      onInvoicePageHidden();
-    } else {
-      onInvoicePageVisible();
-    }
-  });
-  window.addEventListener('blur', onInvoicePageHidden);
-  window.addEventListener('focus', tryAutoSubmitInvoiceAfterPay);
-  window.addEventListener('pageshow', tryAutoSubmitInvoiceAfterPay);
 
   if (orderForm) {
     orderForm.addEventListener('submit', async function (e) {
       e.preventDefault();
       if (orderPayMode === 'invoice') {
-        alert('Для безнала нажмите «Оплатить в СберБанк», оплатите и вернитесь на эту страницу.');
+        alert('Для безнала сначала нажмите «Отправить заказ» в блоке оплаты, затем «Перейти в СберБанк».');
         return;
       }
       var totalText = getOrderTotalText();
