@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=pay-modal-v14" />
+    <link rel="stylesheet" href="styles.css?v=pay-modal-v15" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -527,6 +527,20 @@
           </div>
 
           <div class="order-layout">
+            <div class="order-pay-mode" id="order-pay-mode">
+              <p class="order-pay-mode__title">Способ оплаты</p>
+              <div class="order-pay-mode__buttons" role="group" aria-label="Способ оплаты">
+                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-cash" data-order-pay-mode="cash" aria-pressed="false">
+                  Нал
+                </button>
+                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-invoice" data-order-pay-mode="invoice" aria-pressed="false">
+                  Безнал
+                </button>
+              </div>
+              <p class="order-pay-mode__hint" id="order-pay-mode-hint">Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.</p>
+            </div>
+
+            <div class="order-checkout" id="order-checkout" hidden>
             <div class="order-selected" id="order-selected" aria-live="polite">
               <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
             </div>
@@ -569,9 +583,9 @@
                   <span class="order-field__label">ФИО</span>
                   <input class="order-field__input" type="text" name="name" id="order-name" required autocomplete="name" />
                 </label>
-                <label class="order-field">
-                  <span class="order-field__label">Компания</span>
-                  <input class="order-field__input" type="text" name="company" id="order-company" autocomplete="organization" />
+                <label class="order-field order-field--company" id="order-company-field" hidden>
+                  <span class="order-field__label">Компания <span class="order-field__optional">(необязательно)</span></span>
+                  <input class="order-field__input" type="text" name="company" id="order-company" autocomplete="organization" placeholder="ООО или ИП — если нужен счёт" />
                 </label>
                 <label class="order-field">
                   <span class="order-field__label">Телефон</span>
@@ -601,6 +615,7 @@
 
               <button type="submit" class="btn btn--primary order-form__submit">Отправить заказ</button>
             </form>
+            </div>
           </div>
         </div>
       </section>
@@ -1013,7 +1028,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=pay-modal-v14" defer></script>
+    <script src="order-cart.js?v=pay-modal-v15" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
