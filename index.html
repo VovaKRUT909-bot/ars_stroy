@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v3" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v5" />
     <script>
     // Автоматическая обработка статуса оплаты и отправка формы заказа
     document.addEventListener('DOMContentLoaded', function () {
@@ -631,37 +631,16 @@
             </div>
 
             <div class="order-payment" id="order-payment" hidden aria-hidden="true">
-              <p class="order-payment__success" id="order-payment-success" hidden>Заказ принят! Оплатите удобным способом ниже.</p>
               <div class="order-payment__panel">
                 <h3 class="order-payment__title">🟢 Прямая оплата на карту Сбербанка</h3>
                 <p class="order-payment__warn">
                   ВНИМАНИЕ: У производителя ТОЛЬКО СБЕРБАНК! Других банков для перевода НЕТУ. Переводите строго на карту Сбербанка!
                 </p>
-
-                <div class="order-payment__mobile">
-                  <a
-                    class="order-payment__sber order-payment__sber--pulse"
-                    id="order-payment-sber"
-                    href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >Перейти в СберБанк Онлайн и оплатить</a>
-                </div>
-
-                <div class="order-payment__desktop">
-                  <p class="order-payment__qr-lead">Если вы зашли с компьютера, отсканируйте этот QR-код через приложение банка:</p>
-                  <div class="order-payment__qr-frame">
-                    <img
-                      class="order-payment__qr-img"
-                      src="sber-qr.jpg"
-                      alt="QR-код СберБанк для оплаты заказа"
-                      width="280"
-                      height="280"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  class="order-payment__sber order-payment__sber--pulse"
+                  id="order-payment-sber"
+                >Оплатить в СберБанк и отправить заказ</button>
               </div>
             </div>
 
@@ -734,7 +713,7 @@
                 </label>
               </div>
 
-              <button type="submit" class="btn btn--primary order-form__submit">Отправить заказ</button>
+              <button type="submit" class="btn btn--primary order-form__submit" id="order-form-submit">Отправить заказ</button>
             </form>
             </div>
             </div>
@@ -1151,7 +1130,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=order-fs-v1" defer></script>
+    <script src="order-cart.js?v=order-fs-v5" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

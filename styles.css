@@ -476,6 +476,12 @@ main{
   box-shadow:0 16px 40px rgba(0,0,0,.28);
   overflow:hidden;
 }
+.order-checkout-card[data-pay-mode="cash"] .order-payment{
+  display:none !important;
+}
+.order-checkout-card[data-pay-mode="invoice"] .order-form__submit{
+  display:none;
+}
 .order-layout--fullscreen .order-pay-mode{
   margin:0;
   padding:14px 14px 10px;
@@ -994,6 +1000,12 @@ body.order-fs-open{
   box-shadow:0 10px 28px rgba(33,160,56,.34);
   transition:filter .15s ease, transform .15s ease;
   -webkit-tap-highlight-color:transparent;
+  cursor:pointer;
+  box-sizing:border-box;
+}
+.order-payment__sber--loading{
+  opacity:.75;
+  pointer-events:none;
 }
 .order-payment__sber--pulse{
   animation:order-pay-pulse 2.4s ease-in-out infinite;
