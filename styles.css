@@ -343,6 +343,182 @@ main{
 #order{
   scroll-margin-top:88px;
 }
+.order-open-btn{
+  width:100%;
+  max-width:420px;
+  padding:16px 24px;
+  font-size:17px;
+}
+.order-fs{
+  position:fixed;
+  inset:0;
+  z-index:200000;
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+  padding:0;
+  box-sizing:border-box;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .4s ease, visibility .4s ease;
+}
+.order-fs.is-open{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.order-fs__backdrop{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(900px 520px at 12% -8%, rgba(201,168,108,.2), transparent 55%),
+    radial-gradient(700px 480px at 92% 8%, rgba(61,124,255,.12), transparent 50%),
+    rgba(6,8,14,.88);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.order-fs__dialog{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:760px;
+  max-height:100%;
+  margin:0 auto;
+  background:linear-gradient(165deg, rgba(24,30,48,.98) 0%, rgba(12,14,20,.99) 100%);
+  border-left:1px solid rgba(255,255,255,.1);
+  border-right:1px solid rgba(255,255,255,.1);
+  box-shadow:0 40px 120px rgba(0,0,0,.65);
+  transform:translateY(24px) scale(.98);
+  transition:transform .45s cubic-bezier(.22,1,.36,1);
+}
+.order-fs.is-open .order-fs__dialog{
+  transform:translateY(0) scale(1);
+}
+.order-fs__header{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:18px 18px 14px;
+  border-bottom:1px solid rgba(201,168,108,.22);
+  background:linear-gradient(180deg, rgba(201,168,108,.1) 0%, transparent 100%);
+}
+.order-fs__brand{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-width:0;
+}
+.order-fs__logo{
+  width:52px;
+  height:52px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  flex-shrink:0;
+}
+.order-fs__title{
+  margin:0;
+  font-size:clamp(1.35rem, 4.5vw, 1.75rem);
+  font-weight:950;
+  line-height:1.15;
+  color:#fff;
+  letter-spacing:.02em;
+}
+.order-fs__tagline{
+  margin:4px 0 0;
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+}
+.order-fs__close{
+  flex-shrink:0;
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font-size:28px;
+  line-height:1;
+  cursor:pointer;
+  transition:background .15s ease, border-color .15s ease;
+}
+.order-fs__close:hover{
+  border-color:var(--accent-border);
+  background:rgba(201,168,108,.14);
+}
+.order-fs__body{
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:16px 18px 28px;
+  -webkit-overflow-scrolling:touch;
+}
+.order-fs__intro{
+  margin:0 0 16px;
+  text-align:center;
+  font-size:14px;
+  font-weight:700;
+  color:var(--muted);
+  line-height:1.45;
+}
+.order-layout--fullscreen{
+  gap:18px;
+}
+.order-layout--fullscreen .order-pay-mode{
+  padding:22px 18px;
+  border-color:rgba(201,168,108,.28);
+  background:linear-gradient(145deg, rgba(201,168,108,.08) 0%, rgba(255,255,255,.03) 100%);
+  box-shadow:0 16px 40px rgba(0,0,0,.28);
+}
+.order-layout--fullscreen .order-pay-mode__title{
+  text-align:center;
+  font-size:1.1rem;
+  margin-bottom:16px;
+}
+.order-layout--fullscreen .order-pay-mode__btn{
+  min-height:56px;
+  font-size:17px;
+}
+.order-layout--fullscreen .order-form{
+  padding:20px;
+}
+body.order-fs-open{
+  overflow:hidden;
+}
+@media (min-width:769px){
+  .order-fs{
+    padding:20px;
+    align-items:center;
+  }
+  .order-fs__dialog{
+    max-height:min(94vh, 920px);
+    border-radius:var(--radius2);
+    border:1px solid rgba(255,255,255,.12);
+  }
+}
+@media (max-width:768px){
+  .order-fs__header{
+    padding:14px 14px 12px;
+  }
+  .order-fs__body{
+    padding:12px 14px 24px;
+  }
+  .order-fs__logo{
+    width:44px;
+    height:44px;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .order-fs,
+  .order-fs__dialog{
+    transition:none;
+  }
+}
 .order-layout{
   display:grid;
   grid-template-columns:1fr;

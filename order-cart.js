@@ -25,6 +25,12 @@
   var orderPaymentEl = document.getElementById('order-payment');
   var orderPaymentSuccessEl = document.getElementById('order-payment-success');
   var orderPayMode = null;
+  var orderFsOverlay = document.getElementById('order-checkout-overlay');
+  var orderFsBackdrop = document.getElementById('order-fs-backdrop');
+  var orderFsCloseBtn = document.getElementById('order-fs-close');
+  var orderFsBody = document.querySelector('.order-fs__body');
+  var orderOpenCheckoutBtn = document.getElementById('order-open-checkout');
+  var orderFsPrevOverflow = '';
   var ukladkaForm = document.getElementById('ukladka-form');
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
@@ -710,6 +716,39 @@
     });
   }
 
+  function isOrderFullscreenOpen() {
+    return orderFsOverlay && orderFsOverlay.classList.contains('is-open');
+  }
+
+  function openOrderFullscreen() {
+    if (!orderFsOverlay) return;
+    orderFsPrevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('order-fs-open');
+    orderFsOverlay.hidden = false;
+    orderFsOverlay.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(function () {
+      orderFsOverlay.classList.add('is-open');
+    });
+  }
+
+  function closeOrderFullscreen() {
+    if (!orderFsOverlay) return;
+    orderFsOverlay.classList.remove('is-open');
+    orderFsOverlay.setAttribute('aria-hidden', 'true');
+    orderFsOverlay.hidden = true;
+    document.body.classList.remove('order-fs-open');
+    document.body.style.overflow = orderFsPrevOverflow;
+  }
+
+  function scrollWithinFullscreen(target) {
+    if (!target || !orderFsBody) return;
+    var bodyRect = orderFsBody.getBoundingClientRect();
+    var targetRect = target.getBoundingClientRect();
+    var nextTop = orderFsBody.scrollTop + (targetRect.top - bodyRect.top) - 16;
+    orderFsBody.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+  }
+
   function scrollToOrderCart() {
     var target = null;
     if (orderCheckoutEl && !orderCheckoutEl.hidden) {
@@ -719,10 +758,28 @@
         target = orderCheckoutEl;
       }
     } else {
-      target = document.getElementById('order-pay-mode') || orderSection;
+      target = document.getElementById('order-pay-mode');
     }
-    if (target && target.scrollIntoView) {
+    if (!target) return;
+    if (isOrderFullscreenOpen()) {
+      scrollWithinFullscreen(target);
+      return;
+    }
+    if (target.scrollIntoView) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function beginOrderCheckout(opts) {
+    opts = opts || {};
+    openOrderFullscreen();
+    if (!orderPayMode) {
+      setOrderPaymentMode('cash', { scroll: opts.scroll !== false });
+      return;
+    }
+    renderCart();
+    if (opts.scroll !== false) {
+      requestAnimationFrame(scrollToOrderCart);
     }
   }
 
@@ -788,6 +845,7 @@
 
   function showOrderPaymentAfterSubmit() {
     if (orderPayMode !== 'invoice') return;
+    openOrderFullscreen();
     showPanel(orderPaymentEl, 'is-open');
     if (orderPaymentEl) {
       orderPaymentEl.classList.add('is-success');
@@ -810,6 +868,7 @@
       orderForm.reset();
     }
     resetPaymentStatus();
+    closeOrderFullscreen();
   }
 
   function clearCart() {
@@ -1441,12 +1500,7 @@
   }
 
   function goToOrderAfterAddToCart() {
-    if (!orderPayMode) {
-      setOrderPaymentMode('cash', { scroll: true });
-      return;
-    }
-    renderCart();
-    scrollToOrderCart();
+    beginOrderCheckout({ scroll: true });
   }
 
   function createCartButton(getProduct) {
@@ -1535,9 +1589,49 @@
   document.querySelectorAll('[data-order-pay-mode]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var mode = btn.getAttribute('data-order-pay-mode');
+      if (!isOrderFullscreenOpen()) {
+        openOrderFullscreen();
+      }
       setOrderPaymentMode(mode, { scroll: true });
     });
   });
+
+  if (orderOpenCheckoutBtn) {
+    orderOpenCheckoutBtn.addEventListener('click', function () {
+      if (cart.length === 0) {
+        alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
+        return;
+      }
+      beginOrderCheckout({ scroll: true });
+    });
+  }
+
+  if (orderFsCloseBtn) {
+    orderFsCloseBtn.addEventListener('click', closeOrderFullscreen);
+  }
+  if (orderFsBackdrop) {
+    orderFsBackdrop.addEventListener('click', closeOrderFullscreen);
+  }
+
+  document.querySelectorAll('a[href="#order"]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (cart.length === 0) {
+        openOrderFullscreen();
+        return;
+      }
+      beginOrderCheckout({ scroll: true });
+    });
+  });
+
+  if (!window.__orderFsEscBound) {
+    window.__orderFsEscBound = true;
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isOrderFullscreenOpen()) {
+        closeOrderFullscreen();
+      }
+    });
+  }
 
   function validateOrderBeforeSubmit() {
     if (!orderPayMode) {
