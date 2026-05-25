@@ -36,6 +36,64 @@
     }
     </script>
     <link rel="stylesheet" href="styles.css?v=pay-modal-v22" />
+    <script>
+    // Автоматическая обработка статуса оплаты и отправка формы заказа
+    document.addEventListener('DOMContentLoaded', function () {
+      // Найти форму заказа
+      var orderForm = document.querySelector('form#order-form') || document.querySelector('form[action*="order"]');
+
+      // Добавить скрытое поле payment_status, если нет
+      if (orderForm && !orderForm.querySelector('#payment_status')) {
+        var hiddenStatus = document.createElement('input');
+        hiddenStatus.type = 'hidden';
+        hiddenStatus.id = 'payment_status';
+        hiddenStatus.name = 'payment_status';
+        hiddenStatus.value = 'Не оплачено / Оплата при получении';
+        orderForm.appendChild(hiddenStatus);
+      }
+
+      // Получить скрытое поле
+      var paymentStatusField = orderForm ? orderForm.querySelector('#payment_status') : null;
+
+      // Функция извлечения суммы
+      function getOrderTotal() {
+        // Попробовать найти input[name="total"]
+        var input = orderForm ? orderForm.querySelector('input[name="total"]') : null;
+        if (input && input.value) return input.value.trim();
+        // Альтернатива: найти элемент с id order-total
+        var el = document.getElementById('order-total');
+        if (el) {
+          // Оставляем только числа, запятые, точки и пробелы
+          return el.textContent.replace(/[^\d,.\s]/g, '').trim();
+        }
+        return '';
+      }
+
+      // Обработчик: оплата безналом
+      var btnCashless = document.querySelector('[data-order-pay-mode="cashless"], .order-pay-mode-cashless');
+      if (btnCashless) {
+        btnCashless.addEventListener('click', function(event) {
+          event.preventDefault();
+          if (!orderForm || !paymentStatusField) return;
+          var sum = getOrderTotal();
+          paymentStatusField.value = 'Оплачено безналом (Сумма: ' + sum + ')';
+          orderForm.submit();
+        });
+      }
+
+      // Обработчик: оплата через QR-код
+      var btnQr = document.querySelector('[data-order-pay-mode="qr"], .order-pay-mode-qr');
+      if (btnQr) {
+        btnQr.addEventListener('click', function(event) {
+          event.preventDefault();
+          if (!orderForm || !paymentStatusField) return;
+          var sum = getOrderTotal();
+          paymentStatusField.value = 'Оплачено через QR-код (Сумма: ' + sum + ')';
+          orderForm.submit();
+        });
+      }
+    });
+    </script>
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
