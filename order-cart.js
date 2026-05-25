@@ -587,7 +587,7 @@
     if (orderPayModeHintEl) {
       if (orderPayMode === 'cash') {
         orderPayModeHintEl.textContent =
-          'Наличный расчёт: после «Отправить заказ» ниже появится QR-код и кнопка оплаты в СберБанк Онлайн.';
+          'Наличный расчёт: ниже откроется блок прямой оплаты в Сбербанк и форма заказа.';
       } else if (orderPayMode === 'invoice') {
         orderPayModeHintEl.textContent =
           'Безналичный расчёт: при необходимости укажите компанию для счёта — поле необязательно.';
@@ -598,19 +598,54 @@
     }
   }
 
-  function setOrderPaymentVisibility(show) {
+  function showAnimatedBlock(el, visibleClass) {
+    if (!el || !visibleClass) return;
+    el.hidden = false;
+    el.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(function () {
+      el.classList.add(visibleClass);
+    });
+  }
+
+  function hideAnimatedBlock(el, visibleClass) {
+    if (!el || !visibleClass) return;
+    el.classList.remove(visibleClass);
+    var hideAfter = function () {
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+    };
+    var onEnd = function (ev) {
+      if (ev.propertyName === 'opacity') {
+        el.removeEventListener('transitionend', onEnd);
+        hideAfter();
+      }
+    };
+    el.addEventListener('transitionend', onEnd);
+    window.setTimeout(hideAfter, 520);
+  }
+
+  function openOrderCheckout() {
+    showAnimatedBlock(orderCheckoutEl, 'is-visible');
+  }
+
+  function closeOrderCheckout() {
+    hideAnimatedBlock(orderCheckoutEl, 'is-visible');
+  }
+
+  function openOrderPayment() {
+    showAnimatedBlock(orderPaymentEl, 'is-open');
+  }
+
+  function closeOrderPayment() {
     if (!orderPaymentEl) return;
-    orderPaymentEl.hidden = !show;
-    if (!show) {
-      orderPaymentEl.classList.remove('is-success');
-      if (orderPaymentSuccessEl) orderPaymentSuccessEl.hidden = true;
-    }
+    orderPaymentEl.classList.remove('is-success');
+    if (orderPaymentSuccessEl) orderPaymentSuccessEl.hidden = true;
+    hideAnimatedBlock(orderPaymentEl, 'is-open');
   }
 
   function setOrderPaymentMode(mode) {
     if (mode !== 'cash' && mode !== 'invoice') return;
     orderPayMode = mode;
-    if (orderCheckoutEl) orderCheckoutEl.hidden = false;
     if (orderCompanyFieldEl) {
       orderCompanyFieldEl.hidden = mode !== 'invoice';
       if (mode !== 'invoice') {
@@ -618,23 +653,29 @@
         if (companyInput) companyInput.value = '';
       }
     }
-    setOrderPaymentVisibility(mode === 'cash');
+    if (mode === 'cash') {
+      openOrderPayment();
+    } else {
+      closeOrderPayment();
+    }
+    openOrderCheckout();
     updateOrderPayModeButtons();
     renderCart();
   }
 
   function resetOrderPaymentMode() {
     orderPayMode = null;
-    if (orderCheckoutEl) orderCheckoutEl.hidden = true;
+    closeOrderCheckout();
+    closeOrderPayment();
     if (orderCompanyFieldEl) orderCompanyFieldEl.hidden = true;
     var companyInput = document.getElementById('order-company');
     if (companyInput) companyInput.value = '';
-    setOrderPaymentVisibility(false);
     updateOrderPayModeButtons();
   }
 
   function showOrderPaymentAfterSubmit() {
-    setOrderPaymentVisibility(true);
+    if (orderPayMode !== 'cash') return;
+    openOrderPayment();
     if (orderPaymentEl) {
       orderPaymentEl.classList.add('is-success');
     }
