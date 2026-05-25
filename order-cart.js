@@ -13,8 +13,8 @@
   var cartClearBtn = document.getElementById('cart-clear');
   var orderForm = document.getElementById('order-form');
   var orderCheckoutEl = document.getElementById('order-checkout');
-  var orderInvoiceSoonEl = document.getElementById('order-invoice-soon');
   var orderPayModeHintEl = document.getElementById('order-pay-mode-hint');
+  var orderCashInfoEl = document.getElementById('order-cash-info');
   var orderPaymentEl = document.getElementById('order-payment');
   var orderPaymentSuccessEl = document.getElementById('order-payment-success');
   var orderPayMode = null;
@@ -587,10 +587,10 @@
     if (orderPayModeHintEl) {
       if (orderPayMode === 'cash') {
         orderPayModeHintEl.textContent =
-          'Наличный расчёт: ниже откроется блок прямой оплаты в Сбербанк и форма заказа.';
+          'Наличные: при доставке — водителю в руки. Ниже откроется форма заказа.';
       } else if (orderPayMode === 'invoice') {
         orderPayModeHintEl.textContent =
-          'Безналичного расчёта пока нет — скоро появится оформление через фирмы.';
+          'Безнал: оплата переводом в Сбербанк — QR-код и кнопка ниже, затем форма заказа.';
       } else {
         orderPayModeHintEl.textContent =
           'Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.';
@@ -643,18 +643,25 @@
     hideAnimatedBlock(orderPaymentEl, 'is-open');
   }
 
+  function openOrderCashInfo() {
+    showAnimatedBlock(orderCashInfoEl, 'is-open');
+  }
+
+  function closeOrderCashInfo() {
+    hideAnimatedBlock(orderCashInfoEl, 'is-open');
+  }
+
   function setOrderPaymentMode(mode) {
     if (mode !== 'cash' && mode !== 'invoice') return;
     orderPayMode = mode;
     if (mode === 'cash') {
-      hideAnimatedBlock(orderInvoiceSoonEl, 'is-open');
-      openOrderPayment();
-      openOrderCheckout();
-    } else {
       closeOrderPayment();
-      closeOrderCheckout();
-      showAnimatedBlock(orderInvoiceSoonEl, 'is-open');
+      openOrderCashInfo();
+    } else {
+      closeOrderCashInfo();
+      openOrderPayment();
     }
+    openOrderCheckout();
     updateOrderPayModeButtons();
     renderCart();
   }
@@ -663,12 +670,12 @@
     orderPayMode = null;
     closeOrderCheckout();
     closeOrderPayment();
-    hideAnimatedBlock(orderInvoiceSoonEl, 'is-open');
+    closeOrderCashInfo();
     updateOrderPayModeButtons();
   }
 
   function showOrderPaymentAfterSubmit() {
-    if (orderPayMode !== 'cash') return;
+    if (orderPayMode !== 'invoice') return;
     openOrderPayment();
     if (orderPaymentEl) {
       orderPaymentEl.classList.add('is-success');
@@ -713,7 +720,9 @@
         if (showPaymentSection) {
           showOrderPaymentAfterSubmit();
         } else {
-          alert('Заказ успешно отправлен! Мы свяжемся с вами для выставления счёта.');
+          alert(
+            'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
+          );
           clearCart();
         }
         return true;
@@ -1422,11 +1431,6 @@
         return;
       }
 
-      if (orderPayMode === 'invoice') {
-        alert('Безналичного расчёта пока нет. Скоро будет — оформление заказа через фирмы.');
-        return;
-      }
-
       if (!orderForm.checkValidity()) {
         orderForm.reportValidity();
         return;
@@ -1463,7 +1467,7 @@
       }
 
       var orderData = {
-        payment: 'Нал',
+        payment: orderPayMode === 'cash' ? 'Нал' : 'Безнал',
         name: nameEl ? nameEl.value.trim() : '',
         company: '',
         phone: phone,
@@ -1474,7 +1478,7 @@
         total: formatMoney(getCartGrandTotal()) + ' руб.'
       };
 
-      await sendFormspreeOrder(orderData, orderPayMode === 'cash');
+      await sendFormspreeOrder(orderData, orderPayMode === 'invoice');
 
       if (submitBtn) {
         submitBtn.disabled = false;
