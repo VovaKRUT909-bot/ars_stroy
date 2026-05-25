@@ -441,6 +441,9 @@ main{
   font-weight:900;
   cursor:pointer;
   transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
 }
 .order-pay-mode__btn:hover{
   border-color:var(--accent-border);

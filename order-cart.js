@@ -659,34 +659,43 @@
     }
   }
 
-  function showAnimatedBlock(el, visibleClass) {
+  function hidePanel(el, visibleClass) {
     if (!el || !visibleClass) return;
+    el.classList.remove(visibleClass);
+    el.hidden = true;
+    el.setAttribute('aria-hidden', 'true');
+  }
+
+  function showPanel(el, visibleClass) {
+    if (!el || !visibleClass) return;
+    var animate = el.hidden || !el.classList.contains(visibleClass);
     el.hidden = false;
     el.setAttribute('aria-hidden', 'false');
+    if (!animate) return;
+    el.classList.remove(visibleClass);
+    void el.offsetWidth;
     requestAnimationFrame(function () {
       el.classList.add(visibleClass);
     });
   }
 
-  function hideAnimatedBlock(el, visibleClass) {
-    if (!el || !visibleClass) return;
-    el.classList.remove(visibleClass);
-    var hideAfter = function () {
-      el.hidden = true;
-      el.setAttribute('aria-hidden', 'true');
-    };
-    var onEnd = function (ev) {
-      if (ev.propertyName === 'opacity') {
-        el.removeEventListener('transitionend', onEnd);
-        hideAfter();
+  function scrollToOrderCart() {
+    var target = null;
+    if (orderCheckoutEl && !orderCheckoutEl.hidden) {
+      if (orderCart && cart.length > 0 && !orderCart.hidden) {
+        target = orderCart;
+      } else {
+        target = orderCheckoutEl;
       }
-    };
-    el.addEventListener('transitionend', onEnd);
-    window.setTimeout(hideAfter, 520);
+    } else {
+      target = document.getElementById('order-pay-mode') || orderSection;
+    }
+    if (target && target.scrollIntoView) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
-  function openOrderCheckout() {
-    showAnimatedBlock(orderCheckoutEl, 'is-visible');
+  function refreshCheckoutDelivery() {
     if (orderAddressEl) {
       var address = orderAddressEl.value.trim();
       if (address.length >= DELIVERY_MIN_ADDRESS_LEN) {
@@ -695,55 +704,59 @@
     }
   }
 
-  function closeOrderCheckout() {
-    hideAnimatedBlock(orderCheckoutEl, 'is-visible');
-  }
-
-  function openOrderPayment() {
-    showAnimatedBlock(orderPaymentEl, 'is-open');
-  }
-
-  function closeOrderPayment() {
-    if (!orderPaymentEl) return;
-    orderPaymentEl.classList.remove('is-success');
-    if (orderPaymentSuccessEl) orderPaymentSuccessEl.hidden = true;
-    hideAnimatedBlock(orderPaymentEl, 'is-open');
-  }
-
-  function openOrderCashInfo() {
-    showAnimatedBlock(orderCashInfoEl, 'is-open');
-  }
-
-  function closeOrderCashInfo() {
-    hideAnimatedBlock(orderCashInfoEl, 'is-open');
-  }
-
-  function setOrderPaymentMode(mode) {
+  function setOrderPaymentMode(mode, opts) {
+    opts = opts || {};
     if (mode !== 'cash' && mode !== 'invoice') return;
-    orderPayMode = mode;
-    if (mode === 'cash') {
-      closeOrderPayment();
-      openOrderCashInfo();
-    } else {
-      closeOrderCashInfo();
-      openOrderPayment();
+
+    if (orderPayMode === mode && !opts.force) {
+      updateOrderPayModeButtons();
+      renderCart();
+      if (opts.scroll !== false) scrollToOrderCart();
+      return;
     }
-    openOrderCheckout();
+
+    orderPayMode = mode;
+
+    hidePanel(orderPaymentEl, 'is-open');
+    hidePanel(orderCashInfoEl, 'is-open');
+    if (orderPaymentEl) {
+      orderPaymentEl.classList.remove('is-success');
+    }
+    if (orderPaymentSuccessEl) {
+      orderPaymentSuccessEl.hidden = true;
+    }
+
+    if (mode === 'cash') {
+      showPanel(orderCashInfoEl, 'is-open');
+    } else {
+      showPanel(orderPaymentEl, 'is-open');
+    }
+    showPanel(orderCheckoutEl, 'is-visible');
     updateOrderPayModeButtons();
     renderCart();
+    refreshCheckoutDelivery();
+    if (opts.scroll !== false) {
+      requestAnimationFrame(scrollToOrderCart);
+    }
   }
 
   function resetOrderPaymentMode() {
     orderPayMode = null;
-    closeOrderCheckout();
-    closeOrderPayment();
-    closeOrderCashInfo();
+    hidePanel(orderCheckoutEl, 'is-visible');
+    hidePanel(orderPaymentEl, 'is-open');
+    hidePanel(orderCashInfoEl, 'is-open');
+    if (orderPaymentEl) {
+      orderPaymentEl.classList.remove('is-success');
+    }
+    if (orderPaymentSuccessEl) {
+      orderPaymentSuccessEl.hidden = true;
+    }
     updateOrderPayModeButtons();
   }
 
   function showOrderPaymentAfterSubmit() {
     if (orderPayMode !== 'invoice') return;
-    openOrderPayment();
+    showPanel(orderPaymentEl, 'is-open');
     if (orderPaymentEl) {
       orderPaymentEl.classList.add('is-success');
     }
@@ -1394,10 +1407,13 @@
     renderCart();
   }
 
-  function scrollToOrder() {
-    if (orderSection) {
-      orderSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function goToOrderAfterAddToCart() {
+    if (!orderPayMode) {
+      setOrderPaymentMode('cash', { scroll: true });
+      return;
     }
+    renderCart();
+    scrollToOrderCart();
   }
 
   function createCartButton(getProduct) {
@@ -1407,7 +1423,7 @@
     btn.textContent = 'В корзину';
     btn.addEventListener('click', function () {
       addToCart(getProduct());
-      scrollToOrder();
+      goToOrderAfterAddToCart();
     });
     return btn;
   }
@@ -1485,7 +1501,8 @@
 
   document.querySelectorAll('[data-order-pay-mode]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      setOrderPaymentMode(btn.getAttribute('data-order-pay-mode'));
+      var mode = btn.getAttribute('data-order-pay-mode');
+      setOrderPaymentMode(mode, { scroll: true });
     });
   });
 
