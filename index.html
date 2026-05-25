@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=pay-modal-v16" />
+    <link rel="stylesheet" href="styles.css?v=pay-modal-v17" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -630,13 +630,16 @@
                       decoding="async"
                     />
                   </div>
-                  <a
-                    class="order-payment__sber"
-                    id="order-payment-sber"
-                    href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >Перейти в СберБанк Онлайн и оплатить</a>
+                  <div class="order-payment__sber-wrap">
+                    <a
+                      class="order-payment__sber"
+                      id="order-payment-sber"
+                      href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >Перейти в СберБанк Онлайн и оплатить</a>
+                    <p class="order-payment__sber-note">В приложении Сбера переводите строго на карту Сбербанка!</p>
+                  </div>
                 </div>
               </div>
             </form>
