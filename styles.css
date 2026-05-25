@@ -1122,6 +1122,22 @@ body.order-fs-open{
   opacity:.75;
   pointer-events:none;
 }
+.order-payment__waiting{
+  margin:0;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid rgba(33,160,56,.4);
+  background:rgba(33,160,56,.12);
+  color:#b8f0c8;
+  font-size:clamp(.86rem, 2.9vw, .95rem);
+  font-weight:800;
+  line-height:1.45;
+  text-align:center;
+}
+.order-payment__sber--waiting{
+  animation:none;
+  filter:brightness(.95);
+}
 .order-payment__mobile{
   display:flex;
   flex-direction:column;
