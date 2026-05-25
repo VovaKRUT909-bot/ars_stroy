@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=pay-modal-v15" />
+    <link rel="stylesheet" href="styles.css?v=pay-modal-v16" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -614,6 +614,31 @@
               </div>
 
               <button type="submit" class="btn btn--primary order-form__submit">Отправить заказ</button>
+
+              <div class="order-payment" id="order-payment" hidden>
+                <p class="order-payment__success" id="order-payment-success" hidden>Заказ принят! Оплатите удобным способом ниже.</p>
+                <div class="order-payment__panel">
+                  <div class="order-payment__qr">
+                    <h3 class="order-payment__qr-title">Арс Строй | Оплата по QR-коду для ПК</h3>
+                    <img
+                      class="order-payment__qr-img"
+                      src="sber-qr.jpg"
+                      alt="QR-код СберБанк для оплаты заказа"
+                      width="280"
+                      height="280"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <a
+                    class="order-payment__sber"
+                    id="order-payment-sber"
+                    href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >Перейти в СберБанк Онлайн и оплатить</a>
+                </div>
+              </div>
             </form>
             </div>
           </div>
@@ -1028,7 +1053,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=pay-modal-v15" defer></script>
+    <script src="order-cart.js?v=pay-modal-v16" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

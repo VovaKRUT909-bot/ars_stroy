@@ -15,6 +15,8 @@
   var orderCheckoutEl = document.getElementById('order-checkout');
   var orderCompanyFieldEl = document.getElementById('order-company-field');
   var orderPayModeHintEl = document.getElementById('order-pay-mode-hint');
+  var orderPaymentEl = document.getElementById('order-payment');
+  var orderPaymentSuccessEl = document.getElementById('order-payment-success');
   var orderPayMode = null;
   var ukladkaForm = document.getElementById('ukladka-form');
   var orderAddressEl = document.getElementById('order-address');
@@ -585,7 +587,7 @@
     if (orderPayModeHintEl) {
       if (orderPayMode === 'cash') {
         orderPayModeHintEl.textContent =
-          'Наличный расчёт: корзина и форма как обычно. После отправки заказа откроется окно с оплатой по СБП.';
+          'Наличный расчёт: после «Отправить заказ» ниже появится QR-код и кнопка оплаты в СберБанк Онлайн.';
       } else if (orderPayMode === 'invoice') {
         orderPayModeHintEl.textContent =
           'Безналичный расчёт: при необходимости укажите компанию для счёта — поле необязательно.';
@@ -593,6 +595,15 @@
         orderPayModeHintEl.textContent =
           'Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.';
       }
+    }
+  }
+
+  function setOrderPaymentVisibility(show) {
+    if (!orderPaymentEl) return;
+    orderPaymentEl.hidden = !show;
+    if (!show) {
+      orderPaymentEl.classList.remove('is-success');
+      if (orderPaymentSuccessEl) orderPaymentSuccessEl.hidden = true;
     }
   }
 
@@ -607,6 +618,7 @@
         if (companyInput) companyInput.value = '';
       }
     }
+    setOrderPaymentVisibility(mode === 'cash');
     updateOrderPayModeButtons();
     renderCart();
   }
@@ -617,7 +629,21 @@
     if (orderCompanyFieldEl) orderCompanyFieldEl.hidden = true;
     var companyInput = document.getElementById('order-company');
     if (companyInput) companyInput.value = '';
+    setOrderPaymentVisibility(false);
     updateOrderPayModeButtons();
+  }
+
+  function showOrderPaymentAfterSubmit() {
+    setOrderPaymentVisibility(true);
+    if (orderPaymentEl) {
+      orderPaymentEl.classList.add('is-success');
+    }
+    if (orderPaymentSuccessEl) {
+      orderPaymentSuccessEl.hidden = false;
+    }
+    if (orderPaymentEl && orderPaymentEl.scrollIntoView) {
+      orderPaymentEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   function clearOrderAfterSubmit() {
@@ -635,254 +661,8 @@
     clearOrderAfterSubmit();
   }
 
-  var PAY_PHONE_COPY = '+79258387248';
-  var orderPaymentModalEl = null;
-  var orderPaymentModalPrevOverflow = '';
-  var orderPaymentAmountRub = 0;
-
-  var orderPayCopyPhoneBtn = null;
-  var orderPayCopySumBtn = null;
-  var PAY_MODAL_VERSION = '3';
-
-  function safeCopy(text) {
-    var el = document.createElement('textarea');
-    el.value = String(text);
-    el.style.position = 'absolute';
-    el.style.left = '-9999px';
-    document.body.appendChild(el);
-    el.select();
-    try {
-      document.execCommand('copy');
-    } catch (err) {
-      /* ignore */
-    }
-    document.body.removeChild(el);
-  }
-
-  function flashPayCopyButton(btn, defaultLabel) {
-    if (!btn) return;
-    btn.textContent = 'Скопировано! ✓';
-    window.setTimeout(function () {
-      btn.textContent = defaultLabel;
-    }, 1600);
-  }
-
-  function stylePayEl(el, styles) {
-    Object.keys(styles).forEach(function (key) {
-      el.style[key] = styles[key];
-    });
-  }
-
-  function createPayActionButton(label, variant) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = label;
-    stylePayEl(btn, {
-      width: '100%',
-      boxSizing: 'border-box',
-      display: 'block',
-      margin: '0 0 12px',
-      padding: '16px 14px',
-      border: 'none',
-      borderRadius: '12px',
-      fontSize: '16px',
-      fontWeight: '700',
-      lineHeight: '1.35',
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-      WebkitTapHighlightColor: 'transparent',
-      touchAction: 'manipulation',
-      pointerEvents: 'auto'
-    });
-    if (variant === 'close') {
-      stylePayEl(btn, {
-        marginBottom: '0',
-        border: '1px solid rgba(255, 255, 255, 0.18)',
-        color: '#e8ecff',
-        background: 'rgba(255, 255, 255, 0.08)'
-      });
-    } else if (variant === 'sum') {
-      stylePayEl(btn, {
-        color: '#0f1524',
-        background: 'linear-gradient(135deg, #ffd76a 0%, #f5b942 100%)',
-        boxShadow: '0 8px 20px rgba(245, 185, 66, 0.28)'
-      });
-    } else {
-      stylePayEl(btn, {
-        color: '#ffffff',
-        background: 'linear-gradient(135deg, #3d7cff 0%, #2b5fd9 100%)',
-        boxShadow: '0 8px 20px rgba(61, 124, 255, 0.28)'
-      });
-    }
-    return btn;
-  }
-
-  function destroyOrderPaymentModal() {
-    if (orderPaymentModalEl) {
-      orderPaymentModalEl.remove();
-      orderPaymentModalEl = null;
-    }
-    orderPayCopyPhoneBtn = null;
-    orderPayCopySumBtn = null;
-  }
-
-  function createOrderPaymentModal() {
-    if (orderPaymentModalEl && orderPaymentModalEl.getAttribute('data-pay-modal-v') !== PAY_MODAL_VERSION) {
-      destroyOrderPaymentModal();
-    }
-    if (orderPaymentModalEl) {
-      return orderPaymentModalEl;
-    }
-
-    var overlay = document.createElement('div');
-    overlay.id = 'order-pay-overlay';
-    overlay.setAttribute('data-pay-modal-v', PAY_MODAL_VERSION);
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-labelledby', 'order-pay-modal-title');
-    stylePayEl(overlay, {
-      position: 'fixed',
-      inset: '0',
-      zIndex: '999999',
-      display: 'none',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '16px',
-      boxSizing: 'border-box',
-      background: 'rgba(6, 10, 20, 0.78)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      pointerEvents: 'auto'
-    });
-
-    var panel = document.createElement('div');
-    panel.id = 'order-pay-panel';
-    stylePayEl(panel, {
-      position: 'relative',
-      zIndex: '1000000',
-      width: '100%',
-      maxWidth: '420px',
-      maxHeight: 'min(92vh, 680px)',
-      overflowY: 'auto',
-      boxSizing: 'border-box',
-      padding: '26px 20px 20px',
-      borderRadius: '15px',
-      background: 'linear-gradient(165deg, #1e2740 0%, #111827 100%)',
-      border: '1px solid rgba(255, 255, 255, 0.12)',
-      boxShadow: '0 32px 80px rgba(0, 0, 0, 0.62)',
-      color: '#f4f7ff',
-      fontFamily: 'inherit',
-      pointerEvents: 'auto'
-    });
-
-    var title = document.createElement('h2');
-    title.id = 'order-pay-modal-title';
-    title.textContent = 'Арс Строй';
-    stylePayEl(title, {
-      margin: '0 0 10px',
-      fontSize: 'clamp(1.7rem, 5vw, 2rem)',
-      fontWeight: '800',
-      lineHeight: '1.15',
-      textAlign: 'center',
-      color: '#ffffff'
-    });
-
-    var lead = document.createElement('p');
-    lead.textContent = 'Ваш заказ успешно принят! Скопируйте реквизиты для оплаты:';
-    stylePayEl(lead, {
-      margin: '0 0 18px',
-      fontSize: '15px',
-      lineHeight: '1.5',
-      textAlign: 'center',
-      color: 'rgba(244, 247, 255, 0.9)'
-    });
-
-    orderPayCopyPhoneBtn = createPayActionButton('Скопировать номер телефона', 'phone');
-    orderPayCopyPhoneBtn.id = 'order-pay-copy-phone-btn';
-    orderPayCopyPhoneBtn.addEventListener('click', function () {
-      safeCopy(PAY_PHONE_COPY);
-      flashPayCopyButton(orderPayCopyPhoneBtn, 'Скопировать номер телефона');
-    });
-
-    orderPayCopySumBtn = createPayActionButton('Скопировать сумму заказа', 'sum');
-    orderPayCopySumBtn.id = 'order-pay-copy-sum-btn';
-    orderPayCopySumBtn.addEventListener('click', function () {
-      safeCopy(formatMoney(Math.max(0, Math.round(orderPaymentAmountRub))));
-      flashPayCopyButton(orderPayCopySumBtn, 'Скопировать сумму заказа');
-    });
-
-    var guide = document.createElement('div');
-    guide.textContent =
-      'Как оплатить заказ:\n' +
-      '1. Скопируйте номер телефона и сумму кнопками выше.\n' +
-      '2. Откройте приложение вашего любимого банка (Сбербанк, Альфа-Банк, Т-Банк и др.).\n' +
-      '3. Сделайте перевод по номеру телефона через СБП.';
-    stylePayEl(guide, {
-      margin: '4px 0 16px',
-      padding: '14px 12px',
-      borderRadius: '12px',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      background: 'rgba(255, 255, 255, 0.05)',
-      fontSize: '14px',
-      fontWeight: '600',
-      lineHeight: '1.6',
-      color: 'rgba(244, 247, 255, 0.92)',
-      whiteSpace: 'pre-line'
-    });
-
-    var closeBtn = createPayActionButton('Закрыть и очистить корзину', 'close');
-    closeBtn.id = 'order-pay-close-btn';
-    closeBtn.addEventListener('click', function () {
-      hideOrderPaymentModal();
-      clearCart();
-    });
-
-    if (!window.__orderPayEscBound) {
-      window.__orderPayEscBound = true;
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && orderPaymentModalEl && orderPaymentModalEl.style.display === 'flex') {
-          hideOrderPaymentModal();
-          clearCart();
-        }
-      });
-    }
-
-    panel.appendChild(title);
-    panel.appendChild(lead);
-    panel.appendChild(orderPayCopyPhoneBtn);
-    panel.appendChild(orderPayCopySumBtn);
-    panel.appendChild(guide);
-    panel.appendChild(closeBtn);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-    orderPaymentModalEl = overlay;
-    return orderPaymentModalEl;
-  }
-
-  function showOrderPaymentModal(totalRub) {
-    orderPaymentAmountRub = Math.max(0, Math.round(Number(totalRub) || 0));
-    var modal = createOrderPaymentModal();
-    orderPaymentModalPrevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    modal.style.display = 'flex';
-    if (orderPayCopyPhoneBtn) {
-      orderPayCopyPhoneBtn.focus();
-    }
-  }
-
-  function hideOrderPaymentModal() {
-    if (!orderPaymentModalEl) {
-      return;
-    }
-    orderPaymentModalEl.style.display = 'none';
-    document.body.style.overflow = orderPaymentModalPrevOverflow;
-    if (typeof closeCartModal === 'function') {
-      closeCartModal();
-    }
-  }
-
   /** Отправка заказа плитки (корзины) → Formspree. */
-  async function sendFormspreeOrder(orderData, showPaymentModal) {
+  async function sendFormspreeOrder(orderData, showPaymentSection) {
     try {
       var domain = 'https://formspree.io';
       var path = '/f/xgoqzaey';
@@ -895,18 +675,8 @@
         body: JSON.stringify(orderData)
       });
       if (response.ok) {
-        if (showPaymentModal) {
-          var totalRub = 0;
-          if (orderData && orderData.total) {
-            var parsed = parseInt(String(orderData.total).replace(/\D/g, ''), 10);
-            if (!isNaN(parsed)) {
-              totalRub = parsed;
-            }
-          }
-          if (!totalRub) {
-            totalRub = getCartGrandTotal();
-          }
-          showOrderPaymentModal(totalRub);
+        if (showPaymentSection) {
+          showOrderPaymentAfterSubmit();
         } else {
           alert('Заказ успешно отправлен! Мы свяжемся с вами для выставления счёта.');
           clearCart();
