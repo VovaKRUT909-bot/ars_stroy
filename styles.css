@@ -1982,7 +1982,7 @@ h3.section__subtitle{
   }
 }
 
-/* Вибропрессованное литьё — после .subprices, чтобы не перебивалось сеткой бордюров */
+/* Вибро литая — после .subprices, чтобы не перебивалось сеткой бордюров */
 .subprices.subprices--cast{
   grid-template-columns: 1fr;
   gap: 14px;

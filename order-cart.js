@@ -121,7 +121,7 @@
     },
     'prices-cast': {
       productKey: 'lito',
-      productName: 'Вибропрессованное литьё',
+      productName: 'Вибро литая',
       articlePrefix: 'LITO'
     },
     'prices-curb': {
@@ -1032,7 +1032,7 @@
     return src.replace('bruschatka-60-', 'bruschatka-40-');
   }
 
-  /** Одна миниатюра на цвет для всех размеров литья */
+  /** Одна миниатюра на цвет для всех размеров вибро литой */
   function litoTileSrc(colorVariantKey) {
     return TILE_IMG_BASE + '/lito-' + colorVariantKey + '.jpg';
   }
