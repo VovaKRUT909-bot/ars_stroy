@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=site-v9" />
+    <link rel="stylesheet" href="styles.css?v=site-v10" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -43,7 +43,7 @@
     <a class="skip-link" href="#main">Перейти к содержимому</a>
 
     <header class="topbar">
-      <div class="container topbar__inner">
+      <div class="container header-container topbar__inner">
         <div class="brand" itemscope itemtype="https://schema.org/Organization">
           <meta itemprop="url" content="https://oooarsstroy.ru" />
           <img class="brand__logo" src="favicon.png" width="52" height="52" alt="Арс Строй" itemprop="logo" />
@@ -709,23 +709,45 @@
                 <label class="order-pay-radio">
                   <input type="radio" name="order_payment_method" id="order-pay-cod" value="cod" checked />
                   <span class="order-pay-radio__content">
-                    <span class="order-pay-radio__title">Оплата при получении</span>
-                    <span class="order-pay-radio__desc">Наличные или СБП водителю — после проверки заказа</span>
+                    <span class="order-pay-radio__title">Оплата наличными или по СБП водителю при получении плитки на объекте</span>
+                    <span class="order-pay-radio__desc">Проверьте заказ при разгрузке — затем расчёт с водителем</span>
                   </span>
                 </label>
                 <label class="order-pay-radio order-pay-radio--online">
                   <input type="radio" name="order_payment_method" id="order-pay-online" value="online" />
                   <span class="order-pay-radio__content">
-                    <span class="order-pay-radio__title">Онлайн-оплата на сайте</span>
-                    <span class="order-pay-radio__desc">SberPay / T-Pay / СБП</span>
+                    <span class="order-pay-radio__title">Онлайн-оплата через Сбербанк</span>
+                    <span class="order-pay-radio__desc">Перевод на карту Сбербанка — быстро и без ручного ввода номера</span>
                   </span>
                 </label>
-                <div class="order-pay-online-stub" id="order-pay-online-stub" hidden>
-                  <p class="order-pay-online-stub__text">Онлайн-оплата подключается. Пока оформите заказ с оплатой при получении или позвоните — <a href="tel:+79258056308">+7 (925) 805-63-08</a>.</p>
-                  <div class="order-pay-online-stub__badges" aria-hidden="true">
-                    <span>SberPay</span>
-                    <span>T-Pay</span>
-                    <span>СБП</span>
+                <div class="order-pay-sber" id="order-pay-sber-panel" hidden aria-hidden="true">
+                  <div class="order-pay-sber__panel">
+                    <h3 class="order-pay-sber__title">🟢 Быстрая оплата через Сбербанк Онлайн</h3>
+                    <p class="order-pay-sber__lead">
+                      Для вашего удобства мы подключили систему моментальных расчётов. Вы можете перевести оплату за заказ напрямую на карту Сбербанка без ручного ввода номера телефона.
+                    </p>
+                    <a
+                      class="order-payment__sber order-payment__sber--pulse"
+                      id="order-payment-sber"
+                      href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >Перейти в СберБанк Онлайн и оплатить</a>
+                    <div class="order-pay-sber__desktop">
+                      <p class="order-payment__qr-lead">Если вы зашли с компьютера, отсканируйте этот QR-код через мобильное приложение вашего банка:</p>
+                      <div class="order-payment__qr-frame">
+                        <img
+                          class="order-payment__qr-img"
+                          src="sber-qr.jpg"
+                          alt="QR-код СберБанк для оплаты заказа"
+                          width="220"
+                          height="220"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                    </div>
+                    <p class="order-pay-sber__hint">Сумма для перевода — в блоке «Итого» в корзине. После оплаты нажмите «Отправить заказ».</p>
                   </div>
                 </div>
               </fieldset>
@@ -1171,7 +1193,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=site-v9" defer></script>
+    <script src="order-cart.js?v=site-v10" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
