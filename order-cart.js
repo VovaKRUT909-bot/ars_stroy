@@ -571,12 +571,18 @@
     return formatMoney(getCartGrandTotal()) + ' руб.';
   }
 
+  var orderPaymentFieldEl = document.getElementById('order-payment-field');
+
   function syncOrderHiddenFields() {
     if (orderTotalEl) {
       orderTotalEl.value = getOrderTotalText();
     }
     if (orderCartDataEl) {
       orderCartDataEl.value = formatCartLinesForForm();
+    }
+    if (orderPaymentFieldEl) {
+      orderPaymentFieldEl.value =
+        orderPayMode === 'cash' ? 'Нал' : orderPayMode === 'invoice' ? 'Безнал' : '';
     }
   }
 
@@ -913,78 +919,6 @@
 
   function clearCart() {
     clearOrderAfterSubmit();
-  }
-
-  /** Отправка заказа плитки (корзины) → FormDesigner. postSubmit: cash | none | invoice-sent */
-  async function sendFormDesignerOrder(orderData, postSubmit) {
-    try {
-      var post = window.ARS_STROY_postFormDesigner;
-      if (typeof post !== 'function') {
-        alert('Ошибка конфигурации формы.');
-        return false;
-      }
-      orderData.form_type = 'order';
-      var ok = await post(orderData);
-      if (ok) {
-        if (postSubmit === 'cash') {
-          alert(
-            'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
-          );
-          clearCart();
-        } else if (postSubmit === 'invoice-sent') {
-          alert(
-            'Заказ отправлен на почту! Проверьте письмо с составом заказа, затем нажмите «Перейти в СберБанк и перевести».'
-          );
-          markInvoiceOrderSent();
-        }
-        return true;
-      }
-      alert('Ошибка при отправке заказа.');
-      return false;
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Произошла ошибка соединения.');
-      return false;
-    }
-  }
-
-  /** Отправка заявки на замерщика → FormDesigner. */
-  async function sendFormDesignerZamershik(formOrData) {
-    try {
-      var post = window.ARS_STROY_postFormDesigner;
-      if (typeof post !== 'function') {
-        alert('Ошибка конфигурации формы.');
-        return false;
-      }
-      var payload = formOrData;
-      if (formOrData instanceof HTMLFormElement) {
-        payload = new FormData(formOrData);
-      } else if (formOrData && typeof formOrData === 'object') {
-        formOrData.form_type = 'zamer';
-        formOrData._subject = 'Заявка на замер тротуарной плитки';
-      }
-      var ok = await post(payload);
-      if (ok) {
-        alert('Заявка на замерщика успешно отправлена!');
-        if (ukladkaForm) {
-          ukladkaForm.reset();
-        }
-        var successEl = document.getElementById('ukladka-success');
-        if (successEl) {
-          successEl.hidden = false;
-        }
-        if (typeof closeZamershikModal === 'function') {
-          closeZamershikModal();
-        }
-        return true;
-      }
-      alert('Ошибка при отправке заявки.');
-      return false;
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Произошла ошибка соединения.');
-      return false;
-    }
   }
 
   function slugifyAscii(text) {
@@ -1705,62 +1639,21 @@
     return true;
   }
 
-  function buildOrderData() {
-    syncOrderHiddenFields();
-    var nameEl = document.getElementById('order-name');
-    var phoneEl = document.getElementById('order-phone');
-    var emailEl = document.getElementById('order-email');
-    var addressEl = document.getElementById('order-address');
-    var commentEl = document.getElementById('order-comment');
-    var totalText = getOrderTotalText();
-    return {
-      payment: orderPayMode === 'cash' ? 'Нал' : 'Безнал',
-      payment_status: paymentStatusEl ? paymentStatusEl.value : PAYMENT_STATUS_DEFAULT,
-      name: nameEl ? nameEl.value.trim() : '',
-      company: '',
-      phone: phoneEl ? phoneEl.value.trim() : '',
-      email: emailEl ? emailEl.value.trim() : '',
-      address: addressEl ? addressEl.value.trim() : '',
-      comment: commentEl ? commentEl.value.trim() : '',
-      cart: formatCartLinesForForm(),
-      total: totalText
-    };
-  }
-
-  async function submitOrderForm(options) {
-    options = options || {};
-    if (orderFormSending) return false;
+  function nativeSubmitOrderForm() {
+    if (orderFormSending || !orderForm) return false;
     if (!validateOrderBeforeSubmit()) return false;
-
+    syncOrderHiddenFields();
     orderFormSending = true;
     var submitBtn = orderFormSubmitBtn || orderForm.querySelector('.order-form__submit');
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.classList.add('order-form__submit--loading');
     }
-    if (orderPaymentSendBtn && orderPayMode === 'invoice') {
-      orderPaymentSendBtn.classList.add('order-payment__send-order--loading');
-      orderPaymentSendBtn.disabled = true;
-    }
-
-    var orderData = buildOrderData();
-    var ok = await sendFormDesignerOrder(orderData, options.postSubmit || 'none');
-
-    orderFormSending = false;
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.classList.remove('order-form__submit--loading');
-    }
-    if (orderPaymentSendBtn) {
-      orderPaymentSendBtn.classList.remove('order-payment__send-order--loading');
-      if (!invoiceOrderSent) {
-        orderPaymentSendBtn.disabled = false;
-      }
-    }
-    return ok;
+    orderForm.submit();
+    return true;
   }
 
-  async function handleInvoiceSendOrder() {
+  function handleInvoiceSendOrder() {
     if (orderPayMode !== 'invoice') {
       alert('Для безнала выберите способ оплаты «Безнал».');
       return;
@@ -1772,7 +1665,7 @@
     if (orderFormSending) return;
     var totalText = getOrderTotalText();
     setPaymentStatus('Безнал — заказ отправлен, ожидается перевод (Сумма: ' + totalText + ')');
-    await submitOrderForm({ postSubmit: 'invoice-sent' });
+    nativeSubmitOrderForm();
   }
 
   function handleSberPayClick(e) {
@@ -1794,67 +1687,48 @@
   }
 
   if (orderForm) {
-    orderForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
+    orderForm.addEventListener('submit', function (e) {
       if (orderPayMode === 'invoice') {
+        e.preventDefault();
         alert('Для безнала сначала нажмите «Отправить заказ» в блоке оплаты, затем «Перейти в СберБанк».');
+        return;
+      }
+      if (!validateOrderBeforeSubmit()) {
+        e.preventDefault();
         return;
       }
       var totalText = getOrderTotalText();
       setPaymentStatus('Нал — оплата при получении (Сумма: ' + totalText + ')');
-      await submitOrderForm({ postSubmit: 'cash' });
+      syncOrderHiddenFields();
+      orderFormSending = true;
+      var submitBtn = orderFormSubmitBtn || orderForm.querySelector('.order-form__submit');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('order-form__submit--loading');
+      }
     });
   }
 
   if (ukladkaForm) {
-    var ukladkaSuccessEl = document.getElementById('ukladka-success');
-    var ukladkaNameEl = document.getElementById('ukladka-name');
     var ukladkaPhoneEl = document.getElementById('ukladka-phone');
     var ukladkaAddressEl = document.getElementById('ukladka-address');
-    var ukladkaSubmitBtn = document.getElementById('ukladka-submit');
-    var ukladkaSending = false;
-
-    ukladkaForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      if (ukladkaSending) return;
-      if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = true;
-
+    ukladkaForm.addEventListener('submit', function (e) {
       if (!ukladkaForm.checkValidity()) {
+        e.preventDefault();
         ukladkaForm.reportValidity();
         return;
       }
-
-      var name = ukladkaNameEl ? ukladkaNameEl.value.trim() : '';
       var phone = ukladkaPhoneEl ? ukladkaPhoneEl.value.trim() : '';
       var address = ukladkaAddressEl ? ukladkaAddressEl.value.trim() : '';
-
-      if (!phone) {
-        if (ukladkaPhoneEl) {
+      if (!phone || !address) {
+        e.preventDefault();
+        if (!phone && ukladkaPhoneEl) {
           ukladkaPhoneEl.focus();
           ukladkaPhoneEl.reportValidity();
-        }
-        return;
-      }
-      if (!address) {
-        if (ukladkaAddressEl) {
+        } else if (!address && ukladkaAddressEl) {
           ukladkaAddressEl.focus();
           ukladkaAddressEl.reportValidity();
         }
-        return;
-      }
-
-      ukladkaSending = true;
-      if (ukladkaSubmitBtn) {
-        ukladkaSubmitBtn.disabled = true;
-        ukladkaSubmitBtn.textContent = 'Отправляем…';
-      }
-
-      await sendFormDesignerZamershik(ukladkaForm);
-
-      ukladkaSending = false;
-      if (ukladkaSubmitBtn) {
-        ukladkaSubmitBtn.disabled = false;
-        ukladkaSubmitBtn.textContent = 'Отправить заявку';
       }
     });
   }

@@ -456,7 +456,8 @@
           <form
             class="ukladka-request__form"
             id="ukladka-form"
-            method="post"
+            action="https://formdesigner.ru/user/web/form/post/245426"
+            method="POST"
             novalidate
           >
             <input type="hidden" name="form_type" value="zamer" />
@@ -622,11 +623,13 @@
             <form
               class="order-form"
               id="order-form"
-              method="post"
+              action="https://formdesigner.ru/user/web/form/post/245426"
+              method="POST"
               novalidate
             >
               <input type="hidden" name="form_type" value="order" />
               <input type="hidden" name="_subject" value="Новый заказ тротуарной плитки" />
+              <input type="hidden" name="payment" id="order-payment-field" value="" />
               <input type="hidden" name="cart" id="order-cart-data" value="" />
               <input type="hidden" name="total" id="order-total" value="" />
               <input type="hidden" id="payment_status" name="payment_status" value="Оплата не выбрана (ожидание)" />
@@ -1099,64 +1102,9 @@
     })();
     </script>
 
-    <script>
-      (function (w) {
-        'use strict';
-
-        var fdPart1 = 'https://formdesigner.';
-        var fdPart2 = 'ru/user/web/form/post/245426';
-        var FORM_POST_URL = fdPart1 + fdPart2;
-
-        function toFormData(payload) {
-          if (payload instanceof FormData) return payload;
-          if (payload instanceof HTMLFormElement) return new FormData(payload);
-          var fd = new FormData();
-          Object.keys(payload).forEach(function (key) {
-            var val = payload[key];
-            if (val != null && val !== '') fd.append(key, String(val));
-          });
-          return fd;
-        }
-
-        w.ARS_STROY_FORM_DESIGNER_URL = FORM_POST_URL;
-
-        w.ARS_STROY_postFormDesigner = async function (payload) {
-          var body = toFormData(payload);
-          var response = await fetch(FORM_POST_URL, {
-            method: 'POST',
-            body: body
-          });
-          return response.ok;
-        };
-
-        document.addEventListener('DOMContentLoaded', function () {
-          document.querySelectorAll('form').forEach(function (form) {
-            form.setAttribute('action', FORM_POST_URL);
-            form.setAttribute('method', 'post');
-            form.addEventListener('submit', function (e) {
-              e.preventDefault();
-              var formEl = e.target;
-              if (!(formEl instanceof HTMLFormElement)) return;
-              if (formEl.id === 'order-form' || formEl.id === 'ukladka-form') return;
-              w.ARS_STROY_postFormDesigner(formEl).then(function (ok) {
-                if (ok) {
-                  alert('Заявка успешно отправлена!');
-                  formEl.reset();
-                } else {
-                  alert('Ошибка при отправке заявки.');
-                }
-              }).catch(function () {
-                alert('Произошла ошибка соединения.');
-              });
-            });
-          });
-        });
-      })(window);
-    </script>
-
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=formdesigner-v1" defer></script>
+    <script src="order-cart.js?v=native-post-v1" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
