@@ -1,0 +1,39 @@
+﻿      <section class="section section--soft ukladka-request" id="ukladka-request" aria-labelledby="ukladka-request-title">
+        <div class="container">
+          <div class="ukladka-request__card">
+            <h2 class="section__title ukladka-request__title" id="ukladka-request-title">╨Т╤Л╨╖╨╛╨▓╨╕╤В╨╡ ╤Б╨┐╨╡╤Ж╨╕╨░╨╗╨╕╤Б╤В╨░ ╨▒╨╡╤Б╨┐╨╗╨░╤В╨╜╨╛ ╨╕ ╨╛╨╜ ╤Б╨┤╨╡╨╗╨░╨╡╤В ╨╖╨░╨╝╨╡╤А</h2>
+            <p class="section__subtitle ukladka-request__text">
+            ╨е╨╛╤В╨╕╤В╨╡ ╨║╤А╨░╤Б╨╕╨▓╤Г╤О ╨╖╨╛╨╜╤Г ╨▓╨╛╨║╤А╤Г╨│ ╨┤╨╛╨╝╨░? ╨Р ╨╝╨╛╨╢╨╡╤В ╨▒╤Л╤В╤М ╨┤╨╛╤А╨╛╨╢╨║╨╕ ╨╕╨╜╤В╨╡╤А╨╡╤Б╨╜╨╛╨╣ ╤Д╨╛╤А╨╝╤Л? ╨а╨░╨┤╤Л ╨┐╤А╨╡╨┤╨╗╨╛╨╢╨╕╤В╤М ╨Т╨░╨╝ ╤Б╨▓╨╛╨╕ ╤Г╤Б╨╗╤Г╨│╨╕.
+            ╨Э╨░╤И ╨╕╨╜╨╢╨╡╨╜╨╡╤А ╨┐╤А╨╕╨╡╨┤╨╡╤В ╨║ ╨Т╨░╨╝, ╨┐╤А╨╛╨╕╨╖╨▓╨╡╨┤╤С╤В ╨▓╤Б╨╡ ╨╜╨╡╨╛╨▒╤Е╨╛╨┤╨╕╨╝╤Л╨╡ ╨╖╨░╨╝╨╡╤А╤Л, ╤Б╨┤╨╡╨╗╨░╨╡╤В ╤А╨░╤Б╤З╤С╤В.
+          </p>
+            <p class="ukladka-request__note">
+              ╨Т╤Л╨╡╨╖╨┤ ╨╖╨░╨╝╨╡╤А╤Й╨╕╨║╨░ ╨▒╨╡╤Б╨┐╨╗╨░╤В╨╜╨╛ ╨╜╨░ ╤А╨░╤Б╤Б╤В╨╛╤П╨╜╨╕╨╕ ╨┤╨╛ 10&nbsp;╨║╨╝. ╨Я╤А╨╕ ╨▓╤Л╨╡╨╖╨┤╨╡ ╨┤╨░╨╗╤М╤И╨╡ 10&nbsp;╨║╨╝ тАФ ╨╛╤В 2&nbsp;999&nbsp;тВ╜.
+            </p>
+          <form
+            class="ukladka-request__form"
+            id="ukladka-form"
+            action="https://formspree.io/f/xjgzoybd"
+            method="POST"
+            novalidate
+          >
+            <input type="hidden" name="_subject" value="╨Ч╨░╤П╨▓╨║╨░ ╨╜╨░ ╨╖╨░╨╝╨╡╤А ╤В╤А╨╛╤В╤Г╨░╤А╨╜╨╛╨╣ ╨┐╨╗╨╕╤В╨║╨╕" />
+            <label class="order-field ukladka-request__field">
+              <span class="order-field__label">╨Ш╨╝╤П</span>
+              <input class="order-field__input ukladka-request__input" type="text" name="name" id="ukladka-name" required autocomplete="name" />
+            </label>
+            <label class="order-field ukladka-request__field">
+              <span class="order-field__label">╨в╨╡╨╗╨╡╤Д╨╛╨╜</span>
+              <input class="order-field__input ukladka-request__input" type="tel" name="phone" id="ukladka-phone" required autocomplete="tel" inputmode="tel" />
+            </label>
+            <label class="order-field ukladka-request__field">
+              <span class="order-field__label">╨Р╨┤╤А╨╡╤Б</span>
+              <input class="order-field__input ukladka-request__input" type="text" name="address" id="ukladka-address" required autocomplete="street-address" />
+            </label>
+            <button type="submit" class="btn btn--primary ukladka-request__submit" id="ukladka-submit">╨Ю╤В╨┐╤А╨░╨▓╨╕╤В╤М ╨╖╨░╤П╨▓╨║╤Г</button>
+            <p class="ukladka-request__success" id="ukladka-success" role="status" aria-live="polite" hidden>
+              ╨б╨┐╨░╤Б╨╕╨▒╨╛! ╨Ч╨░╤П╨▓╨║╨░ ╨┐╤А╨╕╨╜╤П╤В╨░, ╨╜╨░╤И ╨╕╨╜╨╢╨╡╨╜╨╡╤А ╤Б╨▓╤П╨╢╨╡╤В╤Б╤П ╤Б ╨▓╨░╨╝╨╕ ╨▓ ╤В╨╡╤З╨╡╨╜╨╕╨╡ 15 ╨╝╨╕╨╜╤Г╤В.
+            </p>
+          </form>
+          </div>
+        </div>
+      </section>

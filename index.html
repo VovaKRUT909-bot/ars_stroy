@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v8" />
+    <link rel="stylesheet" href="styles.css?v=phone-only-v1" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -65,16 +65,10 @@
           <a href="#catalog">Каталог</a>
           <a href="#prices">Прайс</a>
           <a href="#gallery">Фото</a>
-          <a href="#order">Заказ</a>
-          <a href="#delivery">Доставка</a>
           <a href="#contacts">Контакты</a>
         </nav>
 
         <div class="topbar__cta">
-          <a class="cart-chip" href="#order" id="cart-chip" aria-label="Корзина">
-            <span class="cart-chip__label">Корзина</span>
-            <span class="cart-chip__count" id="cart-count">0</span>
-          </a>
           <a class="phone-chip" href="tel:+79258056308">
             <span class="phone-chip__label">Позвонить</span>
             <span class="phone-chip__value"><span class="phone-chip__value-main">+7 (925) 805-63-</span><span class="phone-chip__value-end">08</span></span>
@@ -178,7 +172,7 @@
         <div class="container">
           <div class="section__head">
             <h2 class="section__title">Цены на тротуарную плитку и брусчатку — прайс от производителя</h2>
-            <h3 class="section__subtitle">Брусчатка цена за м² — у каждого цвета своя кнопка «В корзину»</h3>
+            <h3 class="section__subtitle">Брусчатка цена за м² — для заказа позвоните по телефону</h3>
           </div>
 
           <div class="prices">
@@ -392,7 +386,7 @@
         <div class="container">
           <div class="section__head">
             <h2 class="section__title">Фотогалерея</h2>
-            <p class="section__subtitle">Фото для ориентира. Цены и «В корзину» — в разделе «Прайс».</p>
+            <p class="section__subtitle">Фото для ориентира. Актуальные цены — в разделе «Прайс».</p>
           </div>
 
           <div class="gallery-grid" role="list">
@@ -431,267 +425,15 @@
                 <div class="gallery-card__title">Наш завод</div>
               </figcaption>
             </figure>
-            <figure class="gallery-card gallery-card--ukladka" role="listitem">
+            <figure class="gallery-card gallery-card--no-buy" role="listitem">
               <img src="assets/ukladka-1.png" alt="Укладка покрытия (пример)" loading="lazy" />
               <figcaption>
                 <div class="gallery-card__title">Укладка</div>
-                <a class="btn btn--primary btn--buy gallery-card__buy" href="https://t.me/Ars_Ukladka_bot" target="_blank" rel="noopener noreferrer">Замерщик</a>
               </figcaption>
             </figure>
           </div>
         </div>
       </section>
-
-      <section class="section section--soft ukladka-request" id="ukladka-request" aria-labelledby="ukladka-request-title">
-        <div class="container">
-          <div class="ukladka-request__card">
-            <h2 class="section__title ukladka-request__title" id="ukladka-request-title">Вызовите специалиста бесплатно и он сделает замер</h2>
-            <p class="section__subtitle ukladka-request__text">
-            Хотите красивую зону вокруг дома? А может быть дорожки интересной формы? Рады предложить Вам свои услуги.
-            Наш инженер приедет к Вам, произведёт все необходимые замеры, сделает расчёт.
-          </p>
-            <p class="ukladka-request__note">
-              Выезд замерщика бесплатно на расстоянии до 10&nbsp;км. При выезде дальше 10&nbsp;км — от 2&nbsp;999&nbsp;₽.
-            </p>
-          <form
-            class="ukladka-request__form"
-            id="ukladka-form"
-            action="https://formspree.io/f/xjgzoybd"
-            method="POST"
-            novalidate
-          >
-            <input type="hidden" name="_subject" value="Заявка на замер тротуарной плитки" />
-            <label class="order-field ukladka-request__field">
-              <span class="order-field__label">Имя</span>
-              <input class="order-field__input ukladka-request__input" type="text" name="name" id="ukladka-name" required autocomplete="name" />
-            </label>
-            <label class="order-field ukladka-request__field">
-              <span class="order-field__label">Телефон</span>
-              <input class="order-field__input ukladka-request__input" type="tel" name="phone" id="ukladka-phone" required autocomplete="tel" inputmode="tel" />
-            </label>
-            <label class="order-field ukladka-request__field">
-              <span class="order-field__label">Адрес</span>
-              <input class="order-field__input ukladka-request__input" type="text" name="address" id="ukladka-address" required autocomplete="street-address" />
-            </label>
-            <button type="submit" class="btn btn--primary ukladka-request__submit" id="ukladka-submit">Отправить заявку</button>
-            <p class="ukladka-request__success" id="ukladka-success" role="status" aria-live="polite" hidden>
-              Спасибо! Заявка принята, наш инженер свяжется с вами в течение 15 минут.
-            </p>
-          </form>
-          </div>
-        </div>
-      </section>
-
-      <section class="section section--soft" id="delivery">
-        <div class="container">
-          <div class="delivery">
-            <div class="delivery__left">
-              <h2 class="section__title">Доставка тротуарной плитки по Кубинке и Одинцовскому району</h2>
-              <h3 class="section__subtitle">Свой манипулятор до 4 тонн — расчёт по километражу</h3>
-              <p class="delivery__intro">
-                Доставляем по Кубинке и Одинцовскому району. Стоимость зависит от километража и объёма заказа — поможем организовать перевозку под ваш объект.
-              </p>
-              <div class="delivery__list" aria-label="Преимущества доставки">
-                <div class="delivery-item">Подвоз на объект</div>
-                <div class="delivery-item">Быстрая логистика</div>
-                <div class="delivery-item">Расчёт по километражу</div>
-              </div>
-              <figure class="delivery__photo">
-                <img src="assets/manipulyator-1.png" alt="Доставка своим манипулятором UNIC" loading="lazy" />
-              </figure>
-            </div>
-            <div class="delivery__right">
-              <div class="delivery-card">
-                <h3 class="delivery-card__title">Расчёт доставки</h3>
-                <div class="delivery-card__text">В разделе «Оформление заказа» укажите адрес — стоимость доставки посчитается автоматически. По Кубинке и району до 10&nbsp;км — 5&nbsp;000&nbsp;₽, далее 100&nbsp;₽ за каждый километр в одну сторону.</div>
-                <div class="delivery-card__actions">
-                  <a class="btn btn--primary" href="tel:+79258056308">Позвонить</a>
-                  <a class="btn btn--ghost" href="#contacts">Контакты</a>
-                </div>
-                <div class="delivery-card__phones">
-                  <div><a href="tel:+79258056308">+7 (925) 805-63-08</a></div>
-                  <div><a href="tel:+79850101110">+7 (985) 010-11-10</a></div>
-                  <div><a href="tel:+79258387248">+7 (925) 838-72-48</a></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section section--soft" id="order">
-        <div class="container">
-          <div class="section__head">
-            <h2 class="section__title">Оформление заказа</h2>
-            <p class="section__subtitle">Добавьте товары из «Прайса» в корзину и нажмите кнопку ниже — откроется удобное оформление на весь экран.</p>
-          </div>
-          <button type="button" class="btn btn--primary order-open-btn" id="order-open-checkout">Оформить заказ</button>
-        </div>
-      </section>
-
-    <div id="order-checkout-overlay" class="order-fs" hidden aria-hidden="true">
-      <div class="order-fs__backdrop" id="order-fs-backdrop" aria-hidden="true"></div>
-      <div class="order-fs__dialog" role="dialog" aria-modal="true" aria-labelledby="order-fs-title">
-        <header class="order-fs__header">
-          <div class="order-fs__brand">
-            <img class="order-fs__logo" src="favicon.png" width="52" height="52" alt="" />
-            <div>
-              <h2 class="order-fs__title" id="order-fs-title">Арс Строй</h2>
-              <p class="order-fs__tagline">Производство тротуарной плитки · Кубинка</p>
-            </div>
-          </div>
-          <button type="button" class="order-fs__close" id="order-fs-close" aria-label="Закрыть оформление заказа">×</button>
-        </header>
-        <div class="order-fs__body">
-          <p class="order-fs__intro">Выберите способ оплаты и заполните данные — всё на одном экране.</p>
-          <div class="order-layout order-layout--fullscreen">
-            <div class="order-checkout-card">
-            <div class="order-pay-mode" id="order-pay-mode">
-              <p class="order-pay-mode__title">Способ оплаты</p>
-              <div class="order-pay-mode__buttons" role="group" aria-label="Способ оплаты">
-                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-cash" data-order-pay-mode="cash" aria-pressed="false">
-                  Нал
-                </button>
-                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-invoice" data-order-pay-mode="invoice" aria-pressed="false">
-                  Безнал
-                </button>
-              </div>
-              <p class="order-pay-mode__hint" id="order-pay-mode-hint">Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.</p>
-            </div>
-
-            <div class="order-checkout" id="order-checkout" hidden>
-            <div class="order-cash-info" id="order-cash-info" hidden aria-hidden="true">
-              <div class="order-cash-info__panel">
-                <h3 class="order-cash-info__title">💵 Оплата наличными</h3>
-                <p class="order-cash-info__lead">Онлайн-перевод не нужен — расчёт наличными при получении заказа.</p>
-                <ul class="order-cash-info__list">
-                  <li><strong>Есть доставка</strong> — передайте сумму <strong>водителю в руки</strong> при разгрузке на объекте.</li>
-                  <li><strong>Самовывоз</strong> — оплата на производстве по согласованию с менеджером.</li>
-                </ul>
-                <p class="order-cash-info__note">Сумма — по итогу в корзине. Желательно подготовить мелочь: водителю не всегда удобно давать сдачу с крупных купюр.</p>
-              </div>
-            </div>
-
-            <div class="order-payment" id="order-payment" hidden aria-hidden="true">
-              <div class="order-payment__panel">
-                <h3 class="order-payment__title">🟢 Прямая оплата на карту Сбербанка</h3>
-                <p class="order-payment__warn">
-                  ВНИМАНИЕ: У производителя ТОЛЬКО СБЕРБАНК! Других банков для перевода НЕТУ. Переводите строго на карту Сбербанка!
-                </p>
-                <p class="order-payment__flow" id="order-payment-flow-hint">
-                  Сначала <strong>отправьте заказ</strong> — придёт на почту, проверьте состав. Затем ниже — <strong>переход в Сбер</strong> для перевода.
-                </p>
-                <div class="order-payment__pay-row">
-                  <figure class="order-payment__qr-mini" title="QR для оплаты с компьютера">
-                    <img
-                      class="order-payment__qr-img"
-                      src="sber-qr.jpg"
-                      alt="QR СберБанк"
-                      width="80"
-                      height="80"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <figcaption class="order-payment__qr-caption">QR с ПК</figcaption>
-                  </figure>
-                  <p class="order-payment__step-hint order-payment__step-hint--side">
-                    Сумма для перевода — в блоке «Итого» в корзине.
-                  </p>
-                </div>
-                <div class="order-payment__actions">
-                  <button type="button" class="order-payment__send-order" id="order-payment-send">
-                    Отправить заказ
-                  </button>
-                  <a
-                    class="order-payment__sber order-payment__sber--disabled"
-                    id="order-payment-sber"
-                    href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled="true"
-                    tabindex="-1"
-                  >Перейти в СберБанк и перевести</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="order-selected" id="order-selected" aria-live="polite">
-              <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
-            </div>
-
-            <form
-              class="order-form"
-              id="order-form"
-              action="https://formspree.io/f/xgoqzaey"
-              method="POST"
-              novalidate
-            >
-              <input type="hidden" name="_subject" value="Новый заказ тротуарной плитки" />
-              <input type="hidden" name="cart" id="order-cart-data" value="" />
-              <input type="hidden" name="total" id="order-total" value="" />
-              <input type="hidden" id="payment_status" name="payment_status" value="Оплата не выбрана (ожидание)" />
-              <div class="order-cart" id="order-cart" hidden>
-                <div class="order-cart__head">
-                  <div class="order-cart__title">Ваш заказ</div>
-                  <button type="button" class="order-cart__clear" id="cart-clear">Очистить</button>
-                </div>
-                <div class="order-cart__items" id="cart-items"></div>
-                <div class="order-cart__totals">
-                  <div class="order-cart__subline">
-                    Товары: <b id="cart-subtotal">0</b> <span class="unit">руб.</span>
-                  </div>
-                  <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
-                    Доставка: <b id="cart-delivery-total">0</b> ₽
-                    <span class="order-cart__delivery-km" id="cart-delivery-km"></span>
-                  </div>
-                  <p class="order-cart__delivery-tariff" id="cart-delivery-tariff" hidden>
-                    Тариф: Доставка компактным манипулятором (до 4 тонн). По Кубинке и району (до 10&nbsp;км) — 5&nbsp;000&nbsp;₽. Далее — 100&nbsp;₽ за каждый 1&nbsp;км в одну сторону.
-                  </p>
-                  <div class="order-cart__grand">
-                    Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="order-form__grid">
-                <label class="order-field">
-                  <span class="order-field__label">ФИО</span>
-                  <input class="order-field__input" type="text" name="name" id="order-name" required autocomplete="name" />
-                </label>
-                <label class="order-field">
-                  <span class="order-field__label">Телефон</span>
-                  <input class="order-field__input" type="tel" name="phone" id="order-phone" required autocomplete="tel" />
-                </label>
-                <label class="order-field">
-                  <span class="order-field__label">E-mail <span class="order-field__optional">(необязательно)</span></span>
-                  <input class="order-field__input" type="email" name="email" id="order-email" autocomplete="email" />
-                </label>
-                <label class="order-field order-field--full">
-                  <span class="order-field__label">Адрес доставки <span class="order-field__optional">(необязательно)</span></span>
-                  <input
-                    class="order-field__input"
-                    type="text"
-                    name="address"
-                    id="order-address"
-                    autocomplete="street-address"
-                    placeholder="Например: Одинцово, Можайское шоссе, 15"
-                  />
-                  <p class="order-field__hint">По желанию: если нужна доставка — укажите адрес (город, улица, дом), и стоимость посчитается автоматически в блоке «Итого». Без адреса заказ можно оформить на самовывоз.</p>
-                </label>
-                <label class="order-field order-field--full">
-                  <span class="order-field__label">Дополнительная информация</span>
-                  <textarea class="order-field__input order-field__textarea" name="comment" id="order-comment" rows="3"></textarea>
-                </label>
-              </div>
-
-              <button type="submit" class="btn btn--primary order-form__submit" id="order-form-submit">Отправить заказ</button>
-            </form>
-            </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
       <section class="section" id="contacts">
         <div class="container">
@@ -735,7 +477,7 @@
               Если вам нужно <strong>купить тротуарную плитку в Кубинке от производителя</strong> — вы на нужном сайте. Компания «Арс Строй» изготавливает брусчатку, коллекцию «Новый город», бордюрный камень, вибро литая и строительные блоки на собственном производстве в Одинцовском районе. Мы не работаем через перекупщиков: в прайсе указана актуальная <strong>брусчатка — цена за м²</strong> и цена за штуку на бордюр, без скрытых наценок.
             </p>
             <p>
-              Заказать материал просто: выберите размер и цвет в каталоге, добавьте позиции в корзину и оформите заявку на сайте или по телефону. Доставляем своим манипулятором по Кубинке, <strong>Голицыно, Тучково, Часцы, Дорохово</strong> и всему <strong>Одинцовскому району</strong>. Нужна помощь с расчётом? Инженер бесплатно приедет на объект и сделает замер — так вы точно закажете нужный объём плитки и не переплатите за лишние квадратные метры.
+              Заказать материал просто: выберите размер и цвет в прайсе и позвоните — менеджер уточнит наличие, рассчитает доставку и зафиксирует цену. Доставляем своим манипулятором по Кубинке, <strong>Голицыно, Тучково, Часцы, Дорохово</strong> и всему <strong>Одинцовскому району</strong>.
             </p>
             <p>
               Для частных дворов, парковок у дома, подъездных путей и коммерческих объектов подбираем фактуру и цвет под ваш проект. Выполняем <strong>укладку плитки</strong> по согласованию: аккуратные швы, правильное основание и долговечный результат. Сравните наши цены с предложениями посредников — при заказе напрямую с производства экономия на крупных объёмах особенно заметна.
@@ -770,8 +512,6 @@
         <div class="footer__links">
           <a href="#prices">Прайс</a>
           <a href="#gallery">Фото</a>
-          <a href="#order">Заказ</a>
-          <a href="#delivery">Доставка</a>
           <a href="#contacts">Контакты</a>
         </div>
       </div>
@@ -1099,9 +839,7 @@
     })();
     </script>
 
-    <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
-    <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=order-fs-v8" defer></script>
+    <script src="site-catalog.js?v=phone-only-v1" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

@@ -1,0 +1,173 @@
+﻿      <section class="section section--soft" id="order">
+        <div class="container">
+          <div class="section__head">
+            <h2 class="section__title">╨Ю╤Д╨╛╤А╨╝╨╗╨╡╨╜╨╕╨╡ ╨╖╨░╨║╨░╨╖╨░</h2>
+            <p class="section__subtitle">╨Ф╨╛╨▒╨░╨▓╤М╤В╨╡ ╤В╨╛╨▓╨░╤А╤Л ╨╕╨╖ ┬л╨Я╤А╨░╨╣╤Б╨░┬╗ ╨▓ ╨║╨╛╤А╨╖╨╕╨╜╤Г ╨╕ ╨╜╨░╨╢╨╝╨╕╤В╨╡ ╨║╨╜╨╛╨┐╨║╤Г ╨╜╨╕╨╢╨╡ тАФ ╨╛╤В╨║╤А╨╛╨╡╤В╤Б╤П ╤Г╨┤╨╛╨▒╨╜╨╛╨╡ ╨╛╤Д╨╛╤А╨╝╨╗╨╡╨╜╨╕╨╡ ╨╜╨░ ╨▓╨╡╤Б╤М ╤Н╨║╤А╨░╨╜.</p>
+          </div>
+          <button type="button" class="btn btn--primary order-open-btn" id="order-open-checkout">╨Ю╤Д╨╛╤А╨╝╨╕╤В╤М ╨╖╨░╨║╨░╨╖</button>
+        </div>
+      </section>
+
+    <div id="order-checkout-overlay" class="order-fs" hidden aria-hidden="true">
+      <div class="order-fs__backdrop" id="order-fs-backdrop" aria-hidden="true"></div>
+      <div class="order-fs__dialog" role="dialog" aria-modal="true" aria-labelledby="order-fs-title">
+        <header class="order-fs__header">
+          <div class="order-fs__brand">
+            <img class="order-fs__logo" src="favicon.png" width="52" height="52" alt="" />
+            <div>
+              <h2 class="order-fs__title" id="order-fs-title">╨Р╤А╤Б ╨б╤В╤А╨╛╨╣</h2>
+              <p class="order-fs__tagline">╨Я╤А╨╛╨╕╨╖╨▓╨╛╨┤╤Б╤В╨▓╨╛ ╤В╤А╨╛╤В╤Г╨░╤А╨╜╨╛╨╣ ╨┐╨╗╨╕╤В╨║╨╕ ┬╖ ╨Ъ╤Г╨▒╨╕╨╜╨║╨░</p>
+            </div>
+          </div>
+          <button type="button" class="order-fs__close" id="order-fs-close" aria-label="╨Ч╨░╨║╤А╤Л╤В╤М ╨╛╤Д╨╛╤А╨╝╨╗╨╡╨╜╨╕╨╡ ╨╖╨░╨║╨░╨╖╨░">├Ч</button>
+        </header>
+        <div class="order-fs__body">
+          <p class="order-fs__intro">╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╤Б╨┐╨╛╤Б╨╛╨▒ ╨╛╨┐╨╗╨░╤В╤Л ╨╕ ╨╖╨░╨┐╨╛╨╗╨╜╨╕╤В╨╡ ╨┤╨░╨╜╨╜╤Л╨╡ тАФ ╨▓╤Б╤С ╨╜╨░ ╨╛╨┤╨╜╨╛╨╝ ╤Н╨║╤А╨░╨╜╨╡.</p>
+          <div class="order-layout order-layout--fullscreen">
+            <div class="order-checkout-card">
+            <div class="order-pay-mode" id="order-pay-mode">
+              <p class="order-pay-mode__title">╨б╨┐╨╛╤Б╨╛╨▒ ╨╛╨┐╨╗╨░╤В╤Л</p>
+              <div class="order-pay-mode__buttons" role="group" aria-label="╨б╨┐╨╛╤Б╨╛╨▒ ╨╛╨┐╨╗╨░╤В╤Л">
+                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-cash" data-order-pay-mode="cash" aria-pressed="false">
+                  ╨Э╨░╨╗
+                </button>
+                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-invoice" data-order-pay-mode="invoice" aria-pressed="false">
+                  ╨С╨╡╨╖╨╜╨░╨╗
+                </button>
+              </div>
+              <p class="order-pay-mode__hint" id="order-pay-mode-hint">╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ┬л╨Э╨░╨╗┬╗ ╨╕╨╗╨╕ ┬л╨С╨╡╨╖╨╜╨░╨╗┬╗, ╤З╤В╨╛╨▒╤Л ╨╛╤В╨║╤А╤Л╤В╤М ╨║╨╛╤А╨╖╨╕╨╜╤Г ╨╕ ╨╛╤Д╨╛╤А╨╝╨╕╤В╤М ╨╖╨░╨║╨░╨╖.</p>
+            </div>
+
+            <div class="order-checkout" id="order-checkout" hidden>
+            <div class="order-cash-info" id="order-cash-info" hidden aria-hidden="true">
+              <div class="order-cash-info__panel">
+                <h3 class="order-cash-info__title">ЁЯТ╡ ╨Ю╨┐╨╗╨░╤В╨░ ╨╜╨░╨╗╨╕╤З╨╜╤Л╨╝╨╕</h3>
+                <p class="order-cash-info__lead">╨Ю╨╜╨╗╨░╨╣╨╜-╨┐╨╡╤А╨╡╨▓╨╛╨┤ ╨╜╨╡ ╨╜╤Г╨╢╨╡╨╜ тАФ ╤А╨░╤Б╤З╤С╤В ╨╜╨░╨╗╨╕╤З╨╜╤Л╨╝╨╕ ╨┐╤А╨╕ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╕ ╨╖╨░╨║╨░╨╖╨░.</p>
+                <ul class="order-cash-info__list">
+                  <li><strong>╨Х╤Б╤В╤М ╨┤╨╛╤Б╤В╨░╨▓╨║╨░</strong> тАФ ╨┐╨╡╤А╨╡╨┤╨░╨╣╤В╨╡ ╤Б╤Г╨╝╨╝╤Г <strong>╨▓╨╛╨┤╨╕╤В╨╡╨╗╤О ╨▓ ╤А╤Г╨║╨╕</strong> ╨┐╤А╨╕ ╤А╨░╨╖╨│╤А╤Г╨╖╨║╨╡ ╨╜╨░ ╨╛╨▒╤К╨╡╨║╤В╨╡.</li>
+                  <li><strong>╨б╨░╨╝╨╛╨▓╤Л╨▓╨╛╨╖</strong> тАФ ╨╛╨┐╨╗╨░╤В╨░ ╨╜╨░ ╨┐╤А╨╛╨╕╨╖╨▓╨╛╨┤╤Б╤В╨▓╨╡ ╨┐╨╛ ╤Б╨╛╨│╨╗╨░╤Б╨╛╨▓╨░╨╜╨╕╤О ╤Б ╨╝╨╡╨╜╨╡╨┤╨╢╨╡╤А╨╛╨╝.</li>
+                </ul>
+                <p class="order-cash-info__note">╨б╤Г╨╝╨╝╨░ тАФ ╨┐╨╛ ╨╕╤В╨╛╨│╤Г ╨▓ ╨║╨╛╤А╨╖╨╕╨╜╨╡. ╨Ц╨╡╨╗╨░╤В╨╡╨╗╤М╨╜╨╛ ╨┐╨╛╨┤╨│╨╛╤В╨╛╨▓╨╕╤В╤М ╨╝╨╡╨╗╨╛╤З╤М: ╨▓╨╛╨┤╨╕╤В╨╡╨╗╤О ╨╜╨╡ ╨▓╤Б╨╡╨│╨┤╨░ ╤Г╨┤╨╛╨▒╨╜╨╛ ╨┤╨░╨▓╨░╤В╤М ╤Б╨┤╨░╤З╤Г ╤Б ╨║╤А╤Г╨┐╨╜╤Л╤Е ╨║╤Г╨┐╤О╤А.</p>
+              </div>
+            </div>
+
+            <div class="order-payment" id="order-payment" hidden aria-hidden="true">
+              <div class="order-payment__panel">
+                <h3 class="order-payment__title">ЁЯЯв ╨Я╤А╤П╨╝╨░╤П ╨╛╨┐╨╗╨░╤В╨░ ╨╜╨░ ╨║╨░╤А╤В╤Г ╨б╨▒╨╡╤А╨▒╨░╨╜╨║╨░</h3>
+                <p class="order-payment__warn">
+                  ╨Т╨Э╨Ш╨Ь╨Р╨Э╨Ш╨Х: ╨г ╨┐╤А╨╛╨╕╨╖╨▓╨╛╨┤╨╕╤В╨╡╨╗╤П ╨в╨Ю╨Ы╨м╨Ъ╨Ю ╨б╨С╨Х╨а╨С╨Р╨Э╨Ъ! ╨Ф╤А╤Г╨│╨╕╤Е ╨▒╨░╨╜╨║╨╛╨▓ ╨┤╨╗╤П ╨┐╨╡╤А╨╡╨▓╨╛╨┤╨░ ╨Э╨Х╨в╨г. ╨Я╨╡╤А╨╡╨▓╨╛╨┤╨╕╤В╨╡ ╤Б╤В╤А╨╛╨│╨╛ ╨╜╨░ ╨║╨░╤А╤В╤Г ╨б╨▒╨╡╤А╨▒╨░╨╜╨║╨░!
+                </p>
+                <p class="order-payment__flow" id="order-payment-flow-hint">
+                  ╨б╨╜╨░╤З╨░╨╗╨░ <strong>╨╛╤В╨┐╤А╨░╨▓╤М╤В╨╡ ╨╖╨░╨║╨░╨╖</strong> тАФ ╨┐╤А╨╕╨┤╤С╤В ╨╜╨░ ╨┐╨╛╤З╤В╤Г, ╨┐╤А╨╛╨▓╨╡╤А╤М╤В╨╡ ╤Б╨╛╤Б╤В╨░╨▓. ╨Ч╨░╤В╨╡╨╝ ╨╜╨╕╨╢╨╡ тАФ <strong>╨┐╨╡╤А╨╡╤Е╨╛╨┤ ╨▓ ╨б╨▒╨╡╤А</strong> ╨┤╨╗╤П ╨┐╨╡╤А╨╡╨▓╨╛╨┤╨░.
+                </p>
+                <div class="order-payment__pay-row">
+                  <figure class="order-payment__qr-mini" title="QR ╨┤╨╗╤П ╨╛╨┐╨╗╨░╤В╤Л ╤Б ╨║╨╛╨╝╨┐╤М╤О╤В╨╡╤А╨░">
+                    <img
+                      class="order-payment__qr-img"
+                      src="sber-qr.jpg"
+                      alt="QR ╨б╨▒╨╡╤А╨С╨░╨╜╨║"
+                      width="80"
+                      height="80"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <figcaption class="order-payment__qr-caption">QR ╤Б ╨Я╨Ъ</figcaption>
+                  </figure>
+                  <p class="order-payment__step-hint order-payment__step-hint--side">
+                    ╨б╤Г╨╝╨╝╨░ ╨┤╨╗╤П ╨┐╨╡╤А╨╡╨▓╨╛╨┤╨░ тАФ ╨▓ ╨▒╨╗╨╛╨║╨╡ ┬л╨Ш╤В╨╛╨│╨╛┬╗ ╨▓ ╨║╨╛╤А╨╖╨╕╨╜╨╡.
+                  </p>
+                </div>
+                <div class="order-payment__actions">
+                  <button type="button" class="order-payment__send-order" id="order-payment-send">
+                    ╨Ю╤В╨┐╤А╨░╨▓╨╕╤В╤М ╨╖╨░╨║╨░╨╖
+                  </button>
+                  <a
+                    class="order-payment__sber order-payment__sber--disabled"
+                    id="order-payment-sber"
+                    href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled="true"
+                    tabindex="-1"
+                  >╨Я╨╡╤А╨╡╨╣╤В╨╕ ╨▓ ╨б╨▒╨╡╤А╨С╨░╨╜╨║ ╨╕ ╨┐╨╡╤А╨╡╨▓╨╡╤Б╤В╨╕</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="order-selected" id="order-selected" aria-live="polite">
+              <p class="order-selected__empty">╨Ъ╨╛╤А╨╖╨╕╨╜╨░ ╨┐╤Г╤Б╤В╨░. ╨Т ╤А╨░╨╖╨┤╨╡╨╗╨╡ ┬л╨Я╤А╨░╨╣╤Б┬╗ ╨▓╤Л╨▒╨╡╤А╨╕╤В╨╡ ╤А╨░╨╖╨╝╨╡╤А ╨╕ ╤Ж╨▓╨╡╤В ╨╕ ╨╜╨░╨╢╨╝╨╕╤В╨╡ ┬л╨Т ╨║╨╛╤А╨╖╨╕╨╜╤Г┬╗ ╤Г ╨║╨░╨╢╨┤╨╛╨╣ ╨╜╤Г╨╢╨╜╨╛╨╣ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕.</p>
+            </div>
+
+            <form
+              class="order-form"
+              id="order-form"
+              action="https://formspree.io/f/xgoqzaey"
+              method="POST"
+              novalidate
+            >
+              <input type="hidden" name="_subject" value="╨Э╨╛╨▓╤Л╨╣ ╨╖╨░╨║╨░╨╖ ╤В╤А╨╛╤В╤Г╨░╤А╨╜╨╛╨╣ ╨┐╨╗╨╕╤В╨║╨╕" />
+              <input type="hidden" name="cart" id="order-cart-data" value="" />
+              <input type="hidden" name="total" id="order-total" value="" />
+              <input type="hidden" id="payment_status" name="payment_status" value="╨Ю╨┐╨╗╨░╤В╨░ ╨╜╨╡ ╨▓╤Л╨▒╤А╨░╨╜╨░ (╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡)" />
+              <div class="order-cart" id="order-cart" hidden>
+                <div class="order-cart__head">
+                  <div class="order-cart__title">╨Т╨░╤И ╨╖╨░╨║╨░╨╖</div>
+                  <button type="button" class="order-cart__clear" id="cart-clear">╨Ю╤З╨╕╤Б╤В╨╕╤В╤М</button>
+                </div>
+                <div class="order-cart__items" id="cart-items"></div>
+                <div class="order-cart__totals">
+                  <div class="order-cart__subline">
+                    ╨в╨╛╨▓╨░╤А╤Л: <b id="cart-subtotal">0</b> <span class="unit">╤А╤Г╨▒.</span>
+                  </div>
+                  <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
+                    ╨Ф╨╛╤Б╤В╨░╨▓╨║╨░: <b id="cart-delivery-total">0</b> тВ╜
+                    <span class="order-cart__delivery-km" id="cart-delivery-km"></span>
+                  </div>
+                  <p class="order-cart__delivery-tariff" id="cart-delivery-tariff" hidden>
+                    ╨в╨░╤А╨╕╤Д: ╨Ф╨╛╤Б╤В╨░╨▓╨║╨░ ╨║╨╛╨╝╨┐╨░╨║╤В╨╜╤Л╨╝ ╨╝╨░╨╜╨╕╨┐╤Г╨╗╤П╤В╨╛╤А╨╛╨╝ (╨┤╨╛ 4 ╤В╨╛╨╜╨╜). ╨Я╨╛ ╨Ъ╤Г╨▒╨╕╨╜╨║╨╡ ╨╕ ╤А╨░╨╣╨╛╨╜╤Г (╨┤╨╛ 10&nbsp;╨║╨╝) тАФ 5&nbsp;000&nbsp;тВ╜. ╨Ф╨░╨╗╨╡╨╡ тАФ 100&nbsp;тВ╜ ╨╖╨░ ╨║╨░╨╢╨┤╤Л╨╣ 1&nbsp;╨║╨╝ ╨▓ ╨╛╨┤╨╜╤Г ╤Б╤В╨╛╤А╨╛╨╜╤Г.
+                  </p>
+                  <div class="order-cart__grand">
+                    ╨Ш╤В╨╛╨│╨╛: <b id="cart-grand-total">0</b> <span class="unit">╤А╤Г╨▒.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="order-form__grid">
+                <label class="order-field">
+                  <span class="order-field__label">╨д╨Ш╨Ю</span>
+                  <input class="order-field__input" type="text" name="name" id="order-name" required autocomplete="name" />
+                </label>
+                <label class="order-field">
+                  <span class="order-field__label">╨в╨╡╨╗╨╡╤Д╨╛╨╜</span>
+                  <input class="order-field__input" type="tel" name="phone" id="order-phone" required autocomplete="tel" />
+                </label>
+                <label class="order-field">
+                  <span class="order-field__label">E-mail <span class="order-field__optional">(╨╜╨╡╨╛╨▒╤П╨╖╨░╤В╨╡╨╗╤М╨╜╨╛)</span></span>
+                  <input class="order-field__input" type="email" name="email" id="order-email" autocomplete="email" />
+                </label>
+                <label class="order-field order-field--full">
+                  <span class="order-field__label">╨Р╨┤╤А╨╡╤Б ╨┤╨╛╤Б╤В╨░╨▓╨║╨╕ <span class="order-field__optional">(╨╜╨╡╨╛╨▒╤П╨╖╨░╤В╨╡╨╗╤М╨╜╨╛)</span></span>
+                  <input
+                    class="order-field__input"
+                    type="text"
+                    name="address"
+                    id="order-address"
+                    autocomplete="street-address"
+                    placeholder="╨Э╨░╨┐╤А╨╕╨╝╨╡╤А: ╨Ю╨┤╨╕╨╜╤Ж╨╛╨▓╨╛, ╨Ь╨╛╨╢╨░╨╣╤Б╨║╨╛╨╡ ╤И╨╛╤Б╤Б╨╡, 15"
+                  />
+                  <p class="order-field__hint">╨Я╨╛ ╨╢╨╡╨╗╨░╨╜╨╕╤О: ╨╡╤Б╨╗╨╕ ╨╜╤Г╨╢╨╜╨░ ╨┤╨╛╤Б╤В╨░╨▓╨║╨░ тАФ ╤Г╨║╨░╨╢╨╕╤В╨╡ ╨░╨┤╤А╨╡╤Б (╨│╨╛╤А╨╛╨┤, ╤Г╨╗╨╕╤Ж╨░, ╨┤╨╛╨╝), ╨╕ ╤Б╤В╨╛╨╕╨╝╨╛╤Б╤В╤М ╨┐╨╛╤Б╤З╨╕╤В╨░╨╡╤В╤Б╤П ╨░╨▓╤В╨╛╨╝╨░╤В╨╕╤З╨╡╤Б╨║╨╕ ╨▓ ╨▒╨╗╨╛╨║╨╡ ┬л╨Ш╤В╨╛╨│╨╛┬╗. ╨С╨╡╨╖ ╨░╨┤╤А╨╡╤Б╨░ ╨╖╨░╨║╨░╨╖ ╨╝╨╛╨╢╨╜╨╛ ╨╛╤Д╨╛╤А╨╝╨╕╤В╤М ╨╜╨░ ╤Б╨░╨╝╨╛╨▓╤Л╨▓╨╛╨╖.</p>
+                </label>
+                <label class="order-field order-field--full">
+                  <span class="order-field__label">╨Ф╨╛╨┐╨╛╨╗╨╜╨╕╤В╨╡╨╗╤М╨╜╨░╤П ╨╕╨╜╤Д╨╛╤А╨╝╨░╤Ж╨╕╤П</span>
+                  <textarea class="order-field__input order-field__textarea" name="comment" id="order-comment" rows="3"></textarea>
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn--primary order-form__submit" id="order-form-submit">╨Ю╤В╨┐╤А╨░╨▓╨╕╤В╤М ╨╖╨░╨║╨░╨╖</button>
+            </form>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
