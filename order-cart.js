@@ -17,8 +17,7 @@
   var paymentStatusEl = document.getElementById('payment_status');
   var orderPayCodRadio = document.getElementById('order-pay-cod');
   var orderPayOnlineRadio = document.getElementById('order-pay-online');
-  var orderPaySberPanel = document.getElementById('order-pay-sber-panel');
-  var SBER_PAY_URL = 'https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308';
+  var orderPayOnlineStub = document.getElementById('order-pay-online-stub');
   var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
   var orderFormSending = false;
   var orderCheckoutEl = document.getElementById('order-checkout');
@@ -695,21 +694,17 @@
     if (orderCheckoutCard) {
       orderCheckoutCard.setAttribute('data-payment', method);
     }
-    if (orderPaySberPanel) {
-      if (method === 'online') {
-        orderPaySberPanel.hidden = false;
-        orderPaySberPanel.setAttribute('aria-hidden', 'false');
-        void orderPaySberPanel.offsetWidth;
-        orderPaySberPanel.classList.add('is-open');
-      } else {
-        orderPaySberPanel.classList.remove('is-open');
-        orderPaySberPanel.hidden = true;
-        orderPaySberPanel.setAttribute('aria-hidden', 'true');
-      }
+    if (orderPayOnlineStub) {
+      orderPayOnlineStub.hidden = method !== 'online';
     }
     if (orderFormSubmitBtn) {
-      orderFormSubmitBtn.disabled = false;
-      orderFormSubmitBtn.textContent = 'Отправить заказ';
+      if (method === 'online') {
+        orderFormSubmitBtn.disabled = true;
+        orderFormSubmitBtn.textContent = 'Онлайн-оплата скоро';
+      } else {
+        orderFormSubmitBtn.disabled = false;
+        orderFormSubmitBtn.textContent = 'Отправить заказ';
+      }
     }
   }
 
@@ -1651,6 +1646,10 @@
   }
 
   function validateOrderBeforeSubmit() {
+    if (getPaymentMethod() === 'online') {
+      alert('Онлайн-оплата скоро будет доступна. Выберите «Оплата при получении» или позвоните нам.');
+      return false;
+    }
     if (!orderForm.checkValidity()) {
       orderForm.reportValidity();
       return false;
@@ -1684,7 +1683,7 @@
     var commentEl = document.getElementById('order-comment');
     var totalText = getOrderTotalText();
     return {
-      payment: getPaymentMethod() === 'cod' ? 'При получении' : 'Онлайн — СберБанк',
+      payment: getPaymentMethod() === 'cod' ? 'При получении' : 'Онлайн (скоро)',
       payment_status: paymentStatusEl ? paymentStatusEl.value : PAYMENT_STATUS_DEFAULT,
       name: nameEl ? nameEl.value.trim() : '',
       company: '',
@@ -1727,8 +1726,6 @@
       var totalText = getOrderTotalText();
       if (getPaymentMethod() === 'cod') {
         setPaymentStatus('Оплата при получении — наличные или СБП водителю (Сумма: ' + totalText + ')');
-      } else {
-        setPaymentStatus('Онлайн — оплата через СберБанк (Сумма: ' + totalText + ')');
       }
       await submitOrderForm({ postSubmit: 'done' });
     });
