@@ -1103,10 +1103,9 @@
       (function (w) {
         'use strict';
 
-        var fdBase = 'https://formdesigner';
-        var fdPath = '.ru/user/web/form/post/';
-        var fdFormId = '245426';
-        var FORM_POST_URL = fdBase + fdPath + fdFormId;
+        var fdPart1 = 'https://formdesigner.';
+        var fdPart2 = 'ru/user/web/form/post/245426';
+        var FORM_POST_URL = fdPart1 + fdPart2;
 
         function toFormData(payload) {
           if (payload instanceof FormData) return payload;
