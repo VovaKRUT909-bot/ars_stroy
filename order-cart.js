@@ -915,20 +915,17 @@
     clearOrderAfterSubmit();
   }
 
-  /** Отправка заказа плитки (корзины) → Formspree. postSubmit: cash | none */
-  async function sendFormspreeOrder(orderData, postSubmit) {
+  /** Отправка заказа плитки (корзины) → FormDesigner. postSubmit: cash | none | invoice-sent */
+  async function sendFormDesignerOrder(orderData, postSubmit) {
     try {
-      var domain = 'https://formspree.io';
-      var path = '/f/xgoqzaey';
-      var response = await fetch(domain + path, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
-      if (response.ok) {
+      var post = window.ARS_STROY_postFormDesigner;
+      if (typeof post !== 'function') {
+        alert('Ошибка конфигурации формы.');
+        return false;
+      }
+      orderData.form_type = 'order';
+      var ok = await post(orderData);
+      if (ok) {
         if (postSubmit === 'cash') {
           alert(
             'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
@@ -951,20 +948,23 @@
     }
   }
 
-  /** Отправка заявки на замерщика → Formspree. */
-  async function sendFormspreeZamershik(zamershikData) {
+  /** Отправка заявки на замерщика → FormDesigner. */
+  async function sendFormDesignerZamershik(formOrData) {
     try {
-      var domain = 'https://formspree.io';
-      var path = '/f/xjgzoybd';
-      var response = await fetch(domain + path, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify(zamershikData)
-      });
-      if (response.ok) {
+      var post = window.ARS_STROY_postFormDesigner;
+      if (typeof post !== 'function') {
+        alert('Ошибка конфигурации формы.');
+        return false;
+      }
+      var payload = formOrData;
+      if (formOrData instanceof HTMLFormElement) {
+        payload = new FormData(formOrData);
+      } else if (formOrData && typeof formOrData === 'object') {
+        formOrData.form_type = 'zamer';
+        formOrData._subject = 'Заявка на замер тротуарной плитки';
+      }
+      var ok = await post(payload);
+      if (ok) {
         alert('Заявка на замерщика успешно отправлена!');
         if (ukladkaForm) {
           ukladkaForm.reset();
@@ -1744,7 +1744,7 @@
     }
 
     var orderData = buildOrderData();
-    var ok = await sendFormspreeOrder(orderData, options.postSubmit || 'none');
+    var ok = await sendFormDesignerOrder(orderData, options.postSubmit || 'none');
 
     orderFormSending = false;
     if (submitBtn) {
@@ -1849,13 +1849,7 @@
         ukladkaSubmitBtn.textContent = 'Отправляем…';
       }
 
-      var zamershikData = {
-        name: name,
-        phone: phone,
-        address: address
-      };
-
-      await sendFormspreeZamershik(zamershikData);
+      await sendFormDesignerZamershik(ukladkaForm);
 
       ukladkaSending = false;
       if (ukladkaSubmitBtn) {
