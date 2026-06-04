@@ -81,6 +81,8 @@
   var DELIVERY_INCLUDED_KM = 10;
   var DELIVERY_BASE_RUB = 5000;
   var DELIVERY_EXTRA_RUB_PER_KM = 100;
+  /** Дальше — не считаем автоматически (ложные 5 000 ₽). */
+  var MAX_DELIVERY_ONE_WAY_KM = 150;
   var DELIVERY_GEO_HEADERS = {
     Accept: 'application/json',
     'Accept-Language': 'ru',
@@ -180,13 +182,75 @@
     return '(' + formatKm(deliveryState.km) + ' км до объекта)';
   }
 
-  /** Город/населённый пункт из поля адреса доставки (#order-address). */
+  /** Полный адрес доставки из поля #order-address. */
+  function getClientDeliveryAddressText() {
+    if (orderAddressEl && orderAddressEl.value.trim()) {
+      return orderAddressEl.value.trim();
+    }
+    if (deliveryState.address) {
+      return deliveryState.address;
+    }
+    return '';
+  }
+
+  /** Город/населённый пункт — первая часть до запятой. */
   function getDeliveryCityFromAddress() {
-    if (!orderAddressEl) return '';
-    var address = orderAddressEl.value.trim();
+    var address = getClientDeliveryAddressText();
     if (!address) return '';
     var city = address.split(',')[0].trim();
     return city || address;
+  }
+
+  function isGeocodePrecisionReliable(precision, address) {
+    if (!precision) return false;
+    if (
+      precision === 'exact' ||
+      precision === 'number' ||
+      precision === 'near' ||
+      precision === 'range' ||
+      precision === 'street'
+    ) {
+      return true;
+    }
+    var addr = (address || '').trim();
+    if (
+      (precision === 'locality' || precision === 'district') &&
+      addr &&
+      addr.indexOf(',') === -1 &&
+      addr.length <= 48
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  function isDeliveryPointInServiceArea(point) {
+    if (!point || point.lat == null || point.lon == null) return false;
+    var km = haversineKm(DELIVERY_ORIGIN, point);
+    return km > 0 && km <= MAX_DELIVERY_ONE_WAY_KM;
+  }
+
+  function isDeliveryCalcResultAcceptable(address, result) {
+    if (!result || result.km == null || isNaN(result.km) || result.km <= 0) {
+      return false;
+    }
+    if (result.km > MAX_DELIVERY_ONE_WAY_KM) {
+      return false;
+    }
+    if (result.source === 'yandex') {
+      return true;
+    }
+    return isGeocodePrecisionReliable(result.geocodePrecision, address);
+  }
+
+  function failDeliveryCalc(address) {
+    deliveryState.status = 'error';
+    deliveryState.km = null;
+    deliveryState.cost = null;
+    deliveryState.message = 'delivery_error';
+    if (address) {
+      deliveryState.address = address;
+    }
   }
 
   /** До 10 км в одну сторону — 5 000 ₽; каждый км сверх — +100 ₽ (км округляются). */
@@ -386,7 +450,7 @@
     return fetchGeoJson(photon).then(function (ph) {
       if (ph && ph.features && ph.features[0] && ph.features[0].geometry) {
         var c = ph.features[0].geometry.coordinates;
-        return { lat: c[1], lon: c[0] };
+        return { lat: c[1], lon: c[0], precision: 'other', label: '' };
       }
       throw new Error('photon_not_found');
     });
@@ -403,7 +467,9 @@
       if (data && data[0]) {
         return {
           lat: parseFloat(data[0].lat),
-          lon: parseFloat(data[0].lon)
+          lon: parseFloat(data[0].lon),
+          precision: 'other',
+          label: data[0].display_name || ''
         };
       }
       throw new Error('nominatim_not_found');
@@ -433,9 +499,17 @@
           data.response.GeoObjectCollection &&
           data.response.GeoObjectCollection.featureMember;
         if (!members || !members[0]) throw new Error('yandex_geo_not_found');
-        var pos = members[0].GeoObject.Point.pos;
+        var geoObject = members[0].GeoObject;
+        var pos = geoObject.Point.pos;
         var parts = String(pos).split(' ');
-        return { lon: parseFloat(parts[0]), lat: parseFloat(parts[1]) };
+        var meta =
+          geoObject.metaDataProperty && geoObject.metaDataProperty.GeocoderMetaData;
+        return {
+          lon: parseFloat(parts[0]),
+          lat: parseFloat(parts[1]),
+          precision: meta && meta.precision ? meta.precision : '',
+          label: meta && meta.text ? meta.text : ''
+        };
       });
   }
 
@@ -481,9 +555,20 @@
   function deliveryDistanceViaOsm(customerAddress) {
     return geocodeAddress(customerAddress)
       .then(function (point) {
+        if (!isDeliveryPointInServiceArea(point)) {
+          throw new Error('out_of_service_area');
+        }
+        if (!isGeocodePrecisionReliable(point.precision, customerAddress)) {
+          throw new Error('low_geocode_precision');
+        }
         return estimateDistanceKmOsm(point).then(function (km) {
           if (km == null || isNaN(km) || km <= 0) throw new Error('bad_km');
-          return { km: km, source: 'osm' };
+          return {
+            km: km,
+            source: 'osm',
+            geocodePrecision: point.precision || '',
+            geocodeLabel: point.label || ''
+          };
         });
       })
       .catch(function (geoErr) {
@@ -547,9 +632,9 @@
 
     if (deliveryState.status === 'error' && deliveryState.address) {
       cartDeliveryLine.hidden = false;
-      if (cartDeliveryTotalEl) cartDeliveryTotalEl.textContent = '—';
+      if (cartDeliveryTotalEl) cartDeliveryTotalEl.textContent = 'Уточняется';
       if (cartDeliveryKmEl) {
-        cartDeliveryKmEl.textContent = ' (уточните у менеджера)';
+        cartDeliveryKmEl.textContent = ' (уточнит менеджер)';
       }
       if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
       return;
@@ -613,6 +698,9 @@
     return deliveryDistanceKm(address)
       .then(function (result) {
         if (token !== deliveryCalcToken) return;
+        if (!isDeliveryCalcResultAcceptable(address, result)) {
+          throw new Error('delivery_unreliable');
+        }
         var km = result.km;
         deliveryUsedFallback = result.source !== 'yandex';
         deliveryState.km = km;
@@ -623,10 +711,7 @@
       .catch(function (err) {
         if (token !== deliveryCalcToken) return;
         console.warn('delivery_calc', err);
-        deliveryState.status = 'error';
-        deliveryState.km = null;
-        deliveryState.cost = null;
-        deliveryState.message = 'delivery_error';
+        failDeliveryCalc(address);
       })
       .then(function () {
         if (token !== deliveryCalcToken) return;
@@ -650,9 +735,8 @@
       } catch (syncErr) {
         console.warn('delivery_calc_sync', syncErr);
         markYmapsUnavailable(syncErr);
-        deliveryState.status = 'error';
-        deliveryState.message = 'delivery_error';
-        renderDeliveryUi();
+        failDeliveryCalc(address);
+        updateOrderTotals();
       }
     }, 700);
   }
@@ -942,6 +1026,24 @@
     clearOrderAfterSubmit();
   }
 
+  function formatCheckoutWidgetDeliveryLine() {
+    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
+      var deliveryLine = 'Доставка:';
+      var cityName = getDeliveryCityFromAddress();
+      if (cityName) {
+        deliveryLine += ' ' + cityName + ',';
+      }
+      deliveryLine +=
+        ' ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel();
+      return deliveryLine.trim();
+    }
+    var clientAddress = getClientDeliveryAddressText();
+    if (clientAddress) {
+      return 'Доставка: ' + clientAddress + ', стоимость уточнит менеджер';
+    }
+    return 'Доставка: самовывоз';
+  }
+
   function getCheckoutWidgetCartText() {
     var lines = [];
     if (orderPayMode) {
@@ -964,24 +1066,7 @@
         lines.push('   ' + formatMoney(item.price * item.qty) + ' руб.');
       }
     });
-    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
-      var deliveryLine = 'Доставка:';
-      var cityName = getDeliveryCityFromAddress();
-      if (cityName) {
-        deliveryLine += ' ' + cityName + ',';
-      }
-      deliveryLine +=
-        ' ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel();
-      lines.push(deliveryLine.trim());
-    } else if (orderAddressEl && orderAddressEl.value.trim()) {
-      var cityPending = getDeliveryCityFromAddress();
-      lines.push(
-        'Доставка: ' +
-          (cityPending ? cityPending + ', уточняется' : 'по адресу «' + orderAddressEl.value.trim() + '»')
-      );
-    } else {
-      lines.push('Доставка: самовывоз');
-    }
+    lines.push(formatCheckoutWidgetDeliveryLine());
     lines.push('Итого: ' + getOrderTotalText());
     var text = lines.join('\n');
     if (text.length > FD_CHECKOUT_ORDER_FIELD_MAX) {
