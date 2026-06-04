@@ -1061,6 +1061,10 @@ body.order-fs-open{
   box-shadow:0 0 0 2px rgba(201,168,108,.18);
   transform:scale(1.03);
 }
+.order-payment__qr-mini--open{
+  border-color:rgba(33,160,56,.55);
+  box-shadow:0 0 0 2px rgba(33,160,56,.25);
+}
 .order-payment__qr-mini .order-payment__qr-img{
   display:block;
   width:80px;
@@ -1084,12 +1088,15 @@ body.order-fs-open{
 .order-qr-lightbox{
   position:fixed;
   inset:0;
-  z-index:9600;
+  z-index:210000;
   display:flex;
   align-items:center;
   justify-content:center;
   padding:20px;
   box-sizing:border-box;
+}
+.order-fs .order-qr-lightbox{
+  z-index:5;
 }
 .order-qr-lightbox[hidden]{
   display:none !important;

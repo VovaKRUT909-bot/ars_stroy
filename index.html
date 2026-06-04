@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v9" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v10" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -529,23 +529,6 @@
         </div>
       </section>
 
-    <div id="order-qr-lightbox" class="order-qr-lightbox" hidden aria-hidden="true">
-      <button type="button" class="order-qr-lightbox__backdrop" id="order-qr-lightbox-backdrop" aria-label="Закрыть QR-код"></button>
-      <div class="order-qr-lightbox__dialog" role="dialog" aria-modal="true" aria-labelledby="order-qr-lightbox-title">
-        <button type="button" class="order-qr-lightbox__close" id="order-qr-lightbox-close" aria-label="Закрыть">×</button>
-        <h3 class="order-qr-lightbox__title" id="order-qr-lightbox-title">QR для оплаты с компьютера</h3>
-        <img
-          class="order-qr-lightbox__img"
-          src="sber-qr.jpg"
-          alt="QR-код СберБанк для оплаты заказа"
-          width="280"
-          height="280"
-          decoding="async"
-        />
-        <p class="order-qr-lightbox__hint">Отсканируйте в мобильном приложении вашего банка</p>
-      </div>
-    </div>
-
     <div id="order-checkout-overlay" class="order-fs" hidden aria-hidden="true">
       <div class="order-fs__backdrop" id="order-fs-backdrop" aria-hidden="true"></div>
       <div class="order-fs__dialog" role="dialog" aria-modal="true" aria-labelledby="order-fs-title">
@@ -712,6 +695,22 @@
             </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div id="order-qr-lightbox" class="order-qr-lightbox" hidden aria-hidden="true">
+        <button type="button" class="order-qr-lightbox__backdrop" id="order-qr-lightbox-backdrop" aria-label="Закрыть QR-код"></button>
+        <div class="order-qr-lightbox__dialog" role="dialog" aria-modal="true" aria-labelledby="order-qr-lightbox-title">
+          <button type="button" class="order-qr-lightbox__close" id="order-qr-lightbox-close" aria-label="Закрыть">×</button>
+          <h3 class="order-qr-lightbox__title" id="order-qr-lightbox-title">QR для оплаты с компьютера</h3>
+          <img
+            class="order-qr-lightbox__img"
+            src="sber-qr.jpg"
+            alt="QR-код СберБанк для оплаты заказа"
+            width="280"
+            height="280"
+            decoding="async"
+          />
+          <p class="order-qr-lightbox__hint">Нажмите ещё раз на миниатюру или «×», чтобы вернуть QR на место</p>
         </div>
       </div>
     </div>
@@ -1124,7 +1123,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=order-fs-v9" defer></script>
+    <script src="order-cart.js?v=order-fs-v10" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

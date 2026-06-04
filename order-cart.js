@@ -1670,9 +1670,12 @@
   if (!window.__orderFsEscBound) {
     window.__orderFsEscBound = true;
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && isOrderFullscreenOpen()) {
-        closeOrderFullscreen();
+      if (e.key !== 'Escape' || !isOrderFullscreenOpen()) return;
+      if (isOrderQrLightboxOpen()) {
+        closeOrderQrLightbox();
+        return;
       }
+      closeOrderFullscreen();
     });
   }
 
@@ -1790,15 +1793,19 @@
   var orderQrLightbox = document.getElementById('order-qr-lightbox');
   var orderQrLightboxBackdrop = document.getElementById('order-qr-lightbox-backdrop');
   var orderQrLightboxClose = document.getElementById('order-qr-lightbox-close');
-  var orderQrLightboxPrevOverflow = '';
+  function isOrderQrLightboxOpen() {
+    return orderQrLightbox && orderQrLightbox.classList.contains('is-open');
+  }
 
   function openOrderQrLightbox() {
     if (!orderQrLightbox) return;
     orderQrLightbox.hidden = false;
     orderQrLightbox.setAttribute('aria-hidden', 'false');
     orderQrLightbox.classList.add('is-open');
-    orderQrLightboxPrevOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
+    if (orderQrOpenBtn) {
+      orderQrOpenBtn.setAttribute('aria-expanded', 'true');
+      orderQrOpenBtn.classList.add('order-payment__qr-mini--open');
+    }
     if (orderQrLightboxClose) orderQrLightboxClose.focus();
   }
 
@@ -1807,26 +1814,32 @@
     orderQrLightbox.classList.remove('is-open');
     orderQrLightbox.hidden = true;
     orderQrLightbox.setAttribute('aria-hidden', 'true');
-    document.documentElement.style.overflow = orderQrLightboxPrevOverflow || '';
-    if (orderQrOpenBtn) orderQrOpenBtn.focus();
+    if (orderQrOpenBtn) {
+      orderQrOpenBtn.setAttribute('aria-expanded', 'false');
+      orderQrOpenBtn.classList.remove('order-payment__qr-mini--open');
+      orderQrOpenBtn.focus();
+    }
+  }
+
+  function toggleOrderQrLightbox() {
+    if (isOrderQrLightboxOpen()) {
+      closeOrderQrLightbox();
+    } else {
+      openOrderQrLightbox();
+    }
   }
 
   if (orderQrOpenBtn) {
-    orderQrOpenBtn.addEventListener('click', openOrderQrLightbox);
+    orderQrOpenBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleOrderQrLightbox();
+    });
   }
   if (orderQrLightboxBackdrop) {
     orderQrLightboxBackdrop.addEventListener('click', closeOrderQrLightbox);
   }
   if (orderQrLightboxClose) {
     orderQrLightboxClose.addEventListener('click', closeOrderQrLightbox);
-  }
-  if (!window.__orderQrEscBound) {
-    window.__orderQrEscBound = true;
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && orderQrLightbox && orderQrLightbox.classList.contains('is-open')) {
-        closeOrderQrLightbox();
-      }
-    });
   }
 
   if (orderPaymentSendBtn) {
