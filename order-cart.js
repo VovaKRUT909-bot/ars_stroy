@@ -180,6 +180,15 @@
     return '(' + formatKm(deliveryState.km) + ' км до объекта)';
   }
 
+  /** Город/населённый пункт из поля адреса доставки (#order-address). */
+  function getDeliveryCityFromAddress() {
+    if (!orderAddressEl) return '';
+    var address = orderAddressEl.value.trim();
+    if (!address) return '';
+    var city = address.split(',')[0].trim();
+    return city || address;
+  }
+
   /** До 10 км в одну сторону — 5 000 ₽; каждый км сверх — +100 ₽ (км округляются). */
   function deliveryCostFromKm(oneWayKm) {
     var km = deliveryKmRounded(oneWayKm);
@@ -956,11 +965,20 @@
       }
     });
     if (deliveryState.status === 'ok' && deliveryState.cost != null) {
-      lines.push(
-        'Доставка: ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel()
-      );
+      var deliveryLine = 'Доставка:';
+      var cityName = getDeliveryCityFromAddress();
+      if (cityName) {
+        deliveryLine += ' ' + cityName + ',';
+      }
+      deliveryLine +=
+        ' ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel();
+      lines.push(deliveryLine.trim());
     } else if (orderAddressEl && orderAddressEl.value.trim()) {
-      lines.push('Доставка: по адресу «' + orderAddressEl.value.trim() + '»');
+      var cityPending = getDeliveryCityFromAddress();
+      lines.push(
+        'Доставка: ' +
+          (cityPending ? cityPending + ', уточняется' : 'по адресу «' + orderAddressEl.value.trim() + '»')
+      );
     } else {
       lines.push('Доставка: самовывоз');
     }
