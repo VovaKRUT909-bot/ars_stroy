@@ -20,11 +20,12 @@
   var orderPaymentFlowHintEl = document.getElementById('order-payment-flow-hint');
   var SBER_PAY_URL = 'https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308';
   var FD_ORDER_ROUTE_URL = 'https://formdesigner.ru' + '/html/route?id=' + '245426';
-  /** Макросы полей FormDesigner (форма 245426) — «Имя макроса» в конструкторе */
-  var FD_ORDER_FIELD_FIO = 'name';
-  var FD_ORDER_FIELD_PHONE = 'phone';
-  /** Многострочное поле «Адрес» в FormDesigner — сюда уходит весь текст заказа */
-  var FD_ORDER_FIELD_ADDRESS = 'address';
+  /** Рабочий POST-endpoint формы 245426 (html/route на сервере не принимает POST) */
+  var FD_ORDER_FORM_POST_URL = 'https://formdesigner.ru/form/view/245426';
+  var FD_ORDER_PAGE_ID = '330967';
+  var FD_FIELD_PHONE = 'field3065905';
+  var FD_FIELD_FIO_PREFIX = 'field3065907';
+  var FD_FIELD_ORDER_TEXT = 'field3065910';
   var invoiceOrderSent = false;
   var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
   var orderFormSending = false;
@@ -998,63 +999,91 @@
     return lines.join('\n');
   }
 
+  function appendFormDesignerFioFields(formData, fio) {
+    var parts = String(fio || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (parts.length >= 3) {
+      formData.append(FD_FIELD_FIO_PREFIX + '[2]', parts[0]);
+      formData.append(FD_FIELD_FIO_PREFIX + '[1]', parts[1]);
+      formData.append(FD_FIELD_FIO_PREFIX + '[3]', parts.slice(2).join(' '));
+    } else if (parts.length === 2) {
+      formData.append(FD_FIELD_FIO_PREFIX + '[2]', parts[0]);
+      formData.append(FD_FIELD_FIO_PREFIX + '[1]', parts[1]);
+    } else {
+      formData.append(FD_FIELD_FIO_PREFIX + '[2]', fio);
+    }
+  }
+
   function buildFormDesignerOrderFormData() {
     var nameEl = document.getElementById('order-name');
     var phoneEl = document.getElementById('order-phone');
     var formData = new FormData();
-    formData.append(FD_ORDER_FIELD_FIO, nameEl ? nameEl.value.trim() : '');
-    formData.append(FD_ORDER_FIELD_PHONE, phoneEl ? phoneEl.value.trim() : '');
-    formData.append(FD_ORDER_FIELD_ADDRESS, getOrderDetailsText());
+    var phone = phoneEl ? phoneEl.value.trim() : '';
+    var fio = nameEl ? nameEl.value.trim() : '';
+    formData.append(FD_FIELD_PHONE, phone);
+    appendFormDesignerFioFields(formData, fio);
+    formData.append(FD_FIELD_ORDER_TEXT, getOrderDetailsText());
+    formData.append('submit', 'send');
+    formData.append('pageId', FD_ORDER_PAGE_ID);
     return formData;
   }
 
-  async function isFormDesignerOrderSuccess(response) {
-    if (!response || !response.ok) return false;
-    var text = '';
-    try {
-      text = await response.text();
-    } catch (e) {
-      return true;
+  function finishFormDesignerOrderSend(postSubmit) {
+    if (postSubmit === 'cash') {
+      alert(
+        'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
+      );
+      clearCart();
+    } else if (postSubmit === 'invoice-sent') {
+      alert(
+        'Заказ принят! Данные отправлены. Проверьте уведомление, затем нажмите «Перейти в СберБанк и перевести».'
+      );
+      markInvoiceOrderSent();
     }
-    if (!text) return true;
+    return true;
+  }
+
+  async function postFormDesignerOrderFetch(url, formData) {
     try {
-      var data = JSON.parse(text);
-      if (data && (data.status === 'error' || data.ok === false)) return false;
-      return true;
+      var response = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'omit',
+        body: formData
+      });
+      if (response && response.ok) {
+        return true;
+      }
+    } catch (e) {
+      console.warn('FormDesigner cors POST failed:', url, e);
+    }
+    try {
+      var opaque = await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        credentials: 'omit',
+        body: formData
+      });
+      return opaque && opaque.type === 'opaque';
     } catch (e2) {
-      return !/error|ошибка/i.test(text);
+      console.warn('FormDesigner no-cors POST failed:', url, e2);
+      return false;
     }
   }
 
   /** Отправка заказа (корзина) → FormDesigner. postSubmit: cash | invoice-sent | none */
   async function sendFormDesignerOrder(postSubmit) {
-    try {
-      var response = await fetch(FD_ORDER_ROUTE_URL, {
-        method: 'POST',
-        body: buildFormDesignerOrderFormData()
-      });
-      var ok = await isFormDesignerOrderSuccess(response);
-      if (ok) {
-        if (postSubmit === 'cash') {
-          alert(
-            'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
-          );
-          clearCart();
-        } else if (postSubmit === 'invoice-sent') {
-          alert(
-            'Заказ принят! Данные отправлены. Проверьте уведомление, затем нажмите «Перейти в СберБанк и перевести».'
-          );
-          markInvoiceOrderSent();
-        }
-        return true;
-      }
-      alert('Ошибка при отправке заказа.');
-      return false;
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Произошла ошибка соединения.');
-      return false;
+    var formData = buildFormDesignerOrderFormData();
+    var sent =
+      (await postFormDesignerOrderFetch(FD_ORDER_ROUTE_URL, formData)) ||
+      (await postFormDesignerOrderFetch(FD_ORDER_FORM_POST_URL, formData));
+    if (sent) {
+      return finishFormDesignerOrderSend(postSubmit);
     }
+    alert('Ошибка при отправке заказа. Проверьте интернет и попробуйте ещё раз.');
+    return false;
   }
 
   function slugifyAscii(text) {
