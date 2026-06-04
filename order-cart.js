@@ -11,30 +11,23 @@
   var cartGrandTotal = document.getElementById('cart-grand-total');
   var cartCountEl = document.getElementById('cart-count');
   var cartClearBtn = document.getElementById('cart-clear');
-  var orderForm = document.getElementById('order-form');
-  var orderTotalEl = document.getElementById('order-total');
-  var orderCartDataEl = document.getElementById('order-cart-data');
   var paymentStatusEl = document.getElementById('payment_status');
-  var orderPaymentSendBtn = document.getElementById('order-payment-send');
   var orderPaymentSberBtn = document.getElementById('order-payment-sber');
   var orderPaymentFlowHintEl = document.getElementById('order-payment-flow-hint');
   var SBER_PAY_URL = 'https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308';
-  var FD_ORDER_ROUTE_URL = 'https://formdesigner.ru' + '/html/route?id=' + '245426';
-  /** Рабочий POST-endpoint формы 245426 (html/route на сервере не принимает POST) */
-  var FD_ORDER_FORM_POST_URL = 'https://formdesigner.ru/form/view/245426';
-  var FD_ORDER_PAGE_ID = '330967';
-  var FD_FIELD_PHONE = 'field3065905';
-  var FD_FIELD_FIO_PREFIX = 'field3065907';
-  var FD_FIELD_ORDER_TEXT = 'field3065910';
+  var FD_CHECKOUT_FORM_ID = '245438';
+  /** Текстовая область заказа в форме 245438 */
+  var FD_CHECKOUT_ORDER_FIELD = 'field3065946';
+  var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
+  var checkoutWidgetFillTimer = null;
+  var checkoutWidgetFillAttempts = 0;
   var invoiceOrderSent = false;
   var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
-  var orderFormSending = false;
   var orderCheckoutEl = document.getElementById('order-checkout');
   var orderPayModeHintEl = document.getElementById('order-pay-mode-hint');
   var orderCashInfoEl = document.getElementById('order-cash-info');
   var orderPaymentEl = document.getElementById('order-payment');
   var orderCheckoutCard = document.querySelector('.order-checkout-card');
-  var orderFormSubmitBtn = document.getElementById('order-form-submit');
   var orderPayMode = null;
   var orderFsOverlay = document.getElementById('order-checkout-overlay');
   var orderFsBackdrop = document.getElementById('order-fs-backdrop');
@@ -577,15 +570,6 @@
     return formatMoney(getCartGrandTotal()) + ' руб.';
   }
 
-  function syncOrderHiddenFields() {
-    if (orderTotalEl) {
-      orderTotalEl.value = getOrderTotalText();
-    }
-    if (orderCartDataEl) {
-      orderCartDataEl.value = formatCartLinesForForm();
-    }
-  }
-
   function setPaymentStatus(text) {
     if (paymentStatusEl) {
       paymentStatusEl.value = text;
@@ -603,8 +587,8 @@
     if (cartGrandTotal) {
       cartGrandTotal.textContent = formatMoney(getCartGrandTotal());
     }
-    syncOrderHiddenFields();
     renderDeliveryUi();
+    scheduleFillCheckoutWidget();
   }
 
   function calculateDelivery(address) {
@@ -731,7 +715,7 @@
           'Наличные: при доставке — водителю в руки. Ниже откроется форма заказа.';
       } else if (orderPayMode === 'invoice') {
         orderPayModeHintEl.textContent =
-          'Безнал: сначала «Отправить заказ», проверьте уведомление, затем «Перейти в СберБанк» для перевода.';
+          'Безнал: заполните форму заказа ниже и нажмите «Отправить», затем «Перейти в СберБанк» для перевода.';
       } else {
         orderPayModeHintEl.textContent =
           'Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.';
@@ -838,6 +822,14 @@
   function setOrderPaymentMode(mode, opts) {
     opts = opts || {};
     if (mode !== 'cash' && mode !== 'invoice') return;
+    if (cart.length === 0) {
+      alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
+      return;
+    }
+    if (cartHasMissingQty()) {
+      alert('Укажите количество для каждой позиции (м² или шт.).');
+      return;
+    }
 
     if (orderPayMode === mode && !opts.force) {
       updateOrderPayModeButtons();
@@ -900,11 +892,6 @@
 
   function resetInvoicePayFlow() {
     invoiceOrderSent = false;
-    if (orderPaymentSendBtn) {
-      orderPaymentSendBtn.disabled = false;
-      orderPaymentSendBtn.textContent = 'Отправить заказ';
-      orderPaymentSendBtn.classList.remove('order-payment__send-order--done', 'order-payment__send-order--loading');
-    }
     if (orderPaymentSberBtn) {
       orderPaymentSberBtn.classList.add('order-payment__sber--disabled');
       orderPaymentSberBtn.classList.remove('order-payment__sber--pulse');
@@ -913,17 +900,12 @@
     }
     if (orderPaymentFlowHintEl) {
       orderPaymentFlowHintEl.innerHTML =
-        'Сначала <strong>отправьте заказ</strong>. Затем ниже — <strong>переход в Сбер</strong> для перевода.';
+        'Сначала <strong>заполните форму заказа ниже</strong> и нажмите «Отправить». Затем — <strong>переход в Сбер</strong> для перевода.';
     }
   }
 
   function markInvoiceOrderSent() {
     invoiceOrderSent = true;
-    if (orderPaymentSendBtn) {
-      orderPaymentSendBtn.disabled = true;
-      orderPaymentSendBtn.classList.add('order-payment__send-order--done');
-      orderPaymentSendBtn.textContent = 'Заказ отправлен';
-    }
     if (orderPaymentSberBtn) {
       orderPaymentSberBtn.classList.remove('order-payment__sber--disabled');
       orderPaymentSberBtn.classList.add('order-payment__sber--pulse');
@@ -943,9 +925,6 @@
     resetDeliveryState();
     resetOrderPaymentMode();
     renderCart();
-    if (orderForm) {
-      orderForm.reset();
-    }
     resetPaymentStatus();
     closeOrderFullscreen();
   }
@@ -954,137 +933,164 @@
     clearOrderAfterSubmit();
   }
 
-  function getOrderDetailsText() {
-    syncOrderHiddenFields();
-    var nameEl = document.getElementById('order-name');
-    var phoneEl = document.getElementById('order-phone');
-    var emailEl = document.getElementById('order-email');
-    var addressEl = document.getElementById('order-address');
-    var commentEl = document.getElementById('order-comment');
+  function getCheckoutWidgetCartText() {
     var lines = [];
-
-    lines.push('—— Контакты ——');
-    lines.push('ФИО: ' + (nameEl ? nameEl.value.trim() : ''));
-    lines.push('Телефон: ' + (phoneEl ? phoneEl.value.trim() : ''));
-    lines.push('E-mail: ' + (emailEl && emailEl.value.trim() ? emailEl.value.trim() : '—'));
-    lines.push(
-      'Адрес доставки: ' +
-        (addressEl && addressEl.value.trim() ? addressEl.value.trim() : '—')
-    );
-    lines.push(
-      'Доп. информация: ' +
-        (commentEl && commentEl.value.trim() ? commentEl.value.trim() : '—')
-    );
-    lines.push('');
-    lines.push('—— Заказ ——');
-    lines.push('Способ оплаты: ' + (orderPayMode === 'cash' ? 'Нал' : 'Безнал'));
-    if (paymentStatusEl && paymentStatusEl.value) {
-      lines.push('Статус оплаты: ' + paymentStatusEl.value);
+    if (orderPayMode) {
+      lines.push('Оплата: ' + (orderPayMode === 'cash' ? 'Нал' : 'Безнал'));
     }
-    lines.push('');
-    lines.push('Товары:');
-    lines.push(formatCartLinesDetailedForForm() || '—');
-    lines.push('');
-    lines.push('Сумма товаров: ' + formatMoney(getCartProductsTotal()) + ' руб.');
+    cart.forEach(function (item, index) {
+      var measure = item.qtyMeasure || 'шт.';
+      lines.push(
+        (index + 1) +
+          '. ' +
+          item.productName +
+          ' | ' +
+          (item.colorRu || item.color) +
+          ' | ' +
+          (item.qty != null ? item.qty : '—') +
+          ' ' +
+          measure
+      );
+      if (item.qty != null && item.qty > 0) {
+        lines.push('   ' + formatMoney(item.price * item.qty) + ' руб.');
+      }
+    });
     if (deliveryState.status === 'ok' && deliveryState.cost != null) {
       lines.push(
         'Доставка: ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel()
       );
-    } else if (addressEl && addressEl.value.trim()) {
-      lines.push('Доставка: уточняется по адресу');
+    } else if (orderAddressEl && orderAddressEl.value.trim()) {
+      lines.push('Доставка: по адресу «' + orderAddressEl.value.trim() + '»');
     } else {
-      lines.push('Доставка: самовывоз / не указана');
+      lines.push('Доставка: самовывоз');
     }
     lines.push('Итого: ' + getOrderTotalText());
-    return lines.join('\n');
+    var text = lines.join('\n');
+    if (text.length > FD_CHECKOUT_ORDER_FIELD_MAX) {
+      text = text.slice(0, FD_CHECKOUT_ORDER_FIELD_MAX - 1) + '…';
+    }
+    return text;
   }
 
-  function appendFormDesignerFioFields(formData, fio) {
-    var parts = String(fio || '')
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-    if (parts.length >= 3) {
-      formData.append(FD_FIELD_FIO_PREFIX + '[2]', parts[0]);
-      formData.append(FD_FIELD_FIO_PREFIX + '[1]', parts[1]);
-      formData.append(FD_FIELD_FIO_PREFIX + '[3]', parts.slice(2).join(' '));
-    } else if (parts.length === 2) {
-      formData.append(FD_FIELD_FIO_PREFIX + '[2]', parts[0]);
-      formData.append(FD_FIELD_FIO_PREFIX + '[1]', parts[1]);
-    } else {
-      formData.append(FD_FIELD_FIO_PREFIX + '[2]', fio);
+  function pushCheckoutWidgetFieldData() {
+    if (!window.FD || typeof window.FD.setData !== 'function') {
+      return false;
+    }
+    var fields = {};
+    fields[FD_CHECKOUT_ORDER_FIELD] = getCheckoutWidgetCartText();
+    window.FD.setData(FD_CHECKOUT_FORM_ID, { fields: fields });
+    return true;
+  }
+
+  function scheduleFillCheckoutWidget() {
+    if (checkoutWidgetFillTimer) {
+      clearTimeout(checkoutWidgetFillTimer);
+    }
+    checkoutWidgetFillAttempts = 0;
+    checkoutWidgetFillTimer = setTimeout(fillCheckoutWidgetWhenReady, 120);
+  }
+
+  function fillCheckoutWidgetWhenReady() {
+    if (cart.length === 0) {
+      return;
+    }
+    if (pushCheckoutWidgetFieldData()) {
+      checkoutWidgetFillAttempts = 0;
+      return;
+    }
+    var iframe = getCheckoutWidgetIframe();
+    if (iframe && !iframe.dataset.arsCheckoutFillBound) {
+      iframe.dataset.arsCheckoutFillBound = '1';
+      iframe.addEventListener('load', function () {
+        pushCheckoutWidgetFieldData();
+      });
+    }
+    if (checkoutWidgetFillAttempts < 40) {
+      checkoutWidgetFillAttempts += 1;
+      checkoutWidgetFillTimer = setTimeout(fillCheckoutWidgetWhenReady, 250);
     }
   }
 
-  function buildFormDesignerOrderFormData() {
-    var nameEl = document.getElementById('order-name');
-    var phoneEl = document.getElementById('order-phone');
-    var formData = new FormData();
-    var phone = phoneEl ? phoneEl.value.trim() : '';
-    var fio = nameEl ? nameEl.value.trim() : '';
-    formData.append(FD_FIELD_PHONE, phone);
-    appendFormDesignerFioFields(formData, fio);
-    formData.append(FD_FIELD_ORDER_TEXT, getOrderDetailsText());
-    formData.append('submit', 'send');
-    formData.append('pageId', FD_ORDER_PAGE_ID);
-    return formData;
+  function getCheckoutWidgetRoot() {
+    return document.querySelector(
+      '.order-checkout-widget[data-id="' + FD_CHECKOUT_FORM_ID + '"]'
+    );
   }
 
-  function finishFormDesignerOrderSend(postSubmit) {
-    if (postSubmit === 'cash') {
+  function getCheckoutWidgetIframe() {
+    var root = getCheckoutWidgetRoot();
+    return root ? root.querySelector('iframe') : null;
+  }
+
+  function onCheckoutFormDesignerSuccess() {
+    if (!orderPayMode) {
+      alert('Сначала выберите способ оплаты: «Нал» или «Безнал».');
+      return;
+    }
+    if (cart.length === 0) {
+      return;
+    }
+    if (orderPayMode === 'cash') {
+      var totalCash = getOrderTotalText();
+      setPaymentStatus('Нал — оплата при получении (Сумма: ' + totalCash + ')');
       alert(
         'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
       );
       clearCart();
-    } else if (postSubmit === 'invoice-sent') {
+      return;
+    }
+    if (orderPayMode === 'invoice') {
+      if (invoiceOrderSent) {
+        return;
+      }
+      var totalInv = getOrderTotalText();
+      setPaymentStatus('Безнал — заказ отправлен, ожидается перевод (Сумма: ' + totalInv + ')');
       alert(
         'Заказ принят! Данные отправлены. Проверьте уведомление, затем нажмите «Перейти в СберБанк и перевести».'
       );
       markInvoiceOrderSent();
     }
-    return true;
   }
 
-  async function postFormDesignerOrderFetch(url, formData) {
-    try {
-      var response = await fetch(url, {
-        method: 'POST',
-        mode: 'cors',
-        credentials: 'omit',
-        body: formData
-      });
-      if (response && response.ok) {
-        return true;
+  function bindCheckoutFormDesignerMessageFallback() {
+    if (window.__arsCheckoutFdMessageBound) {
+      return;
+    }
+    window.__arsCheckoutFdMessageBound = true;
+    window.addEventListener('message', function (event) {
+      var iframe = getCheckoutWidgetIframe();
+      if (!iframe || event.source !== iframe.contentWindow) {
+        return;
       }
-    } catch (e) {
-      console.warn('FormDesigner cors POST failed:', url, e);
-    }
-    try {
-      var opaque = await fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-        credentials: 'omit',
-        body: formData
-      });
-      return opaque && opaque.type === 'opaque';
-    } catch (e2) {
-      console.warn('FormDesigner no-cors POST failed:', url, e2);
-      return false;
-    }
+      if (!event.origin || event.origin.indexOf('formdesigner.ru') === -1) {
+        return;
+      }
+      try {
+        var payload = JSON.parse(event.data);
+        if (payload && payload.data && payload.data.success) {
+          onCheckoutFormDesignerSuccess();
+        }
+      } catch (err) {
+        /* ignore */
+      }
+    });
   }
 
-  /** Отправка заказа (корзина) → FormDesigner. postSubmit: cash | invoice-sent | none */
-  async function sendFormDesignerOrder(postSubmit) {
-    var formData = buildFormDesignerOrderFormData();
-    var sent =
-      (await postFormDesignerOrderFetch(FD_ORDER_ROUTE_URL, formData)) ||
-      (await postFormDesignerOrderFetch(FD_ORDER_FORM_POST_URL, formData));
-    if (sent) {
-      return finishFormDesignerOrderSend(postSubmit);
+  function watchCheckoutWidgetMount() {
+    var root = getCheckoutWidgetRoot();
+    if (!root || root.dataset.arsCheckoutWatchBound) {
+      return;
     }
-    alert('Ошибка при отправке заказа. Проверьте интернет и попробуйте ещё раз.');
-    return false;
+    root.dataset.arsCheckoutWatchBound = '1';
+    var observer = new MutationObserver(function () {
+      scheduleFillCheckoutWidget();
+    });
+    observer.observe(root, { childList: true, subtree: true });
   }
+
+  window.ARS_STROY_onCheckoutFormSuccess = onCheckoutFormDesignerSuccess;
+  bindCheckoutFormDesignerMessageFallback();
+  watchCheckoutWidgetMount();
 
   function slugifyAscii(text) {
     return String(text)
@@ -1620,6 +1626,7 @@
 
     updateOrderTotals();
     updateCartBadge();
+    scheduleFillCheckoutWidget();
   }
 
   function addToCart(product) {
@@ -1778,109 +1785,11 @@
     });
   }
 
-  function validateOrderBeforeSubmit() {
-    if (!orderPayMode) {
-      alert('Выберите способ оплаты: «Нал» или «Безнал».');
-      return false;
-    }
-    if (!orderForm.checkValidity()) {
-      orderForm.reportValidity();
-      return false;
-    }
-    if (cart.length === 0) {
-      alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
-      return false;
-    }
-    if (cartHasMissingQty()) {
-      alert('Укажите количество для каждой позиции (м² или шт.).');
-      return false;
-    }
-    var phoneEl = document.getElementById('order-phone');
-    var phone = phoneEl ? phoneEl.value.trim() : '';
-    if (!phone) {
-      if (phoneEl) {
-        phoneEl.focus();
-        phoneEl.reportValidity();
-      }
-      return false;
-    }
-    return true;
-  }
-
-  function buildOrderData() {
-    syncOrderHiddenFields();
-    var nameEl = document.getElementById('order-name');
-    var phoneEl = document.getElementById('order-phone');
-    var emailEl = document.getElementById('order-email');
-    var addressEl = document.getElementById('order-address');
-    var commentEl = document.getElementById('order-comment');
-    var totalText = getOrderTotalText();
-    return {
-      payment: orderPayMode === 'cash' ? 'Нал' : 'Безнал',
-      payment_status: paymentStatusEl ? paymentStatusEl.value : PAYMENT_STATUS_DEFAULT,
-      name: nameEl ? nameEl.value.trim() : '',
-      company: '',
-      phone: phoneEl ? phoneEl.value.trim() : '',
-      email: emailEl ? emailEl.value.trim() : '',
-      address: addressEl ? addressEl.value.trim() : '',
-      comment: commentEl ? commentEl.value.trim() : '',
-      cart: formatCartLinesForForm(),
-      total: totalText
-    };
-  }
-
-  async function submitOrderForm(options) {
-    options = options || {};
-    if (orderFormSending) return false;
-    if (!validateOrderBeforeSubmit()) return false;
-
-    orderFormSending = true;
-    var submitBtn = orderFormSubmitBtn || orderForm.querySelector('.order-form__submit');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.classList.add('order-form__submit--loading');
-    }
-    if (orderPaymentSendBtn && orderPayMode === 'invoice') {
-      orderPaymentSendBtn.classList.add('order-payment__send-order--loading');
-      orderPaymentSendBtn.disabled = true;
-    }
-
-    var ok = await sendFormDesignerOrder(options.postSubmit || 'none');
-
-    orderFormSending = false;
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.classList.remove('order-form__submit--loading');
-    }
-    if (orderPaymentSendBtn) {
-      orderPaymentSendBtn.classList.remove('order-payment__send-order--loading');
-      if (!invoiceOrderSent) {
-        orderPaymentSendBtn.disabled = false;
-      }
-    }
-    return ok;
-  }
-
-  async function handleInvoiceSendOrder() {
-    if (orderPayMode !== 'invoice') {
-      alert('Для безнала выберите способ оплаты «Безнал».');
-      return;
-    }
-    if (invoiceOrderSent) {
-      alert('Заказ уже отправлен. Нажмите «Перейти в СберБанк и перевести» ниже.');
-      return;
-    }
-    if (orderFormSending) return;
-    var totalText = getOrderTotalText();
-    setPaymentStatus('Безнал — заказ отправлен, ожидается перевод (Сумма: ' + totalText + ')');
-    await submitOrderForm({ postSubmit: 'invoice-sent' });
-  }
-
   function handleSberPayClick(e) {
     if (orderPayMode !== 'invoice') return;
     if (!invoiceOrderSent) {
       e.preventDefault();
-      alert('Сначала нажмите «Отправить заказ», затем переходите в СберБанк.');
+      alert('Сначала заполните форму заказа ниже и нажмите «Отправить», затем переходите в СберБанк.');
       return;
     }
     var totalText = getOrderTotalText();
@@ -1940,24 +1849,8 @@
     orderQrLightboxClose.addEventListener('click', closeOrderQrLightbox);
   }
 
-  if (orderPaymentSendBtn) {
-    orderPaymentSendBtn.addEventListener('click', handleInvoiceSendOrder);
-  }
   if (orderPaymentSberBtn) {
     orderPaymentSberBtn.addEventListener('click', handleSberPayClick);
-  }
-
-  if (orderForm) {
-    orderForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      if (orderPayMode === 'invoice') {
-        alert('Для безнала сначала нажмите «Отправить заказ» в блоке оплаты, затем «Перейти в СберБанк».');
-        return;
-      }
-      var totalText = getOrderTotalText();
-      setPaymentStatus('Нал — оплата при получении (Сумма: ' + totalText + ')');
-      await submitOrderForm({ postSubmit: 'cash' });
-    });
   }
 
   resetDeliveryState();

@@ -518,9 +518,6 @@ main{
   opacity:1;
   transform:none;
 }
-.order-layout--fullscreen .order-checkout.is-visible .order-form{
-  display:contents;
-}
 .order-layout--fullscreen .order-checkout.is-visible .order-cart{
   order:1;
 }
@@ -530,14 +527,11 @@ main{
 .order-layout--fullscreen .order-checkout.is-visible .order-payment.is-open{
   order:2;
 }
-.order-layout--fullscreen .order-checkout.is-visible .order-form__grid{
+.order-layout--fullscreen .order-checkout.is-visible .order-checkout-widget{
   order:3;
-  display:grid;
-}
-.order-layout--fullscreen .order-checkout.is-visible .order-form__submit{
-  order:4;
   width:calc(100% - 28px);
-  margin:0 14px 14px;
+  max-width:600px;
+  margin:0 auto 14px;
 }
 .order-layout--fullscreen .order-checkout.is-visible .order-selected{
   order:0;
@@ -1626,6 +1620,7 @@ body.order-fs-open{
   color:var(--muted);
   font-weight:600;
 }
+.order-checkout-widget.formdesigner-widget,
 .ukladka-request__card .formdesigner-widget{
   margin-top:18px;
   width:100%;

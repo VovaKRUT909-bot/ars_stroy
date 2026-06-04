@@ -57,6 +57,16 @@
             "width": "600px",
             "height": "auto",
             "scroll": true
+        },
+        "245438": {
+            "width": "600px",
+            "height": "auto",
+            "scroll": true,
+            "callback": function () {
+                if (window.ARS_STROY_onCheckoutFormSuccess) {
+                    window.ARS_STROY_onCheckoutFormSuccess();
+                }
+            }
         }
     }
 });
@@ -580,7 +590,7 @@
                   ВНИМАНИЕ: У производителя ТОЛЬКО СБЕРБАНК! Других банков для перевода НЕТУ. Переводите строго на карту Сбербанка!
                 </p>
                 <p class="order-payment__flow" id="order-payment-flow-hint">
-                  Сначала <strong>отправьте заказ</strong>. Затем ниже — <strong>переход в Сбер</strong> для перевода.
+                  Сначала <strong>заполните форму заказа ниже</strong> и нажмите «Отправить». Затем — <strong>переход в Сбер</strong> для перевода.
                 </p>
                 <div class="order-payment__pay-row">
                   <button
@@ -606,9 +616,6 @@
                   </p>
                 </div>
                 <div class="order-payment__actions">
-                  <button type="button" class="order-payment__send-order" id="order-payment-send">
-                    Отправить заказ
-                  </button>
                   <a
                     class="order-payment__sber order-payment__sber--disabled"
                     id="order-payment-sber"
@@ -626,70 +633,41 @@
               <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
             </div>
 
-            <form
-              class="order-form"
-              id="order-form"
-              novalidate
-            >
-              <input type="hidden" name="cart" id="order-cart-data" value="" />
-              <input type="hidden" name="total" id="order-total" value="" />
-              <input type="hidden" id="payment_status" name="payment_status" value="Оплата не выбрана (ожидание)" />
-              <div class="order-cart" id="order-cart" hidden>
-                <div class="order-cart__head">
-                  <div class="order-cart__title">Ваш заказ</div>
-                  <button type="button" class="order-cart__clear" id="cart-clear">Очистить</button>
+            <input type="hidden" id="payment_status" name="payment_status" value="Оплата не выбрана (ожидание)" />
+            <div class="order-cart" id="order-cart" hidden>
+              <div class="order-cart__head">
+                <div class="order-cart__title">Ваш заказ</div>
+                <button type="button" class="order-cart__clear" id="cart-clear">Очистить</button>
+              </div>
+              <div class="order-cart__items" id="cart-items"></div>
+              <div class="order-cart__totals">
+                <div class="order-cart__subline">
+                  Товары: <b id="cart-subtotal">0</b> <span class="unit">руб.</span>
                 </div>
-                <div class="order-cart__items" id="cart-items"></div>
-                <div class="order-cart__totals">
-                  <div class="order-cart__subline">
-                    Товары: <b id="cart-subtotal">0</b> <span class="unit">руб.</span>
-                  </div>
-                  <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
-                    Доставка: <b id="cart-delivery-total">0</b> ₽
-                    <span class="order-cart__delivery-km" id="cart-delivery-km"></span>
-                  </div>
-                  <p class="order-cart__delivery-tariff" id="cart-delivery-tariff" hidden>
-                    Тариф: Доставка компактным манипулятором (до 4 тонн). По Кубинке и району (до 10&nbsp;км) — 5&nbsp;000&nbsp;₽. Далее — 100&nbsp;₽ за каждый 1&nbsp;км в одну сторону.
-                  </p>
-                  <div class="order-cart__grand">
-                    Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
-                  </div>
+                <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
+                  Доставка: <b id="cart-delivery-total">0</b> ₽
+                  <span class="order-cart__delivery-km" id="cart-delivery-km"></span>
+                </div>
+                <p class="order-cart__delivery-tariff" id="cart-delivery-tariff" hidden>
+                  Тариф: Доставка компактным манипулятором (до 4 тонн). По Кубинке и району (до 10&nbsp;км) — 5&nbsp;000&nbsp;₽. Далее — 100&nbsp;₽ за каждый 1&nbsp;км в одну сторону.
+                </p>
+                <div class="order-cart__grand">
+                  Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
                 </div>
               </div>
-
-              <div class="order-form__grid">
-                <label class="order-field">
-                  <span class="order-field__label">ФИО</span>
-                  <input class="order-field__input" type="text" name="name" id="order-name" required autocomplete="name" />
-                </label>
-                <label class="order-field">
-                  <span class="order-field__label">Телефон</span>
-                  <input class="order-field__input" type="tel" name="phone" id="order-phone" required autocomplete="tel" />
-                </label>
-                <label class="order-field">
-                  <span class="order-field__label">E-mail <span class="order-field__optional">(необязательно)</span></span>
-                  <input class="order-field__input" type="email" name="email" id="order-email" autocomplete="email" />
-                </label>
-                <label class="order-field order-field--full">
-                  <span class="order-field__label">Адрес доставки <span class="order-field__optional">(необязательно)</span></span>
-                  <input
-                    class="order-field__input"
-                    type="text"
-                    name="address"
-                    id="order-address"
-                    autocomplete="street-address"
-                    placeholder="Например: Одинцово, Можайское шоссе, 15"
-                  />
-                  <p class="order-field__hint">По желанию: если нужна доставка — укажите адрес (город, улица, дом), и стоимость посчитается автоматически в блоке «Итого». Без адреса заказ можно оформить на самовывоз.</p>
-                </label>
-                <label class="order-field order-field--full">
-                  <span class="order-field__label">Дополнительная информация</span>
-                  <textarea class="order-field__input order-field__textarea" name="comment" id="order-comment" rows="3"></textarea>
-                </label>
-              </div>
-
-              <button type="submit" class="btn btn--primary order-form__submit" id="order-form-submit">Отправить заказ</button>
-            </form>
+              <label class="order-field order-field--full order-cart__address">
+                <span class="order-field__label">Адрес доставки <span class="order-field__optional">(необязательно)</span></span>
+                <input
+                  class="order-field__input"
+                  type="text"
+                  id="order-address"
+                  autocomplete="street-address"
+                  placeholder="Например: Одинцово, Можайское шоссе, 15"
+                />
+                <p class="order-field__hint">Для расчёта доставки в блоке «Итого». Без адреса — самовывоз.</p>
+              </label>
+            </div>
+            <div class="formdesigner-widget order-checkout-widget" data-id="245438"></div>
             </div>
             </div>
           </div>
@@ -1121,7 +1099,7 @@
 
     <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
     <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=order-fs-v13" defer></script>
+    <script src="order-cart.js?v=order-fs-v14" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
