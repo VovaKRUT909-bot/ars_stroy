@@ -23,7 +23,8 @@
   /** Макросы полей FormDesigner (форма 245426) — «Имя макроса» в конструкторе */
   var FD_ORDER_FIELD_FIO = 'name';
   var FD_ORDER_FIELD_PHONE = 'phone';
-  var FD_ORDER_FIELD_ORDER = 'order';
+  /** Многострочное поле «Адрес» в FormDesigner — сюда уходит весь текст заказа */
+  var FD_ORDER_FIELD_ADDRESS = 'address';
   var invoiceOrderSent = false;
   var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
   var orderFormSending = false;
@@ -683,6 +684,39 @@
       .join('\n');
   }
 
+  function formatCartLinesDetailedForForm() {
+    return cart
+      .map(function (item, index) {
+        var measure = item.qtyMeasure || 'шт.';
+        var lineSum =
+          item.qty != null && item.qty > 0 ? item.price * item.qty : null;
+        var lines = [
+          (index + 1) + '. ' + item.productName,
+          '   Цвет: ' + (item.colorRu || item.color)
+        ];
+        if (item.size) {
+          lines.push('   Размер и толщина: ' + item.size);
+        }
+        if (item.article) {
+          lines.push('   Артикул: ' + item.article);
+        }
+        lines.push(
+          '   Количество: ' +
+            (item.qty != null ? item.qty : '—') +
+            ' ' +
+            measure
+        );
+        lines.push(
+          '   Цена: ' + formatMoney(item.price) + ' ' + (item.unit || '').trim()
+        );
+        if (lineSum != null) {
+          lines.push('   Сумма: ' + formatMoney(lineSum) + ' руб.');
+        }
+        return lines.join('\n');
+      })
+      .join('\n\n');
+  }
+
   function updateOrderPayModeButtons() {
     document.querySelectorAll('[data-order-pay-mode]').forEach(function (btn) {
       var mode = btn.getAttribute('data-order-pay-mode');
@@ -921,37 +955,46 @@
 
   function getOrderDetailsText() {
     syncOrderHiddenFields();
+    var nameEl = document.getElementById('order-name');
+    var phoneEl = document.getElementById('order-phone');
+    var emailEl = document.getElementById('order-email');
+    var addressEl = document.getElementById('order-address');
+    var commentEl = document.getElementById('order-comment');
     var lines = [];
+
+    lines.push('—— Контакты ——');
+    lines.push('ФИО: ' + (nameEl ? nameEl.value.trim() : ''));
+    lines.push('Телефон: ' + (phoneEl ? phoneEl.value.trim() : ''));
+    lines.push('E-mail: ' + (emailEl && emailEl.value.trim() ? emailEl.value.trim() : '—'));
+    lines.push(
+      'Адрес доставки: ' +
+        (addressEl && addressEl.value.trim() ? addressEl.value.trim() : '—')
+    );
+    lines.push(
+      'Доп. информация: ' +
+        (commentEl && commentEl.value.trim() ? commentEl.value.trim() : '—')
+    );
+    lines.push('');
+    lines.push('—— Заказ ——');
     lines.push('Способ оплаты: ' + (orderPayMode === 'cash' ? 'Нал' : 'Безнал'));
     if (paymentStatusEl && paymentStatusEl.value) {
       lines.push('Статус оплаты: ' + paymentStatusEl.value);
     }
     lines.push('');
     lines.push('Товары:');
-    lines.push(formatCartLinesForForm() || '—');
+    lines.push(formatCartLinesDetailedForForm() || '—');
+    lines.push('');
     lines.push('Сумма товаров: ' + formatMoney(getCartProductsTotal()) + ' руб.');
     if (deliveryState.status === 'ok' && deliveryState.cost != null) {
       lines.push(
         'Доставка: ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel()
       );
-    } else if (orderAddressEl && orderAddressEl.value.trim()) {
+    } else if (addressEl && addressEl.value.trim()) {
       lines.push('Доставка: уточняется по адресу');
     } else {
       lines.push('Доставка: самовывоз / не указана');
     }
     lines.push('Итого: ' + getOrderTotalText());
-    var emailEl = document.getElementById('order-email');
-    var addressEl = document.getElementById('order-address');
-    var commentEl = document.getElementById('order-comment');
-    if (emailEl && emailEl.value.trim()) {
-      lines.push('E-mail: ' + emailEl.value.trim());
-    }
-    if (addressEl && addressEl.value.trim()) {
-      lines.push('Адрес: ' + addressEl.value.trim());
-    }
-    if (commentEl && commentEl.value.trim()) {
-      lines.push('Комментарий: ' + commentEl.value.trim());
-    }
     return lines.join('\n');
   }
 
@@ -961,7 +1004,7 @@
     var formData = new FormData();
     formData.append(FD_ORDER_FIELD_FIO, nameEl ? nameEl.value.trim() : '');
     formData.append(FD_ORDER_FIELD_PHONE, phoneEl ? phoneEl.value.trim() : '');
-    formData.append(FD_ORDER_FIELD_ORDER, getOrderDetailsText());
+    formData.append(FD_ORDER_FIELD_ADDRESS, getOrderDetailsText());
     return formData;
   }
 
