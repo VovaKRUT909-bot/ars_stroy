@@ -1,4 +1,4 @@
-(function initOrderCart() {
+﻿(function initOrderCart() {
   'use strict';
 
   var TILE_IMG_BASE = 'img/tiles';
@@ -38,65 +38,10 @@
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
   var cartDeliveryLine = document.getElementById('cart-delivery-line');
-  var cartDeliveryTotalEl = document.getElementById('cart-delivery-total');
-  var cartDeliveryKmEl = document.getElementById('cart-delivery-km');
-  var cartDeliveryTariffEl = document.getElementById('cart-delivery-tariff');
-
+  var cartDeliveryStatusEl = document.getElementById('cart-delivery-status');
   var cart = [];
 
-  /**
-   * Производство (координаты Яндекс.Карт): М-1 Беларусь, 68-й км, вл1с3.
-   * Тариф: до 10 км в одну сторону — 5 000 ₽; далее +100 ₽/км (манипулятор до 4 т).
-   * Ключ в index.html → ARS_STROY_YANDEX_MAPS_KEY (маршрут как в навигаторе).
-   */
-  var YANDEX_MAPS_API_KEY =
-    typeof window !== 'undefined' && window.ARS_STROY_YANDEX_MAPS_KEY
-      ? String(window.ARS_STROY_YANDEX_MAPS_KEY).trim()
-      : '';
-  var DELIVERY_ORIGIN = {
-    lat: 55.565621,
-    lon: 36.635938,
-    label: 'М-1 Беларусь, 68-й км, вл1с3 (Арс Строй)'
-  };
-  var DELIVERY_ORIGIN_ADDRESS =
-    'Московская обл., Одинцовский г.о., М-1 Беларусь, 68-й километр, вл1с3';
-  var NOMINATIM_VIEWBOX = '34.8,56.2,39.8,54.8';
-  var DELIVERY_MIN_ADDRESS_LEN = 3;
-  var YMAPS_LOAD_TIMEOUT_MS = 12000;
-  var YMAPS_ROUTE_TIMEOUT_MS = 12000;
-  var ymapsLoadPromise = null;
-  var ymapsApiUnavailable = false;
-  var deliveryUsedFallback = false;
-
-  window.addEventListener(
-    'error',
-    function (ev) {
-      var src = (ev && ev.filename) || '';
-      if (/yandex|api-maps/i.test(src)) {
-        ymapsApiUnavailable = true;
-      }
-    },
-    true
-  );
-  var DELIVERY_INCLUDED_KM = 10;
-  var DELIVERY_BASE_RUB = 5000;
-  var DELIVERY_EXTRA_RUB_PER_KM = 100;
-  /** Дальше — не считаем автоматически (ложные 5 000 ₽). */
-  var MAX_DELIVERY_ONE_WAY_KM = 150;
-  var DELIVERY_GEO_HEADERS = {
-    Accept: 'application/json',
-    'Accept-Language': 'ru',
-    'User-Agent': 'ArsStroySite/1.0 (oooarsstroy.ru; delivery-estimate)'
-  };
-  var deliveryState = {
-    status: 'idle',
-    km: null,
-    cost: null,
-    address: '',
-    message: ''
-  };
-  var deliveryCalcToken = 0;
-  var deliveryDebounceTimer = null;
+  var addressInputDebounce = null;
 
   var BLOCK_CONFIG = {
     'prices-b1': {
@@ -167,482 +112,45 @@
     return n.toLocaleString('ru-RU');
   }
 
-  function formatKm(km) {
-    if (km == null || isNaN(km)) return '—';
-    return Math.round(km).toLocaleString('ru-RU');
-  }
-
-  function deliveryKmRounded(oneWayKm) {
-    if (oneWayKm == null || isNaN(oneWayKm)) return null;
-    return Math.round(oneWayKm);
-  }
-
-  function cartDeliveryKmLabel() {
-    if (deliveryState.km == null) return '';
-    return '(' + formatKm(deliveryState.km) + ' км до объекта)';
-  }
-
   /** Полный адрес доставки из поля #order-address. */
   function getClientDeliveryAddressText() {
     if (orderAddressEl && orderAddressEl.value.trim()) {
       return orderAddressEl.value.trim();
     }
-    if (deliveryState.address) {
-      return deliveryState.address;
-    }
     return '';
   }
 
-  /** Город/населённый пункт — первая часть до запятой. */
-  function getDeliveryCityFromAddress() {
-    var address = getClientDeliveryAddressText();
-    if (!address) return '';
-    var city = address.split(',')[0].trim();
-    return city || address;
+  function hasDeliveryAddressInput() {
+    return getClientDeliveryAddressText().length > 0;
   }
 
-  function isGeocodePrecisionReliable(precision, address) {
-    if (!precision) return false;
-    if (
-      precision === 'exact' ||
-      precision === 'number' ||
-      precision === 'near' ||
-      precision === 'range' ||
-      precision === 'street'
-    ) {
-      return true;
-    }
-    var addr = (address || '').trim();
-    if (
-      (precision === 'locality' || precision === 'district') &&
-      addr &&
-      addr.indexOf(',') === -1 &&
-      addr.length <= 48
-    ) {
-      return true;
-    }
-    return false;
-  }
-
-  function isDeliveryPointInServiceArea(point) {
-    if (!point || point.lat == null || point.lon == null) return false;
-    var km = haversineKm(DELIVERY_ORIGIN, point);
-    return km > 0 && km <= MAX_DELIVERY_ONE_WAY_KM;
-  }
-
-  function isDeliveryCalcResultAcceptable(address, result) {
-    if (!result || result.km == null || isNaN(result.km) || result.km <= 0) {
-      return false;
-    }
-    if (result.km > MAX_DELIVERY_ONE_WAY_KM) {
-      return false;
-    }
-    if (result.source === 'yandex') {
-      return true;
-    }
-    return isGeocodePrecisionReliable(result.geocodePrecision, address);
-  }
-
-  function failDeliveryCalc(address) {
-    deliveryState.status = 'error';
-    deliveryState.km = null;
-    deliveryState.cost = null;
-    deliveryState.message = 'delivery_error';
-    if (address) {
-      deliveryState.address = address;
-    }
-  }
-
-  /** До 10 км в одну сторону — 5 000 ₽; каждый км сверх — +100 ₽ (км округляются). */
-  function deliveryCostFromKm(oneWayKm) {
-    var km = deliveryKmRounded(oneWayKm);
-    if (km == null || km <= 0) return 0;
-    if (km <= DELIVERY_INCLUDED_KM) return DELIVERY_BASE_RUB;
-    return DELIVERY_BASE_RUB + (km - DELIVERY_INCLUDED_KM) * DELIVERY_EXTRA_RUB_PER_KM;
-  }
-
-  /** Расшифровка для клиента — можно пересчитать в калькуляторе. */
-  function deliveryCostBreakdownText(oneWayKm) {
-    var km = deliveryKmRounded(oneWayKm);
-    if (km == null) return '';
-    var total = deliveryCostFromKm(oneWayKm);
-    if (km <= DELIVERY_INCLUDED_KM) {
-      return (
-        'Как мы посчитали: ' +
-        formatKm(km) +
-        ' км до объекта → ' +
-        formatMoney(DELIVERY_BASE_RUB) +
-        ' ₽ (фиксированно до ' +
-        DELIVERY_INCLUDED_KM +
-        ' км включительно). Итого доставка: ' +
-        formatMoney(total) +
-        ' ₽ — пересчитайте сами, цифры совпадут.'
-      );
-    }
-    var extraKm = km - DELIVERY_INCLUDED_KM;
-    var extraRub = extraKm * DELIVERY_EXTRA_RUB_PER_KM;
-    return (
-      'Как мы посчитали: ' +
-      formatMoney(DELIVERY_BASE_RUB) +
-      ' ₽ (первые ' +
-      DELIVERY_INCLUDED_KM +
-      ' км) + ' +
-      extraKm +
-      ' км × ' +
-      formatMoney(DELIVERY_EXTRA_RUB_PER_KM) +
-      ' ₽ = ' +
-      formatMoney(extraRub) +
-      ' ₽ → всего ' +
-      formatMoney(total) +
-      ' ₽. Откройте калькулятор и сложите — сумма будет такой же, без сюрпризов.'
-    );
-  }
-
-  function haversineKm(from, to) {
-    var R = 6371;
-    var dLat = ((to.lat - from.lat) * Math.PI) / 180;
-    var dLon = ((to.lon - from.lon) * Math.PI) / 180;
-    var lat1 = (from.lat * Math.PI) / 180;
-    var lat2 = (to.lat * Math.PI) / 180;
-    var a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  function promiseTimeout(promise, ms, label) {
-    return new Promise(function (resolve, reject) {
-      var done = false;
-      var timer = setTimeout(function () {
-        if (!done) {
-          done = true;
-          reject(new Error(label || 'timeout'));
-        }
-      }, ms);
-      Promise.resolve(promise).then(
-        function (val) {
-          if (!done) {
-            done = true;
-            clearTimeout(timer);
-            resolve(val);
-          }
-        },
-        function (err) {
-          if (!done) {
-            done = true;
-            clearTimeout(timer);
-            reject(err);
-          }
-        }
-      );
-    });
-  }
-
-  function fetchGeoJson(url) {
-    return fetch(url, { method: 'GET', headers: DELIVERY_GEO_HEADERS }).then(function (res) {
-      if (!res.ok) throw new Error('geo_http');
-      return res.json();
-    });
-  }
-
-  function markYmapsUnavailable(err) {
-    ymapsApiUnavailable = true;
-    if (err) console.warn('ymaps_skip', err);
-  }
-
-  function loadYmapsApi() {
-    if (!YANDEX_MAPS_API_KEY || ymapsApiUnavailable) {
-      return Promise.reject(new Error('no_yandex_key'));
-    }
-    if (window.ymaps) return Promise.resolve(window.ymaps);
-    if (ymapsLoadPromise) return ymapsLoadPromise;
-
-    var loadCore = function () {
-      return new Promise(function (resolve, reject) {
-        var existing = document.getElementById('yandex-maps-api-script');
-        if (existing) {
-          if (window.ymaps) {
-            resolve(window.ymaps);
-            return;
-          }
-          existing.addEventListener('load', function () {
-            if (window.ymaps) resolve(window.ymaps);
-            else reject(new Error('ymaps_missing'));
-          });
-          existing.addEventListener('error', function () {
-            reject(new Error('ymaps_load_fail'));
-          });
-          return;
-        }
-        var script = document.createElement('script');
-        script.id = 'yandex-maps-api-script';
-        script.async = true;
-        script.src =
-          'https://api-maps.yandex.ru/2.1/?apikey=' +
-          encodeURIComponent(YANDEX_MAPS_API_KEY) +
-          '&lang=ru_RU';
-        script.onload = function () {
-          if (window.ymaps) resolve(window.ymaps);
-          else reject(new Error('ymaps_missing'));
-        };
-        script.onerror = function () {
-          reject(new Error('ymaps_load_fail'));
-        };
-        document.head.appendChild(script);
-      });
-    };
-
-    ymapsLoadPromise = promiseTimeout(loadCore(), YMAPS_LOAD_TIMEOUT_MS, 'ymaps_load_timeout').catch(
-      function (err) {
-        ymapsLoadPromise = null;
-        markYmapsUnavailable(err);
-        throw err;
-      }
-    );
-    return ymapsLoadPromise;
-  }
-
-  function ymapsReady(run) {
-    return loadYmapsApi().then(function () {
-      return promiseTimeout(
-        new Promise(function (resolve, reject) {
-          try {
-            window.ymaps.ready(function () {
-              try {
-                Promise.resolve(run(window.ymaps)).then(resolve, reject);
-              } catch (runErr) {
-                reject(runErr);
-              }
-            });
-          } catch (readyErr) {
-            reject(readyErr);
-          }
-        }),
-        YMAPS_ROUTE_TIMEOUT_MS,
-        'ymaps_ready_timeout'
-      );
-    });
-  }
-
-  /** Маршрут через JS API Яндекс.Карт (как в навигаторе). */
-  function ymapsRouteOneWayKm(customerAddress) {
-    var destination = customerAddress + ', Московская область, Россия';
-    return ymapsReady(function (ymaps) {
-      return ymaps
-        .route([DELIVERY_ORIGIN_ADDRESS, destination], {
-          routingMode: 'auto',
-          mapStateAutoApply: false
-        })
-        .then(function (route) {
-          if (!route) throw new Error('no_route');
-          var meters = route.getLength ? route.getLength() : 0;
-          if (!meters || meters <= 0) throw new Error('no_length');
-          return meters / 1000;
-        });
-    });
-  }
-
-  function geocodeAddressPhoton(address) {
-    var q = address + ', Московская область, Россия';
-    var photon =
-      'https://photon.komoot.io/api/?limit=1&lat=55.565621&lon=36.635938&q=' +
-      encodeURIComponent(q);
-    return fetchGeoJson(photon).then(function (ph) {
-      if (ph && ph.features && ph.features[0] && ph.features[0].geometry) {
-        var c = ph.features[0].geometry.coordinates;
-        return { lat: c[1], lon: c[0], precision: 'other', label: '' };
-      }
-      throw new Error('photon_not_found');
-    });
-  }
-
-  function geocodeAddressNominatim(address) {
-    var q = address + ', Московская область, Россия';
-    var nominatim =
-      'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ru&viewbox=' +
-      NOMINATIM_VIEWBOX +
-      '&bounded=0&q=' +
-      encodeURIComponent(q);
-    return fetchGeoJson(nominatim).then(function (data) {
-      if (data && data[0]) {
-        return {
-          lat: parseFloat(data[0].lat),
-          lon: parseFloat(data[0].lon),
-          precision: 'other',
-          label: data[0].display_name || ''
-        };
-      }
-      throw new Error('nominatim_not_found');
-    });
-  }
-
-  function geocodeAddressYandex(address) {
-    if (!YANDEX_MAPS_API_KEY) {
-      return Promise.reject(new Error('no_yandex_key'));
-    }
-    var q = encodeURIComponent(address + ', Московская область, Россия');
-    var url =
-      'https://geocode-maps.yandex.ru/1.x/?apikey=' +
-      encodeURIComponent(YANDEX_MAPS_API_KEY) +
-      '&geocode=' +
-      q +
-      '&format=json&results=1';
-    return fetch(url)
-      .then(function (res) {
-        if (!res.ok) throw new Error('yandex_geo_http');
-        return res.json();
-      })
-      .then(function (data) {
-        var members =
-          data &&
-          data.response &&
-          data.response.GeoObjectCollection &&
-          data.response.GeoObjectCollection.featureMember;
-        if (!members || !members[0]) throw new Error('yandex_geo_not_found');
-        var geoObject = members[0].GeoObject;
-        var pos = geoObject.Point.pos;
-        var parts = String(pos).split(' ');
-        var meta =
-          geoObject.metaDataProperty && geoObject.metaDataProperty.GeocoderMetaData;
-        return {
-          lon: parseFloat(parts[0]),
-          lat: parseFloat(parts[1]),
-          precision: meta && meta.precision ? meta.precision : '',
-          label: meta && meta.text ? meta.text : ''
-        };
-      });
-  }
-
-  function geocodeAddressOsm(address) {
-    return geocodeAddressPhoton(address)
-      .catch(function () {
-        return geocodeAddressYandex(address);
-      })
-      .catch(function () {
-        return geocodeAddressNominatim(address);
-      });
-  }
-
-  function geocodeAddress(address) {
-    return geocodeAddressOsm(address);
-  }
-
-  function routeDistanceKmOsrm(from, to) {
-    var url =
-      'https://router.project-osrm.org/route/v1/driving/' +
-      from.lon +
-      ',' +
-      from.lat +
-      ';' +
-      to.lon +
-      ',' +
-      to.lat +
-      '?overview=false';
-    return fetchGeoJson(url).then(function (data) {
-      if (!data.routes || !data.routes[0] || data.routes[0].distance == null) {
-        throw new Error('no_route');
-      }
-      return data.routes[0].distance / 1000;
-    });
-  }
-
-  function estimateDistanceKmOsm(dest) {
-    return routeDistanceKmOsrm(DELIVERY_ORIGIN, dest).catch(function () {
-      return haversineKm(DELIVERY_ORIGIN, dest) * 1.35;
-    });
-  }
-
-  function deliveryDistanceViaOsm(customerAddress) {
-    return geocodeAddress(customerAddress)
-      .then(function (point) {
-        if (!isDeliveryPointInServiceArea(point)) {
-          throw new Error('out_of_service_area');
-        }
-        if (!isGeocodePrecisionReliable(point.precision, customerAddress)) {
-          throw new Error('low_geocode_precision');
-        }
-        return estimateDistanceKmOsm(point).then(function (km) {
-          if (km == null || isNaN(km) || km <= 0) throw new Error('bad_km');
-          return {
-            km: km,
-            source: 'osm',
-            geocodePrecision: point.precision || '',
-            geocodeLabel: point.label || ''
-          };
-        });
-      })
-      .catch(function (geoErr) {
-        console.warn('delivery_osm_fail', geoErr);
-        throw geoErr;
-      });
-  }
-
-  function deliveryDistanceKm(customerAddress) {
-    if (!YANDEX_MAPS_API_KEY || ymapsApiUnavailable) {
-      return deliveryDistanceViaOsm(customerAddress);
-    }
-    return promiseTimeout(
-      ymapsRouteOneWayKm(customerAddress),
-      YMAPS_ROUTE_TIMEOUT_MS,
-      'ymaps_route_timeout'
-    )
-      .then(function (km) {
-        return { km: km, source: 'yandex' };
-      })
-      .catch(function (err) {
-        console.warn('ymaps_route_fail', err);
-        return deliveryDistanceViaOsm(customerAddress);
-      });
-  }
-
-  function resetDeliveryState() {
-    deliveryState.status = 'idle';
-    deliveryState.km = null;
-    deliveryState.cost = null;
-    deliveryState.address = '';
-    deliveryState.message = '';
-    renderDeliveryUi();
-    updateOrderTotals();
-  }
 
   function renderDeliveryUi() {
     if (!cartDeliveryLine) return;
-
-    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
+    if (hasDeliveryAddressInput()) {
       cartDeliveryLine.hidden = false;
-      if (cartDeliveryTotalEl) {
-        cartDeliveryTotalEl.textContent = formatMoney(deliveryState.cost);
+      if (cartDeliveryStatusEl) {
+        cartDeliveryStatusEl.textContent = 'Уточняется (уточнит менеджер)';
       }
-      if (cartDeliveryKmEl) {
-        cartDeliveryKmEl.textContent = cartDeliveryKmLabel();
-      }
-      if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = false;
-      return;
+    } else {
+      cartDeliveryLine.hidden = true;
     }
+  }
 
-    if (deliveryState.status === 'loading' && deliveryState.address) {
-      cartDeliveryLine.hidden = false;
-      if (cartDeliveryTotalEl) cartDeliveryTotalEl.textContent = '…';
-      if (cartDeliveryKmEl) {
-        cartDeliveryKmEl.textContent = ' (считаем доставку)';
-      }
-      if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
-      return;
-    }
+  function resetDeliveryState() {
+    renderDeliveryUi();
+  }
 
-    if (deliveryState.status === 'error' && deliveryState.address) {
-      cartDeliveryLine.hidden = false;
-      if (cartDeliveryTotalEl) cartDeliveryTotalEl.textContent = 'Уточняется';
-      if (cartDeliveryKmEl) {
-        cartDeliveryKmEl.textContent = ' (уточнит менеджер)';
-      }
-      if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
-      return;
-    }
+  function onDeliveryAddressInput() {
+    renderDeliveryUi();
+    updateOrderTotals();
+    ensureCheckoutFormDesignerWidget();
+  }
 
-    cartDeliveryLine.hidden = true;
-    if (cartDeliveryKmEl) cartDeliveryKmEl.textContent = '';
-    if (cartDeliveryTariffEl) cartDeliveryTariffEl.hidden = true;
+  function scheduleDeliveryAddressUpdate() {
+    if (!orderAddressEl) return;
+    if (addressInputDebounce) clearTimeout(addressInputDebounce);
+    addressInputDebounce = setTimeout(onDeliveryAddressInput, 200);
   }
 
   function getCartProductsTotal() {
@@ -653,15 +161,11 @@
   }
 
   function getCartGrandTotal() {
-    var total = getCartProductsTotal();
-    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
-      total += deliveryState.cost;
-    }
-    return total;
+    return getCartProductsTotal();
   }
 
   function getOrderTotalText() {
-    return formatMoney(getCartGrandTotal()) + ' руб.';
+    return formatMoney(getCartProductsTotal()) + ' руб.';
   }
 
   function setPaymentStatus(text) {
@@ -683,62 +187,6 @@
     }
     renderDeliveryUi();
     scheduleFillCheckoutWidget();
-  }
-
-  function calculateDelivery(address) {
-    var token = ++deliveryCalcToken;
-    deliveryState.status = 'loading';
-    deliveryState.message = '';
-    deliveryState.km = null;
-    deliveryState.cost = null;
-    deliveryState.address = address;
-    deliveryUsedFallback = false;
-    renderDeliveryUi();
-
-    return deliveryDistanceKm(address)
-      .then(function (result) {
-        if (token !== deliveryCalcToken) return;
-        if (!isDeliveryCalcResultAcceptable(address, result)) {
-          throw new Error('delivery_unreliable');
-        }
-        var km = result.km;
-        deliveryUsedFallback = result.source !== 'yandex';
-        deliveryState.km = km;
-        deliveryState.cost = deliveryCostFromKm(km);
-        deliveryState.status = 'ok';
-        deliveryState.message = '';
-      })
-      .catch(function (err) {
-        if (token !== deliveryCalcToken) return;
-        console.warn('delivery_calc', err);
-        failDeliveryCalc(address);
-      })
-      .then(function () {
-        if (token !== deliveryCalcToken) return;
-        updateOrderTotals();
-      });
-  }
-
-  function scheduleDeliveryCalc() {
-    if (!orderAddressEl) return;
-    var address = orderAddressEl.value.trim();
-    if (deliveryDebounceTimer) clearTimeout(deliveryDebounceTimer);
-    if (address.length < DELIVERY_MIN_ADDRESS_LEN) {
-      deliveryCalcToken++;
-      resetDeliveryState();
-      return;
-    }
-    deliveryDebounceTimer = setTimeout(function () {
-      if (orderAddressEl.value.trim() !== address) return;
-      try {
-        calculateDelivery(address);
-      } catch (syncErr) {
-        console.warn('delivery_calc_sync', syncErr);
-        markYmapsUnavailable(syncErr);
-        failDeliveryCalc(address);
-        updateOrderTotals();
-      }
-    }, 700);
   }
 
   function formatCartLinesForForm() {
@@ -904,12 +352,8 @@
   }
 
   function refreshCheckoutDelivery() {
-    if (orderAddressEl) {
-      var address = orderAddressEl.value.trim();
-      if (address.length >= DELIVERY_MIN_ADDRESS_LEN) {
-        scheduleDeliveryCalc();
-      }
-    }
+    renderDeliveryUi();
+    scheduleDeliveryAddressUpdate();
   }
 
   function setOrderPaymentMode(mode, opts) {
@@ -1014,7 +458,6 @@
 
   function clearOrderAfterSubmit() {
     cart = [];
-    deliveryCalcToken++;
     resetDeliveryState();
     resetOrderPaymentMode();
     renderCart();
@@ -1026,29 +469,12 @@
     clearOrderAfterSubmit();
   }
 
-  function formatCheckoutWidgetDeliveryLine() {
-    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
-      var deliveryLine = 'Доставка:';
-      var cityName = getDeliveryCityFromAddress();
-      if (cityName) {
-        deliveryLine += ' ' + cityName + ',';
-      }
-      deliveryLine +=
-        ' ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel();
-      return deliveryLine.trim();
-    }
-    var clientAddress = getClientDeliveryAddressText();
-    if (clientAddress) {
-      return 'Доставка: ' + clientAddress + ', стоимость уточнит менеджер';
-    }
-    return 'Доставка: самовывоз';
-  }
-
   function getCheckoutWidgetCartText() {
     var lines = [];
     if (orderPayMode) {
       lines.push('Оплата: ' + (orderPayMode === 'cash' ? 'Нал' : 'Безнал'));
     }
+    lines.push('Товары:');
     cart.forEach(function (item, index) {
       var measure = item.qtyMeasure || 'шт.';
       lines.push(
@@ -1066,8 +492,14 @@
         lines.push('   ' + formatMoney(item.price * item.qty) + ' руб.');
       }
     });
-    lines.push(formatCheckoutWidgetDeliveryLine());
-    lines.push('Итого: ' + getOrderTotalText());
+    var clientAddress = getClientDeliveryAddressText();
+    if (clientAddress) {
+      lines.push('Адрес доставки: ' + clientAddress);
+      lines.push('Доставка: Уточняется (уточнит менеджер)');
+    } else {
+      lines.push('Доставка: самовывоз');
+    }
+    lines.push('Итого (товары): ' + getOrderTotalText());
     var text = lines.join('\n');
     if (text.length > FD_CHECKOUT_ORDER_FIELD_MAX) {
       text = text.slice(0, FD_CHECKOUT_ORDER_FIELD_MAX - 1) + '…';
@@ -1179,6 +611,22 @@
     });
   }
 
+  function ensureCheckoutFormDesignerWidget() {
+    var root = getCheckoutWidgetRoot();
+    if (!root || cart.length === 0) {
+      return;
+    }
+    if (getCheckoutWidgetIframe()) {
+      scheduleFillCheckoutWidget();
+      return;
+    }
+    if (window.FD && typeof window.FD.init === 'function' && window.ARS_STROY_FD_OPTIONS) {
+      window.FD.init(window.ARS_STROY_FD_OPTIONS);
+      delete root.dataset.arsCheckoutFillBound;
+      scheduleFillCheckoutWidget();
+    }
+  }
+
   function watchCheckoutWidgetMount() {
     var root = getCheckoutWidgetRoot();
     if (!root || root.dataset.arsCheckoutWatchBound) {
@@ -1186,9 +634,14 @@
     }
     root.dataset.arsCheckoutWatchBound = '1';
     var observer = new MutationObserver(function () {
-      scheduleFillCheckoutWidget();
+      if (!getCheckoutWidgetIframe()) {
+        ensureCheckoutFormDesignerWidget();
+      } else {
+        scheduleFillCheckoutWidget();
+      }
     });
     observer.observe(root, { childList: true, subtree: true });
+    ensureCheckoutFormDesignerWidget();
   }
 
   window.ARS_STROY_onCheckoutFormSuccess = onCheckoutFormDesignerSuccess;
@@ -1729,7 +1182,7 @@
 
     updateOrderTotals();
     updateCartBadge();
-    scheduleFillCheckoutWidget();
+    ensureCheckoutFormDesignerWidget();
   }
 
   function addToCart(product) {
@@ -1824,18 +1277,13 @@
   if (cartClearBtn) {
     cartClearBtn.addEventListener('click', function () {
       cart = [];
-      deliveryCalcToken++;
       renderCart();
     });
   }
 
   if (orderAddressEl) {
-    orderAddressEl.addEventListener('input', scheduleDeliveryCalc);
-    orderAddressEl.addEventListener('change', scheduleDeliveryCalc);
-    orderAddressEl.addEventListener('blur', function () {
-      var address = orderAddressEl.value.trim();
-      if (address.length >= DELIVERY_MIN_ADDRESS_LEN) calculateDelivery(address);
-    });
+    orderAddressEl.addEventListener('input', scheduleDeliveryAddressUpdate);
+    orderAddressEl.addEventListener('change', scheduleDeliveryAddressUpdate);
   }
 
   document.querySelectorAll('[data-order-pay-mode]').forEach(function (btn) {

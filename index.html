@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v10" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v11" />
     <script type="text/javascript">
 (function (d, o) {
     var s = d.createElement("script"), g = "getElementsByTagName";
@@ -50,7 +50,7 @@
     };
     var h=d[g]("head")[0] || d[g]("body")[0];
     h.appendChild(s);
-})(document, {
+})(document, (window.ARS_STROY_FD_OPTIONS = {
     "host": "formdesigner.ru",
     "forms": {
         "245426": {
@@ -69,7 +69,7 @@
             }
         }
     }
-});
+}));
 </script>
   </head>
   <body>
@@ -514,7 +514,7 @@
             <div class="delivery__right">
               <div class="delivery-card">
                 <h3 class="delivery-card__title">Расчёт доставки</h3>
-                <div class="delivery-card__text">В разделе «Оформление заказа» укажите адрес — стоимость доставки посчитается автоматически. По Кубинке и району до 10&nbsp;км — 5&nbsp;000&nbsp;₽, далее 100&nbsp;₽ за каждый километр в одну сторону.</div>
+                <div class="delivery-card__text">В разделе «Оформление заказа» укажите адрес доставки — стоимость уточнит менеджер после оформления заказа.</div>
                 <div class="delivery-card__actions">
                   <a class="btn btn--primary" href="tel:+79258056308">Позвонить</a>
                   <a class="btn btn--ghost" href="#contacts">Контакты</a>
@@ -645,12 +645,8 @@
                   Товары: <b id="cart-subtotal">0</b> <span class="unit">руб.</span>
                 </div>
                 <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
-                  Доставка: <b id="cart-delivery-total">0</b> ₽
-                  <span class="order-cart__delivery-km" id="cart-delivery-km"></span>
+                  Доставка: <span id="cart-delivery-status">Уточняется (уточнит менеджер)</span>
                 </div>
-                <p class="order-cart__delivery-tariff" id="cart-delivery-tariff" hidden>
-                  Тариф: Доставка компактным манипулятором (до 4 тонн). По Кубинке и району (до 10&nbsp;км) — 5&nbsp;000&nbsp;₽. Далее — 100&nbsp;₽ за каждый 1&nbsp;км в одну сторону.
-                </p>
                 <div class="order-cart__grand">
                   Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
                 </div>
@@ -664,10 +660,12 @@
                   autocomplete="street-address"
                   placeholder="Например: Одинцово, Можайское шоссе, 15"
                 />
-                <p class="order-field__hint">Для расчёта доставки в блоке «Итого». Без адреса — самовывоз.</p>
+                <p class="order-field__hint">Стоимость доставки уточнит менеджер. Без адреса — самовывоз.</p>
               </label>
             </div>
-            <div class="formdesigner-widget order-checkout-widget" data-id="245438"></div>
+            <div class="order-checkout-fd" id="order-checkout-fd">
+              <div class="formdesigner-widget order-checkout-widget" data-id="245438"></div>
+            </div>
             </div>
             </div>
           </div>
@@ -1097,9 +1095,7 @@
     })();
     </script>
 
-    <!-- Ключ Яндекс.Карт (бесплатно): https://developer.tech.yandex.ru/ — маршрут как в навигаторе -->
-    <script>window.ARS_STROY_YANDEX_MAPS_KEY = '04ef11d5-97cd-45e9-ad36-11eced694f6c';</script>
-    <script src="order-cart.js?v=order-fs-v16" defer></script>
+    <script src="order-cart.js?v=order-fs-v18" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

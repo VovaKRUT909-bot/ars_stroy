@@ -527,8 +527,8 @@ main{
 .order-layout--fullscreen .order-checkout.is-visible .order-payment.is-open{
   order:2;
 }
-.order-layout--fullscreen .order-checkout.is-visible .order-checkout-widget{
-  order:3;
+.order-layout--fullscreen .order-checkout.is-visible .order-checkout-fd{
+  order:4;
   width:calc(100% - 28px);
   max-width:600px;
   margin:0 auto 14px;
@@ -1619,6 +1619,11 @@ body.order-fs-open{
   line-height:1.45;
   color:var(--muted);
   font-weight:600;
+}
+.order-checkout-fd{
+  order:4;
+  width:100%;
+  margin-top:12px;
 }
 .order-checkout-widget.formdesigner-widget,
 .ukladka-request__card .formdesigner-widget{
