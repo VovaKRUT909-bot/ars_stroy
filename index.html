@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v11" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v12" />
     <script type="text/javascript">
 (function (d, o) {
     var s = d.createElement("script"), g = "getElementsByTagName";
@@ -554,86 +554,14 @@
           <button type="button" class="order-fs__close" id="order-fs-close" aria-label="Закрыть оформление заказа">×</button>
         </header>
         <div class="order-fs__body">
-          <p class="order-fs__intro">Выберите способ оплаты и заполните данные — всё на одном экране.</p>
+          <p class="order-fs__intro">Проверьте состав заказа, при необходимости укажите доставку и отправьте заявку.</p>
           <div class="order-layout order-layout--fullscreen">
             <div class="order-checkout-card">
-            <div class="order-pay-mode" id="order-pay-mode">
-              <p class="order-pay-mode__title">Способ оплаты</p>
-              <div class="order-pay-mode__buttons" role="group" aria-label="Способ оплаты">
-                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-cash" data-order-pay-mode="cash" aria-pressed="false">
-                  Нал
-                </button>
-                <button type="button" class="order-pay-mode__btn" id="order-pay-mode-invoice" data-order-pay-mode="invoice" aria-pressed="false">
-                  Безнал
-                </button>
-              </div>
-              <p class="order-pay-mode__hint" id="order-pay-mode-hint">Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.</p>
-            </div>
-
             <div class="order-checkout" id="order-checkout" hidden>
-            <div class="order-cash-info" id="order-cash-info" hidden aria-hidden="true">
-              <div class="order-cash-info__panel">
-                <h3 class="order-cash-info__title">💵 Оплата наличными</h3>
-                <p class="order-cash-info__lead">Онлайн-перевод не нужен — расчёт наличными при получении заказа.</p>
-                <ul class="order-cash-info__list">
-                  <li><strong>Есть доставка</strong> — передайте сумму <strong>водителю в руки</strong> при разгрузке на объекте.</li>
-                  <li><strong>Самовывоз</strong> — оплата на производстве по согласованию с менеджером.</li>
-                </ul>
-                <p class="order-cash-info__note">Сумма — по итогу в корзине. Желательно подготовить мелочь: водителю не всегда удобно давать сдачу с крупных купюр.</p>
-              </div>
-            </div>
-
-            <div class="order-payment" id="order-payment" hidden aria-hidden="true">
-              <div class="order-payment__panel">
-                <h3 class="order-payment__title">🟢 Прямая оплата на карту Сбербанка</h3>
-                <p class="order-payment__warn">
-                  ВНИМАНИЕ: У производителя ТОЛЬКО СБЕРБАНК! Других банков для перевода НЕТУ. Переводите строго на карту Сбербанка!
-                </p>
-                <p class="order-payment__flow" id="order-payment-flow-hint">
-                  Сначала <strong>заполните форму заказа ниже</strong> и нажмите «Отправить». Затем — <strong>переход в Сбер</strong> для перевода.
-                </p>
-                <div class="order-payment__pay-row">
-                  <button
-                    type="button"
-                    class="order-payment__qr-mini"
-                    id="order-payment-qr-open"
-                    aria-label="Увеличить QR-код для оплаты с компьютера"
-                    title="Нажмите, чтобы открыть QR крупнее"
-                  >
-                    <img
-                      class="order-payment__qr-img"
-                      src="sber-qr.jpg"
-                      alt=""
-                      width="80"
-                      height="80"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <span class="order-payment__qr-caption">QR с ПК · нажмите</span>
-                  </button>
-                  <p class="order-payment__step-hint order-payment__step-hint--side">
-                    Сумма для перевода — в блоке «Итого» в корзине.
-                  </p>
-                </div>
-                <div class="order-payment__actions">
-                  <a
-                    class="order-payment__sber order-payment__sber--disabled"
-                    id="order-payment-sber"
-                    href="https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled="true"
-                    tabindex="-1"
-                  >Перейти в СберБанк и перевести</a>
-                </div>
-              </div>
-            </div>
-
             <div class="order-selected" id="order-selected" aria-live="polite">
               <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
             </div>
 
-            <input type="hidden" id="payment_status" name="payment_status" value="Оплата не выбрана (ожидание)" />
             <div class="order-cart" id="order-cart" hidden>
               <div class="order-cart__head">
                 <div class="order-cart__title">Ваш заказ</div>
@@ -666,22 +594,6 @@
             </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div id="order-qr-lightbox" class="order-qr-lightbox" hidden aria-hidden="true">
-        <button type="button" class="order-qr-lightbox__backdrop" id="order-qr-lightbox-backdrop" aria-label="Закрыть QR-код"></button>
-        <div class="order-qr-lightbox__dialog" role="dialog" aria-modal="true" aria-labelledby="order-qr-lightbox-title">
-          <button type="button" class="order-qr-lightbox__close" id="order-qr-lightbox-close" aria-label="Закрыть">×</button>
-          <h3 class="order-qr-lightbox__title" id="order-qr-lightbox-title">QR для оплаты с компьютера</h3>
-          <img
-            class="order-qr-lightbox__img"
-            src="sber-qr.jpg"
-            alt="QR-код СберБанк для оплаты заказа"
-            width="280"
-            height="280"
-            decoding="async"
-          />
-          <p class="order-qr-lightbox__hint">Нажмите ещё раз на миниатюру или «×», чтобы вернуть QR на место</p>
         </div>
       </div>
     </div>
@@ -1092,7 +1004,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=order-fs-v19" defer></script>
+    <script src="order-cart.js?v=order-fs-v20" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

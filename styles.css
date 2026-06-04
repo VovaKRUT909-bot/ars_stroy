@@ -476,36 +476,6 @@ main{
   box-shadow:0 16px 40px rgba(0,0,0,.28);
   overflow:hidden;
 }
-.order-checkout-card[data-pay-mode="cash"] .order-payment{
-  display:none !important;
-}
-.order-checkout-card[data-pay-mode="invoice"] .order-form__submit{
-  display:none;
-}
-.order-layout--fullscreen .order-pay-mode{
-  margin:0;
-  padding:14px 14px 10px;
-  border-color:rgba(201,168,108,.28);
-  background:linear-gradient(145deg, rgba(201,168,108,.08) 0%, rgba(255,255,255,.03) 100%);
-  box-shadow:none;
-  border-radius:0;
-  border:none;
-  background:transparent;
-}
-.order-layout--fullscreen .order-pay-mode__title{
-  text-align:center;
-  font-size:1rem;
-  margin-bottom:10px;
-}
-.order-layout--fullscreen .order-pay-mode__btn{
-  min-height:50px;
-  font-size:16px;
-}
-.order-layout--fullscreen .order-pay-mode__hint{
-  margin-top:8px;
-  margin-bottom:0;
-  font-size:12px;
-}
 .order-layout--fullscreen .order-checkout{
   display:flex;
   flex-direction:column;
@@ -521,40 +491,14 @@ main{
 .order-layout--fullscreen .order-checkout.is-visible .order-cart{
   order:1;
 }
-.order-layout--fullscreen .order-checkout.is-visible .order-cash-info.is-open{
-  order:2;
-}
-.order-layout--fullscreen .order-checkout.is-visible .order-payment.is-open{
-  order:2;
-}
 .order-layout--fullscreen .order-checkout.is-visible .order-checkout-fd{
-  order:4;
+  order:3;
   width:calc(100% - 28px);
   max-width:600px;
   margin:0 auto 14px;
 }
 .order-layout--fullscreen .order-checkout.is-visible .order-selected{
   order:0;
-}
-.order-layout--fullscreen .order-cash-info,
-.order-layout--fullscreen .order-payment{
-  margin:0;
-  opacity:1;
-  transform:none;
-}
-.order-layout--fullscreen .order-cash-info.is-open,
-.order-layout--fullscreen .order-payment.is-open{
-  opacity:1;
-  transform:none;
-}
-.order-layout--fullscreen .order-cash-info__panel,
-.order-layout--fullscreen .order-payment__panel{
-  border-radius:0;
-  border-left:none;
-  border-right:none;
-  border-top:1px dashed rgba(255,255,255,.12);
-  box-shadow:none;
-  padding:12px 14px;
 }
 .order-layout--fullscreen .order-form{
   margin-top:0;
@@ -572,9 +516,6 @@ main{
   margin-top:0;
   padding-top:8px;
   border-top:1px solid rgba(255,255,255,.1);
-}
-.order-layout--fullscreen .order-pay-mode + .order-checkout{
-  margin-top:0;
 }
 body.order-fs-open{
   overflow:hidden;

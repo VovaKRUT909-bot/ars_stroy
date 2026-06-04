@@ -11,24 +11,13 @@
   var cartGrandTotal = document.getElementById('cart-grand-total');
   var cartCountEl = document.getElementById('cart-count');
   var cartClearBtn = document.getElementById('cart-clear');
-  var paymentStatusEl = document.getElementById('payment_status');
-  var orderPaymentSberBtn = document.getElementById('order-payment-sber');
-  var orderPaymentFlowHintEl = document.getElementById('order-payment-flow-hint');
-  var SBER_PAY_URL = 'https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308';
   var FD_CHECKOUT_FORM_ID = '245438';
   /** Текстовая область заказа в форме 245438 */
   var FD_CHECKOUT_ORDER_FIELD = 'field3065946';
   var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
   var checkoutWidgetFillTimer = null;
   var checkoutWidgetFillAttempts = 0;
-  var invoiceOrderSent = false;
-  var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
   var orderCheckoutEl = document.getElementById('order-checkout');
-  var orderPayModeHintEl = document.getElementById('order-pay-mode-hint');
-  var orderCashInfoEl = document.getElementById('order-cash-info');
-  var orderPaymentEl = document.getElementById('order-payment');
-  var orderCheckoutCard = document.querySelector('.order-checkout-card');
-  var orderPayMode = null;
   var orderFsOverlay = document.getElementById('order-checkout-overlay');
   var orderFsBackdrop = document.getElementById('order-fs-backdrop');
   var orderFsCloseBtn = document.getElementById('order-fs-close');
@@ -144,16 +133,6 @@
     return formatMoney(getCartProductsTotal()) + ' руб.';
   }
 
-  function setPaymentStatus(text) {
-    if (paymentStatusEl) {
-      paymentStatusEl.value = text;
-    }
-  }
-
-  function resetPaymentStatus() {
-    setPaymentStatus(PAYMENT_STATUS_DEFAULT);
-  }
-
   function updateOrderTotals() {
     if (cartSubtotalEl) {
       cartSubtotalEl.textContent = formatMoney(getCartProductsTotal());
@@ -218,27 +197,6 @@
       .join('\n\n');
   }
 
-  function updateOrderPayModeButtons() {
-    document.querySelectorAll('[data-order-pay-mode]').forEach(function (btn) {
-      var mode = btn.getAttribute('data-order-pay-mode');
-      var active = mode === orderPayMode;
-      btn.classList.toggle('is-active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-    if (orderPayModeHintEl) {
-      if (orderPayMode === 'cash') {
-        orderPayModeHintEl.textContent =
-          'Наличные: при доставке — водителю в руки. Ниже откроется форма заказа.';
-      } else if (orderPayMode === 'invoice') {
-        orderPayModeHintEl.textContent =
-          'Безнал: заполните форму заказа ниже и нажмите «Отправить», затем «Перейти в СберБанк» для перевода.';
-      } else {
-        orderPayModeHintEl.textContent =
-          'Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.';
-      }
-    }
-  }
-
   function hidePanel(el, visibleClass) {
     if (!el || !visibleClass) return;
     el.classList.remove(visibleClass);
@@ -300,8 +258,8 @@
       } else {
         target = orderCheckoutEl;
       }
-    } else {
-      target = document.getElementById('order-pay-mode');
+    } else if (orderCheckoutEl) {
+      target = orderCheckoutEl;
     }
     if (!target) return;
     if (isOrderFullscreenOpen()) {
@@ -315,126 +273,40 @@
 
   function beginOrderCheckout(opts) {
     opts = opts || {};
-    openOrderFullscreen();
-    if (!orderPayMode) {
-      setOrderPaymentMode('cash', { scroll: opts.scroll !== false });
-      return;
-    }
-    renderCart();
-    if (opts.scroll !== false) {
-      requestAnimationFrame(scrollToOrderCart);
-    }
-  }
-
-  function refreshCheckoutDelivery() {
-    scheduleDeliveryAddressUpdate();
-  }
-
-  function setOrderPaymentMode(mode, opts) {
-    opts = opts || {};
-    if (mode !== 'cash' && mode !== 'invoice') return;
     if (cart.length === 0) {
-      alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
+      openOrderFullscreen();
+      showOrderCheckout(opts);
       return;
     }
     if (cartHasMissingQty()) {
       alert('Укажите количество для каждой позиции (м² или шт.).');
       return;
     }
+    openOrderFullscreen();
+    showOrderCheckout(opts);
+  }
 
-    if (orderPayMode === mode && !opts.force) {
-      updateOrderPayModeButtons();
-      renderCart();
-      if (opts.scroll !== false) scrollToOrderCart();
-      return;
-    }
-
-    orderPayMode = mode;
-
-    if (orderCheckoutCard) {
-      orderCheckoutCard.setAttribute('data-pay-mode', mode);
-    }
-
-    hidePanel(orderPaymentEl, 'is-open');
-    hidePanel(orderCashInfoEl, 'is-open');
-    if (orderPaymentEl) {
-      orderPaymentEl.classList.remove('is-success');
-    }
-
-    if (mode === 'cash') {
-      resetInvoicePayFlow();
-      if (orderPaymentEl) {
-        orderPaymentEl.hidden = true;
-        orderPaymentEl.setAttribute('aria-hidden', 'true');
-      }
-      showPanel(orderCashInfoEl, 'is-open');
-    } else {
-      resetInvoicePayFlow();
-      if (orderPaymentEl) {
-        orderPaymentEl.hidden = false;
-        orderPaymentEl.setAttribute('aria-hidden', 'false');
-      }
-      showPanel(orderPaymentEl, 'is-open');
-    }
+  function showOrderCheckout(opts) {
     showPanel(orderCheckoutEl, 'is-visible');
-    updateOrderPayModeButtons();
     renderCart();
-    refreshCheckoutDelivery();
+    scheduleDeliveryAddressUpdate();
     if (opts.scroll !== false) {
       requestAnimationFrame(scrollToOrderCart);
     }
   }
 
-  function resetOrderPaymentMode() {
-    orderPayMode = null;
+  function resetOrderCheckout() {
     hidePanel(orderCheckoutEl, 'is-visible');
-    hidePanel(orderPaymentEl, 'is-open');
-    hidePanel(orderCashInfoEl, 'is-open');
-    if (orderPaymentEl) {
-      orderPaymentEl.classList.remove('is-success');
-    }
-    if (orderCheckoutCard) {
-      orderCheckoutCard.removeAttribute('data-pay-mode');
-    }
-    resetPaymentStatus();
-    resetInvoicePayFlow();
-    updateOrderPayModeButtons();
   }
 
-  function resetInvoicePayFlow() {
-    invoiceOrderSent = false;
-    if (orderPaymentSberBtn) {
-      orderPaymentSberBtn.classList.add('order-payment__sber--disabled');
-      orderPaymentSberBtn.classList.remove('order-payment__sber--pulse');
-      orderPaymentSberBtn.setAttribute('aria-disabled', 'true');
-      orderPaymentSberBtn.setAttribute('tabindex', '-1');
-    }
-    if (orderPaymentFlowHintEl) {
-      orderPaymentFlowHintEl.innerHTML =
-        'Сначала <strong>заполните форму заказа ниже</strong> и нажмите «Отправить». Затем — <strong>переход в Сбер</strong> для перевода.';
-    }
+  function refreshCheckoutDelivery() {
+    scheduleDeliveryAddressUpdate();
   }
-
-  function markInvoiceOrderSent() {
-    invoiceOrderSent = true;
-    if (orderPaymentSberBtn) {
-      orderPaymentSberBtn.classList.remove('order-payment__sber--disabled');
-      orderPaymentSberBtn.classList.add('order-payment__sber--pulse');
-      orderPaymentSberBtn.setAttribute('aria-disabled', 'false');
-      orderPaymentSberBtn.removeAttribute('tabindex');
-    }
-    if (orderPaymentFlowHintEl) {
-      orderPaymentFlowHintEl.textContent =
-        'Заказ отправлен. Проверьте состав, затем нажмите зелёную кнопку — перевод в СберБанке.';
-    }
-  }
-
 
   function clearOrderAfterSubmit() {
     cart = [];
-    resetOrderPaymentMode();
+    resetOrderCheckout();
     renderCart();
-    resetPaymentStatus();
     closeOrderFullscreen();
   }
 
@@ -444,9 +316,6 @@
 
   function getCheckoutWidgetCartText() {
     var lines = [];
-    if (orderPayMode) {
-      lines.push('Оплата: ' + (orderPayMode === 'cash' ? 'Нал' : 'Безнал'));
-    }
     lines.push('Товары:');
     cart.forEach(function (item, index) {
       var measure = item.qtyMeasure || 'шт.';
@@ -530,33 +399,11 @@
   }
 
   function onCheckoutFormDesignerSuccess() {
-    if (!orderPayMode) {
-      alert('Сначала выберите способ оплаты: «Нал» или «Безнал».');
-      return;
-    }
     if (cart.length === 0) {
       return;
     }
-    if (orderPayMode === 'cash') {
-      var totalCash = getOrderTotalText();
-      setPaymentStatus('Нал — оплата при получении (Сумма: ' + totalCash + ')');
-      alert(
-        'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
-      );
-      clearCart();
-      return;
-    }
-    if (orderPayMode === 'invoice') {
-      if (invoiceOrderSent) {
-        return;
-      }
-      var totalInv = getOrderTotalText();
-      setPaymentStatus('Безнал — заказ отправлен, ожидается перевод (Сумма: ' + totalInv + ')');
-      alert(
-        'Заказ принят! Данные отправлены. Проверьте уведомление, затем нажмите «Перейти в СберБанк и перевести».'
-      );
-      markInvoiceOrderSent();
-    }
+    alert('Заявка отправлена! Менеджер свяжется с вами для уточнения деталей заказа.');
+    clearCart();
   }
 
   function bindCheckoutFormDesignerMessageFallback() {
@@ -1257,22 +1104,8 @@
     orderAddressEl.addEventListener('change', scheduleDeliveryAddressUpdate);
   }
 
-  document.querySelectorAll('[data-order-pay-mode]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var mode = btn.getAttribute('data-order-pay-mode');
-      if (!isOrderFullscreenOpen()) {
-        openOrderFullscreen();
-      }
-      setOrderPaymentMode(mode, { scroll: true });
-    });
-  });
-
   if (orderOpenCheckoutBtn) {
     orderOpenCheckoutBtn.addEventListener('click', function () {
-      if (cart.length === 0) {
-        alert('Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину».');
-        return;
-      }
       beginOrderCheckout({ scroll: true });
     });
   }
@@ -1299,82 +1132,9 @@
     window.__orderFsEscBound = true;
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || !isOrderFullscreenOpen()) return;
-      if (isOrderQrLightboxOpen()) {
-        closeOrderQrLightbox();
-        return;
-      }
       closeOrderFullscreen();
     });
   }
 
-  function handleSberPayClick(e) {
-    if (orderPayMode !== 'invoice') return;
-    if (!invoiceOrderSent) {
-      e.preventDefault();
-      alert('Сначала заполните форму заказа ниже и нажмите «Отправить», затем переходите в СберБанк.');
-      return;
-    }
-    var totalText = getOrderTotalText();
-    setPaymentStatus('Безнал — переход к оплате в СберБанке (Сумма: ' + totalText + ')');
-  }
-
-  var orderQrOpenBtn = document.getElementById('order-payment-qr-open');
-  var orderQrLightbox = document.getElementById('order-qr-lightbox');
-  var orderQrLightboxBackdrop = document.getElementById('order-qr-lightbox-backdrop');
-  var orderQrLightboxClose = document.getElementById('order-qr-lightbox-close');
-  function isOrderQrLightboxOpen() {
-    return orderQrLightbox && orderQrLightbox.classList.contains('is-open');
-  }
-
-  function openOrderQrLightbox() {
-    if (!orderQrLightbox) return;
-    orderQrLightbox.hidden = false;
-    orderQrLightbox.setAttribute('aria-hidden', 'false');
-    orderQrLightbox.classList.add('is-open');
-    if (orderQrOpenBtn) {
-      orderQrOpenBtn.setAttribute('aria-expanded', 'true');
-      orderQrOpenBtn.classList.add('order-payment__qr-mini--open');
-    }
-    if (orderQrLightboxClose) orderQrLightboxClose.focus();
-  }
-
-  function closeOrderQrLightbox() {
-    if (!orderQrLightbox) return;
-    orderQrLightbox.classList.remove('is-open');
-    orderQrLightbox.hidden = true;
-    orderQrLightbox.setAttribute('aria-hidden', 'true');
-    if (orderQrOpenBtn) {
-      orderQrOpenBtn.setAttribute('aria-expanded', 'false');
-      orderQrOpenBtn.classList.remove('order-payment__qr-mini--open');
-      orderQrOpenBtn.focus();
-    }
-  }
-
-  function toggleOrderQrLightbox() {
-    if (isOrderQrLightboxOpen()) {
-      closeOrderQrLightbox();
-    } else {
-      openOrderQrLightbox();
-    }
-  }
-
-  if (orderQrOpenBtn) {
-    orderQrOpenBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      toggleOrderQrLightbox();
-    });
-  }
-  if (orderQrLightboxBackdrop) {
-    orderQrLightboxBackdrop.addEventListener('click', closeOrderQrLightbox);
-  }
-  if (orderQrLightboxClose) {
-    orderQrLightboxClose.addEventListener('click', closeOrderQrLightbox);
-  }
-
-  if (orderPaymentSberBtn) {
-    orderPaymentSberBtn.addEventListener('click', handleSberPayClick);
-  }
-
-  updateOrderPayModeButtons();
   renderCart();
 })();
