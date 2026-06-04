@@ -19,6 +19,11 @@
   var orderPaymentSberBtn = document.getElementById('order-payment-sber');
   var orderPaymentFlowHintEl = document.getElementById('order-payment-flow-hint');
   var SBER_PAY_URL = 'https://www.sberbank.com/sms/pbpn?requisiteNumber=79258056308';
+  var FD_ORDER_ROUTE_URL = 'https://formdesigner.ru' + '/html/route?id=' + '245426';
+  /** Макросы полей FormDesigner (форма 245426) — «Имя макроса» в конструкторе */
+  var FD_ORDER_FIELD_FIO = 'name';
+  var FD_ORDER_FIELD_PHONE = 'phone';
+  var FD_ORDER_FIELD_ORDER = 'order';
   var invoiceOrderSent = false;
   var PAYMENT_STATUS_DEFAULT = 'Оплата не выбрана (ожидание)';
   var orderFormSending = false;
@@ -691,7 +696,7 @@
           'Наличные: при доставке — водителю в руки. Ниже откроется форма заказа.';
       } else if (orderPayMode === 'invoice') {
         orderPayModeHintEl.textContent =
-          'Безнал: сначала «Отправить заказ» (на почту), проверьте состав, затем «Перейти в СберБанк» для перевода.';
+          'Безнал: сначала «Отправить заказ», проверьте уведомление, затем «Перейти в СберБанк» для перевода.';
       } else {
         orderPayModeHintEl.textContent =
           'Выберите «Нал» или «Безнал», чтобы открыть корзину и оформить заказ.';
@@ -882,7 +887,7 @@
     if (orderPaymentSendBtn) {
       orderPaymentSendBtn.disabled = true;
       orderPaymentSendBtn.classList.add('order-payment__send-order--done');
-      orderPaymentSendBtn.textContent = 'Заказ отправлен на почту';
+      orderPaymentSendBtn.textContent = 'Заказ отправлен';
     }
     if (orderPaymentSberBtn) {
       orderPaymentSberBtn.classList.remove('order-payment__sber--disabled');
@@ -892,7 +897,7 @@
     }
     if (orderPaymentFlowHintEl) {
       orderPaymentFlowHintEl.textContent =
-        'Заказ на почте. Проверьте состав заказа, затем нажмите зелёную кнопку — перевод в СберБанке.';
+        'Заказ отправлен. Проверьте состав, затем нажмите зелёную кнопку — перевод в СберБанке.';
     }
   }
 
@@ -914,20 +919,79 @@
     clearOrderAfterSubmit();
   }
 
-  /** Отправка заказа плитки (корзины) → Formspree. postSubmit: cash | none */
-  async function sendFormspreeOrder(orderData, postSubmit) {
+  function getOrderDetailsText() {
+    syncOrderHiddenFields();
+    var lines = [];
+    lines.push('Способ оплаты: ' + (orderPayMode === 'cash' ? 'Нал' : 'Безнал'));
+    if (paymentStatusEl && paymentStatusEl.value) {
+      lines.push('Статус оплаты: ' + paymentStatusEl.value);
+    }
+    lines.push('');
+    lines.push('Товары:');
+    lines.push(formatCartLinesForForm() || '—');
+    lines.push('Сумма товаров: ' + formatMoney(getCartProductsTotal()) + ' руб.');
+    if (deliveryState.status === 'ok' && deliveryState.cost != null) {
+      lines.push(
+        'Доставка: ' + formatMoney(deliveryState.cost) + ' ₽ ' + cartDeliveryKmLabel()
+      );
+    } else if (orderAddressEl && orderAddressEl.value.trim()) {
+      lines.push('Доставка: уточняется по адресу');
+    } else {
+      lines.push('Доставка: самовывоз / не указана');
+    }
+    lines.push('Итого: ' + getOrderTotalText());
+    var emailEl = document.getElementById('order-email');
+    var addressEl = document.getElementById('order-address');
+    var commentEl = document.getElementById('order-comment');
+    if (emailEl && emailEl.value.trim()) {
+      lines.push('E-mail: ' + emailEl.value.trim());
+    }
+    if (addressEl && addressEl.value.trim()) {
+      lines.push('Адрес: ' + addressEl.value.trim());
+    }
+    if (commentEl && commentEl.value.trim()) {
+      lines.push('Комментарий: ' + commentEl.value.trim());
+    }
+    return lines.join('\n');
+  }
+
+  function buildFormDesignerOrderFormData() {
+    var nameEl = document.getElementById('order-name');
+    var phoneEl = document.getElementById('order-phone');
+    var formData = new FormData();
+    formData.append(FD_ORDER_FIELD_FIO, nameEl ? nameEl.value.trim() : '');
+    formData.append(FD_ORDER_FIELD_PHONE, phoneEl ? phoneEl.value.trim() : '');
+    formData.append(FD_ORDER_FIELD_ORDER, getOrderDetailsText());
+    return formData;
+  }
+
+  async function isFormDesignerOrderSuccess(response) {
+    if (!response || !response.ok) return false;
+    var text = '';
     try {
-      var domain = 'https://formspree.io';
-      var path = '/f/xgoqzaey';
-      var response = await fetch(domain + path, {
+      text = await response.text();
+    } catch (e) {
+      return true;
+    }
+    if (!text) return true;
+    try {
+      var data = JSON.parse(text);
+      if (data && (data.status === 'error' || data.ok === false)) return false;
+      return true;
+    } catch (e2) {
+      return !/error|ошибка/i.test(text);
+    }
+  }
+
+  /** Отправка заказа (корзина) → FormDesigner. postSubmit: cash | invoice-sent | none */
+  async function sendFormDesignerOrder(postSubmit) {
+    try {
+      var response = await fetch(FD_ORDER_ROUTE_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify(orderData)
+        body: buildFormDesignerOrderFormData()
       });
-      if (response.ok) {
+      var ok = await isFormDesignerOrderSuccess(response);
+      if (ok) {
         if (postSubmit === 'cash') {
           alert(
             'Заказ принят! Оплата наличными: при доставке — передайте сумму водителю в руки, при самовывозе — на производстве по согласованию.'
@@ -935,7 +999,7 @@
           clearCart();
         } else if (postSubmit === 'invoice-sent') {
           alert(
-            'Заказ отправлен на почту! Проверьте письмо с составом заказа, затем нажмите «Перейти в СберБанк и перевести».'
+            'Заказ принят! Данные отправлены. Проверьте уведомление, затем нажмите «Перейти в СберБанк и перевести».'
           );
           markInvoiceOrderSent();
         }
@@ -1709,8 +1773,7 @@
       orderPaymentSendBtn.disabled = true;
     }
 
-    var orderData = buildOrderData();
-    var ok = await sendFormspreeOrder(orderData, options.postSubmit || 'none');
+    var ok = await sendFormDesignerOrder(options.postSubmit || 'none');
 
     orderFormSending = false;
     if (submitBtn) {
@@ -1745,7 +1808,7 @@
     if (orderPayMode !== 'invoice') return;
     if (!invoiceOrderSent) {
       e.preventDefault();
-      alert('Сначала нажмите «Отправить заказ» — проверьте письмо на почте, затем переходите в СберБанк.');
+      alert('Сначала нажмите «Отправить заказ», затем переходите в СберБанк.');
       return;
     }
     var totalText = getOrderTotalText();
