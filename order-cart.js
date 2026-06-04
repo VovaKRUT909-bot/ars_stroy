@@ -250,16 +250,22 @@
     orderFsBody.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
   }
 
+  function scrollToOrderSection() {
+    if (!orderSection) return;
+    if (isOrderFullscreenOpen()) {
+      closeOrderFullscreen();
+    }
+    orderSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   function scrollToOrderCart() {
     var target = null;
-    if (orderCheckoutEl && !orderCheckoutEl.hidden) {
-      if (orderCart && cart.length > 0 && !orderCart.hidden) {
-        target = orderCart;
-      } else {
-        target = orderCheckoutEl;
-      }
-    } else if (orderCheckoutEl) {
-      target = orderCheckoutEl;
+    if (orderCart && cart.length > 0 && !orderCart.hidden) {
+      target = orderCart;
+    } else if (orderSelected && !orderSelected.hidden) {
+      target = orderSelected;
+    } else if (orderSection) {
+      target = orderSection;
     }
     if (!target) return;
     if (isOrderFullscreenOpen()) {
@@ -273,13 +279,9 @@
 
   function beginOrderCheckout(opts) {
     opts = opts || {};
+    renderCart();
     if (cart.length === 0) {
-      openOrderFullscreen();
-      showOrderCheckout(opts);
-      return;
-    }
-    if (cartHasMissingQty()) {
-      alert('Укажите количество для каждой позиции (м² или шт.).');
+      scrollToOrderSection();
       return;
     }
     openOrderFullscreen();
@@ -290,8 +292,11 @@
     showPanel(orderCheckoutEl, 'is-visible');
     renderCart();
     scheduleDeliveryAddressUpdate();
-    if (opts.scroll !== false) {
-      requestAnimationFrame(scrollToOrderCart);
+    ensureCheckoutFormDesignerWidget();
+    if (opts.scroll !== false && orderFsBody && orderCheckoutEl) {
+      requestAnimationFrame(function () {
+        scrollWithinFullscreen(orderCheckoutEl);
+      });
     }
   }
 
@@ -1023,7 +1028,9 @@
   }
 
   function goToOrderAfterAddToCart() {
-    beginOrderCheckout({ scroll: true });
+    renderCart();
+    scrollToOrderSection();
+    requestAnimationFrame(scrollToOrderCart);
   }
 
   function createCartButton(getProduct) {
@@ -1120,11 +1127,8 @@
   document.querySelectorAll('a[href="#order"]').forEach(function (link) {
     link.addEventListener('click', function (e) {
       e.preventDefault();
-      if (cart.length === 0) {
-        openOrderFullscreen();
-        return;
-      }
-      beginOrderCheckout({ scroll: true });
+      scrollToOrderSection();
+      requestAnimationFrame(scrollToOrderCart);
     });
   });
 

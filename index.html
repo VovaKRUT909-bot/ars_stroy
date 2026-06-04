@@ -35,7 +35,7 @@
       "description": "Производство и продажа тротуарной плитки, брусчатки и бордюра в Кубинке с доставкой по Одинцовскому району."
     }
     </script>
-    <link rel="stylesheet" href="styles.css?v=order-fs-v12" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v13" />
     <script type="text/javascript">
 (function (d, o) {
     var s = d.createElement("script"), g = "getElementsByTagName";
@@ -534,34 +534,12 @@
         <div class="container">
           <div class="section__head">
             <h2 class="section__title">Оформление заказа</h2>
-            <p class="section__subtitle">Добавьте товары из «Прайса» в корзину и нажмите кнопку ниже — откроется удобное оформление на весь экран.</p>
+            <p class="section__subtitle">Добавьте товары из «Прайса» в корзину — состав появится ниже. Затем нажмите «Отправить заявку».</p>
           </div>
-          <button type="button" class="btn btn--primary order-open-btn" id="order-open-checkout">Оформить заказ</button>
-        </div>
-      </section>
-
-    <div id="order-checkout-overlay" class="order-fs" hidden aria-hidden="true">
-      <div class="order-fs__backdrop" id="order-fs-backdrop" aria-hidden="true"></div>
-      <div class="order-fs__dialog" role="dialog" aria-modal="true" aria-labelledby="order-fs-title">
-        <header class="order-fs__header">
-          <div class="order-fs__brand">
-            <img class="order-fs__logo" src="favicon.png" width="52" height="52" alt="" />
-            <div>
-              <h2 class="order-fs__title" id="order-fs-title">Арс Строй</h2>
-              <p class="order-fs__tagline">Производство тротуарной плитки · Кубинка</p>
-            </div>
-          </div>
-          <button type="button" class="order-fs__close" id="order-fs-close" aria-label="Закрыть оформление заказа">×</button>
-        </header>
-        <div class="order-fs__body">
-          <p class="order-fs__intro">Проверьте состав заказа, при необходимости укажите доставку и отправьте заявку.</p>
-          <div class="order-layout order-layout--fullscreen">
-            <div class="order-checkout-card">
-            <div class="order-checkout" id="order-checkout" hidden>
+          <div class="order-page-checkout">
             <div class="order-selected" id="order-selected" aria-live="polite">
               <p class="order-selected__empty">Корзина пуста. В разделе «Прайс» выберите размер и цвет и нажмите «В корзину» у каждой нужной позиции.</p>
             </div>
-
             <div class="order-cart" id="order-cart" hidden>
               <div class="order-cart__head">
                 <div class="order-cart__title">Ваш заказ</div>
@@ -588,10 +566,33 @@
                 <p class="order-field__hint">Без адреса — самовывоз.</p>
               </label>
             </div>
-            <div class="order-checkout-fd" id="order-checkout-fd">
-              <div class="formdesigner-widget order-checkout-widget" data-id="245438"></div>
+          </div>
+          <button type="button" class="btn btn--primary order-open-btn" id="order-open-checkout">Отправить заявку</button>
+        </div>
+      </section>
+
+    <div id="order-checkout-overlay" class="order-fs" hidden aria-hidden="true">
+      <div class="order-fs__backdrop" id="order-fs-backdrop" aria-hidden="true"></div>
+      <div class="order-fs__dialog" role="dialog" aria-modal="true" aria-labelledby="order-fs-title">
+        <header class="order-fs__header">
+          <div class="order-fs__brand">
+            <img class="order-fs__logo" src="favicon.png" width="52" height="52" alt="" />
+            <div>
+              <h2 class="order-fs__title" id="order-fs-title">Арс Строй</h2>
+              <p class="order-fs__tagline">Производство тротуарной плитки · Кубинка</p>
             </div>
-            </div>
+          </div>
+          <button type="button" class="order-fs__close" id="order-fs-close" aria-label="Закрыть оформление заказа">×</button>
+        </header>
+        <div class="order-fs__body">
+          <p class="order-fs__intro">Укажите телефон и имя — состав заказа уже в корзине на странице.</p>
+          <div class="order-layout order-layout--fullscreen">
+            <div class="order-checkout-card">
+              <div class="order-checkout order-checkout--form" id="order-checkout" hidden>
+                <div class="order-checkout-fd" id="order-checkout-fd">
+                  <div class="formdesigner-widget order-checkout-widget" data-id="245438"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1004,7 +1005,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=order-fs-v20" defer></script>
+    <script src="order-cart.js?v=order-fs-v21" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

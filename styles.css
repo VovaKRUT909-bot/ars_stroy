@@ -1377,10 +1377,28 @@ body.order-fs-open{
   background:#229ED9;
 }
 
+.order-page-checkout{
+  margin:20px 0 24px;
+  max-width:720px;
+}
+.order-page-checkout .order-selected__empty{
+  margin-bottom:0;
+}
+.order-page-checkout .order-cart{
+  margin-bottom:0;
+  padding:16px;
+  border-radius:var(--radius2);
+  border:1px solid rgba(201,168,108,.28);
+  background:linear-gradient(165deg, rgba(28,36,58,.92) 0%, rgba(14,18,28,.96) 100%);
+  box-shadow:0 12px 32px rgba(0,0,0,.22);
+}
 .order-cart{
   margin-bottom:16px;
   padding-bottom:16px;
   border-bottom:1px dashed rgba(255,255,255,.14);
+}
+.order-page-checkout .order-cart{
+  border-bottom:none;
 }
 .order-cart__head{
   display:flex;
