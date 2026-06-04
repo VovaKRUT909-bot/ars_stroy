@@ -874,7 +874,7 @@
     }
     if (orderPaymentFlowHintEl) {
       orderPaymentFlowHintEl.innerHTML =
-        'Сначала <strong>отправьте заказ</strong> — придёт на почту, проверьте состав. Затем ниже — <strong>переход в Сбер</strong> для перевода.';
+        'Сначала <strong>отправьте заказ</strong>. Затем ниже — <strong>переход в Сбер</strong> для перевода.';
     }
   }
 
@@ -1784,6 +1784,49 @@
     }
     var totalText = getOrderTotalText();
     setPaymentStatus('Безнал — переход к оплате в СберБанке (Сумма: ' + totalText + ')');
+  }
+
+  var orderQrOpenBtn = document.getElementById('order-payment-qr-open');
+  var orderQrLightbox = document.getElementById('order-qr-lightbox');
+  var orderQrLightboxBackdrop = document.getElementById('order-qr-lightbox-backdrop');
+  var orderQrLightboxClose = document.getElementById('order-qr-lightbox-close');
+  var orderQrLightboxPrevOverflow = '';
+
+  function openOrderQrLightbox() {
+    if (!orderQrLightbox) return;
+    orderQrLightbox.hidden = false;
+    orderQrLightbox.setAttribute('aria-hidden', 'false');
+    orderQrLightbox.classList.add('is-open');
+    orderQrLightboxPrevOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    if (orderQrLightboxClose) orderQrLightboxClose.focus();
+  }
+
+  function closeOrderQrLightbox() {
+    if (!orderQrLightbox) return;
+    orderQrLightbox.classList.remove('is-open');
+    orderQrLightbox.hidden = true;
+    orderQrLightbox.setAttribute('aria-hidden', 'true');
+    document.documentElement.style.overflow = orderQrLightboxPrevOverflow || '';
+    if (orderQrOpenBtn) orderQrOpenBtn.focus();
+  }
+
+  if (orderQrOpenBtn) {
+    orderQrOpenBtn.addEventListener('click', openOrderQrLightbox);
+  }
+  if (orderQrLightboxBackdrop) {
+    orderQrLightboxBackdrop.addEventListener('click', closeOrderQrLightbox);
+  }
+  if (orderQrLightboxClose) {
+    orderQrLightboxClose.addEventListener('click', closeOrderQrLightbox);
+  }
+  if (!window.__orderQrEscBound) {
+    window.__orderQrEscBound = true;
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && orderQrLightbox && orderQrLightbox.classList.contains('is-open')) {
+        closeOrderQrLightbox();
+      }
+    });
   }
 
   if (orderPaymentSendBtn) {

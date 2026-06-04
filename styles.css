@@ -1051,12 +1051,15 @@ body.order-fs-open{
   background:rgba(255,255,255,.06);
   text-align:center;
   cursor:pointer;
-  transition:border-color .15s ease, box-shadow .15s ease;
+  font:inherit;
+  color:inherit;
+  transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 .order-payment__qr-mini:hover,
-.order-payment__qr-mini:focus-within{
+.order-payment__qr-mini:focus-visible{
   border-color:rgba(201,168,108,.5);
   box-shadow:0 0 0 2px rgba(201,168,108,.18);
+  transform:scale(1.03);
 }
 .order-payment__qr-mini .order-payment__qr-img{
   display:block;
@@ -1067,6 +1070,7 @@ body.order-fs-open{
   border-radius:8px;
   object-fit:cover;
   background:#fff;
+  pointer-events:none;
 }
 .order-payment__qr-caption{
   display:block;
@@ -1074,6 +1078,81 @@ body.order-fs-open{
   font-size:10px;
   font-weight:750;
   line-height:1.2;
+  color:var(--muted);
+  pointer-events:none;
+}
+.order-qr-lightbox{
+  position:fixed;
+  inset:0;
+  z-index:9600;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  box-sizing:border-box;
+}
+.order-qr-lightbox[hidden]{
+  display:none !important;
+}
+.order-qr-lightbox.is-open{
+  display:flex;
+}
+.order-qr-lightbox__backdrop{
+  position:absolute;
+  inset:0;
+  margin:0;
+  padding:0;
+  border:none;
+  background:rgba(0,0,0,.72);
+  cursor:pointer;
+}
+.order-qr-lightbox__dialog{
+  position:relative;
+  z-index:1;
+  max-width:min(92vw, 360px);
+  padding:20px 18px 16px;
+  border-radius:var(--radius2);
+  border:1px solid rgba(201,168,108,.35);
+  background:linear-gradient(165deg, rgba(28,36,58,.98) 0%, rgba(14,18,28,.99) 100%);
+  box-shadow:0 24px 60px rgba(0,0,0,.55);
+  text-align:center;
+}
+.order-qr-lightbox__close{
+  position:absolute;
+  top:8px;
+  right:10px;
+  width:40px;
+  height:40px;
+  border:none;
+  border-radius:10px;
+  background:rgba(255,255,255,.08);
+  color:var(--text);
+  font-size:1.5rem;
+  line-height:1;
+  cursor:pointer;
+}
+.order-qr-lightbox__close:hover{
+  background:rgba(255,255,255,.14);
+}
+.order-qr-lightbox__title{
+  margin:0 0 14px;
+  padding-right:32px;
+  font-size:1rem;
+  font-weight:900;
+}
+.order-qr-lightbox__img{
+  display:block;
+  width:min(100%, 280px);
+  height:auto;
+  margin:0 auto;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 12px 32px rgba(0,0,0,.35);
+}
+.order-qr-lightbox__hint{
+  margin:14px 0 0;
+  font-size:.9rem;
+  line-height:1.45;
   color:var(--muted);
 }
 .order-payment__pay-col{
