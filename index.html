@@ -36,6 +36,31 @@
     }
     </script>
     <link rel="stylesheet" href="styles.css?v=order-fs-v10" />
+    <script type="text/javascript">
+(function (d, o) {
+    var s = d.createElement("script"), g = "getElementsByTagName";
+    s.type = "text/javascript"; s.async = true;
+    s.src = "//formdesigner.ru/js/universal/init.js?v=1.0.0";
+    s.onload = function () {
+        if (document.readyState !== 'loading') {
+            FD.init(o);
+        } else document.addEventListener("DOMContentLoaded", function () {
+            FD.init(o);
+        });
+    };
+    var h=d[g]("head")[0] || d[g]("body")[0];
+    h.appendChild(s);
+})(document, {
+    "host": "formdesigner.ru",
+    "forms": {
+        "245426": {
+            "width": "600px",
+            "height": "auto",
+            "scroll": true
+        }
+    }
+});
+</script>
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -453,31 +478,7 @@
             <p class="ukladka-request__note">
               Выезд замерщика бесплатно на расстоянии до 10&nbsp;км. При выезде дальше 10&nbsp;км — от 2&nbsp;999&nbsp;₽.
             </p>
-          <form
-            class="ukladka-request__form"
-            id="ukladka-form"
-            action="https://formspree.io/f/xjgzoybd"
-            method="POST"
-            novalidate
-          >
-            <input type="hidden" name="_subject" value="Заявка на замер тротуарной плитки" />
-            <label class="order-field ukladka-request__field">
-              <span class="order-field__label">Имя</span>
-              <input class="order-field__input ukladka-request__input" type="text" name="name" id="ukladka-name" required autocomplete="name" />
-            </label>
-            <label class="order-field ukladka-request__field">
-              <span class="order-field__label">Телефон</span>
-              <input class="order-field__input ukladka-request__input" type="tel" name="phone" id="ukladka-phone" required autocomplete="tel" inputmode="tel" />
-            </label>
-            <label class="order-field ukladka-request__field">
-              <span class="order-field__label">Адрес</span>
-              <input class="order-field__input ukladka-request__input" type="text" name="address" id="ukladka-address" required autocomplete="street-address" />
-            </label>
-            <button type="submit" class="btn btn--primary ukladka-request__submit" id="ukladka-submit">Отправить заявку</button>
-            <p class="ukladka-request__success" id="ukladka-success" role="status" aria-live="polite" hidden>
-              Спасибо! Заявка принята, наш инженер свяжется с вами в течение 15 минут.
-            </p>
-          </form>
+          <div class="formdesigner-widget" data-id="245426"></div>
           </div>
         </div>
       </section>

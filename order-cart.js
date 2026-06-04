@@ -35,7 +35,6 @@
   var orderFsBody = document.querySelector('.order-fs__body');
   var orderOpenCheckoutBtn = document.getElementById('order-open-checkout');
   var orderFsPrevOverflow = '';
-  var ukladkaForm = document.getElementById('ukladka-form');
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
   var cartDeliveryLine = document.getElementById('cart-delivery-line');
@@ -951,42 +950,6 @@
     }
   }
 
-  /** Отправка заявки на замерщика → Formspree. */
-  async function sendFormspreeZamershik(zamershikData) {
-    try {
-      var domain = 'https://formspree.io';
-      var path = '/f/xjgzoybd';
-      var response = await fetch(domain + path, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify(zamershikData)
-      });
-      if (response.ok) {
-        alert('Заявка на замерщика успешно отправлена!');
-        if (ukladkaForm) {
-          ukladkaForm.reset();
-        }
-        var successEl = document.getElementById('ukladka-success');
-        if (successEl) {
-          successEl.hidden = false;
-        }
-        if (typeof closeZamershikModal === 'function') {
-          closeZamershikModal();
-        }
-        return true;
-      }
-      alert('Ошибка при отправке заявки.');
-      return false;
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Произошла ошибка соединения.');
-      return false;
-    }
-  }
-
   function slugifyAscii(text) {
     return String(text)
       .toUpperCase()
@@ -1859,65 +1822,6 @@
       var totalText = getOrderTotalText();
       setPaymentStatus('Нал — оплата при получении (Сумма: ' + totalText + ')');
       await submitOrderForm({ postSubmit: 'cash' });
-    });
-  }
-
-  if (ukladkaForm) {
-    var ukladkaSuccessEl = document.getElementById('ukladka-success');
-    var ukladkaNameEl = document.getElementById('ukladka-name');
-    var ukladkaPhoneEl = document.getElementById('ukladka-phone');
-    var ukladkaAddressEl = document.getElementById('ukladka-address');
-    var ukladkaSubmitBtn = document.getElementById('ukladka-submit');
-    var ukladkaSending = false;
-
-    ukladkaForm.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      if (ukladkaSending) return;
-      if (ukladkaSuccessEl) ukladkaSuccessEl.hidden = true;
-
-      if (!ukladkaForm.checkValidity()) {
-        ukladkaForm.reportValidity();
-        return;
-      }
-
-      var name = ukladkaNameEl ? ukladkaNameEl.value.trim() : '';
-      var phone = ukladkaPhoneEl ? ukladkaPhoneEl.value.trim() : '';
-      var address = ukladkaAddressEl ? ukladkaAddressEl.value.trim() : '';
-
-      if (!phone) {
-        if (ukladkaPhoneEl) {
-          ukladkaPhoneEl.focus();
-          ukladkaPhoneEl.reportValidity();
-        }
-        return;
-      }
-      if (!address) {
-        if (ukladkaAddressEl) {
-          ukladkaAddressEl.focus();
-          ukladkaAddressEl.reportValidity();
-        }
-        return;
-      }
-
-      ukladkaSending = true;
-      if (ukladkaSubmitBtn) {
-        ukladkaSubmitBtn.disabled = true;
-        ukladkaSubmitBtn.textContent = 'Отправляем…';
-      }
-
-      var zamershikData = {
-        name: name,
-        phone: phone,
-        address: address
-      };
-
-      await sendFormspreeZamershik(zamershikData);
-
-      ukladkaSending = false;
-      if (ukladkaSubmitBtn) {
-        ukladkaSubmitBtn.disabled = false;
-        ukladkaSubmitBtn.textContent = 'Отправить заявку';
-      }
     });
   }
 

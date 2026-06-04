@@ -1626,12 +1626,10 @@ body.order-fs-open{
   color:var(--muted);
   font-weight:600;
 }
-.ukladka-request__form{
+.ukladka-request__card .formdesigner-widget{
   margin-top:18px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  max-width:480px;
+  width:100%;
+  max-width:600px;
 }
 .ukladka-request__submit:disabled{
   opacity:.7;
