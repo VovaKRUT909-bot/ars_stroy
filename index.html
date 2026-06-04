@@ -644,15 +644,12 @@
                 <div class="order-cart__subline">
                   Товары: <b id="cart-subtotal">0</b> <span class="unit">руб.</span>
                 </div>
-                <div class="order-cart__subline order-cart__subline--delivery" id="cart-delivery-line" hidden>
-                  Доставка: <span id="cart-delivery-status">Уточняется (уточнит менеджер)</span>
-                </div>
                 <div class="order-cart__grand">
                   Итого: <b id="cart-grand-total">0</b> <span class="unit">руб.</span>
                 </div>
               </div>
               <label class="order-field order-field--full order-cart__address">
-                <span class="order-field__label">Адрес доставки <span class="order-field__optional">(необязательно)</span></span>
+                <span class="order-field__label">Доставка <span class="order-field__optional">(необязательно)</span></span>
                 <input
                   class="order-field__input"
                   type="text"
@@ -660,7 +657,7 @@
                   autocomplete="street-address"
                   placeholder="Например: Одинцово, Можайское шоссе, 15"
                 />
-                <p class="order-field__hint">Стоимость доставки уточнит менеджер. Без адреса — самовывоз.</p>
+                <p class="order-field__hint">Без адреса — самовывоз.</p>
               </label>
             </div>
             <div class="order-checkout-fd" id="order-checkout-fd">
@@ -1095,7 +1092,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=order-fs-v18" defer></script>
+    <script src="order-cart.js?v=order-fs-v19" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

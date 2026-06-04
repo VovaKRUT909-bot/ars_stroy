@@ -37,8 +37,6 @@
   var orderFsPrevOverflow = '';
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
-  var cartDeliveryLine = document.getElementById('cart-delivery-line');
-  var cartDeliveryStatusEl = document.getElementById('cart-delivery-status');
   var cart = [];
 
   var addressInputDebounce = null;
@@ -120,29 +118,7 @@
     return '';
   }
 
-  function hasDeliveryAddressInput() {
-    return getClientDeliveryAddressText().length > 0;
-  }
-
-
-  function renderDeliveryUi() {
-    if (!cartDeliveryLine) return;
-    if (hasDeliveryAddressInput()) {
-      cartDeliveryLine.hidden = false;
-      if (cartDeliveryStatusEl) {
-        cartDeliveryStatusEl.textContent = 'Уточняется (уточнит менеджер)';
-      }
-    } else {
-      cartDeliveryLine.hidden = true;
-    }
-  }
-
-  function resetDeliveryState() {
-    renderDeliveryUi();
-  }
-
   function onDeliveryAddressInput() {
-    renderDeliveryUi();
     updateOrderTotals();
     ensureCheckoutFormDesignerWidget();
   }
@@ -185,7 +161,6 @@
     if (cartGrandTotal) {
       cartGrandTotal.textContent = formatMoney(getCartGrandTotal());
     }
-    renderDeliveryUi();
     scheduleFillCheckoutWidget();
   }
 
@@ -352,7 +327,6 @@
   }
 
   function refreshCheckoutDelivery() {
-    renderDeliveryUi();
     scheduleDeliveryAddressUpdate();
   }
 
@@ -458,7 +432,6 @@
 
   function clearOrderAfterSubmit() {
     cart = [];
-    resetDeliveryState();
     resetOrderPaymentMode();
     renderCart();
     resetPaymentStatus();
@@ -494,8 +467,7 @@
     });
     var clientAddress = getClientDeliveryAddressText();
     if (clientAddress) {
-      lines.push('Адрес доставки: ' + clientAddress);
-      lines.push('Доставка: Уточняется (уточнит менеджер)');
+      lines.push('Доставка: ' + clientAddress);
     } else {
       lines.push('Доставка: самовывоз');
     }
@@ -1085,7 +1057,6 @@
       cartItemsEl.innerHTML = '';
       if (orderCart) orderCart.hidden = true;
       if (orderSelected) orderSelected.hidden = false;
-      resetDeliveryState();
       updateCartBadge();
       return;
     }
@@ -1404,7 +1375,6 @@
     orderPaymentSberBtn.addEventListener('click', handleSberPayClick);
   }
 
-  resetDeliveryState();
   updateOrderPayModeButtons();
   renderCart();
 })();
