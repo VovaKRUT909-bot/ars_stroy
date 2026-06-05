@@ -1400,6 +1400,19 @@ body.order-fs-open{
 .order-page-checkout .order-cart{
   border-bottom:none;
 }
+.order-page-checkout .order-checkout-fd{
+  margin-top:20px;
+  max-width:600px;
+}
+.order-checkout-fd__title{
+  margin:0 0 12px;
+  font-weight:950;
+  font-size:16px;
+  color:var(--text);
+}
+.order-page-checkout .order-checkout-widget.formdesigner-widget{
+  margin-top:0;
+}
 .order-cart__head{
   display:flex;
   align-items:center;

@@ -17,13 +17,8 @@
   var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
   var checkoutWidgetFillTimer = null;
   var checkoutWidgetFillAttempts = 0;
-  var orderCheckoutEl = document.getElementById('order-checkout');
-  var orderFsOverlay = document.getElementById('order-checkout-overlay');
-  var orderFsBackdrop = document.getElementById('order-fs-backdrop');
-  var orderFsCloseBtn = document.getElementById('order-fs-close');
-  var orderFsBody = document.querySelector('.order-fs__body');
+  var orderCheckoutFdEl = document.getElementById('order-checkout-fd');
   var orderOpenCheckoutBtn = document.getElementById('order-open-checkout');
-  var orderFsPrevOverflow = '';
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
   var cart = [];
@@ -197,65 +192,22 @@
       .join('\n\n');
   }
 
-  function hidePanel(el, visibleClass) {
-    if (!el || !visibleClass) return;
-    el.classList.remove(visibleClass);
-    el.hidden = true;
-    el.setAttribute('aria-hidden', 'true');
-  }
-
-  function showPanel(el, visibleClass) {
-    if (!el || !visibleClass) return;
-    var animate = el.hidden || !el.classList.contains(visibleClass);
-    el.hidden = false;
-    el.setAttribute('aria-hidden', 'false');
-    if (!animate) return;
-    el.classList.remove(visibleClass);
-    void el.offsetWidth;
-    requestAnimationFrame(function () {
-      el.classList.add(visibleClass);
-    });
-  }
-
-  function isOrderFullscreenOpen() {
-    return orderFsOverlay && orderFsOverlay.classList.contains('is-open');
-  }
-
-  function openOrderFullscreen() {
-    if (!orderFsOverlay) return;
-    orderFsPrevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.body.classList.add('order-fs-open');
-    orderFsOverlay.hidden = false;
-    orderFsOverlay.setAttribute('aria-hidden', 'false');
-    requestAnimationFrame(function () {
-      orderFsOverlay.classList.add('is-open');
-    });
-  }
-
-  function closeOrderFullscreen() {
-    if (!orderFsOverlay) return;
-    orderFsOverlay.classList.remove('is-open');
-    orderFsOverlay.setAttribute('aria-hidden', 'true');
-    orderFsOverlay.hidden = true;
-    document.body.classList.remove('order-fs-open');
-    document.body.style.overflow = orderFsPrevOverflow;
-  }
-
-  function scrollWithinFullscreen(target) {
-    if (!target || !orderFsBody) return;
-    var bodyRect = orderFsBody.getBoundingClientRect();
-    var targetRect = target.getBoundingClientRect();
-    var nextTop = orderFsBody.scrollTop + (targetRect.top - bodyRect.top) - 16;
-    orderFsBody.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
-  }
-
   function scrollToOrderSection() {
     if (!orderSection) return;
-    if (isOrderFullscreenOpen()) {
-      closeOrderFullscreen();
-    }
     orderSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function scrollToCheckoutForm() {
+    var target = null;
+    if (orderCheckoutFdEl && !orderCheckoutFdEl.hidden) {
+      target = orderCheckoutFdEl;
+    } else if (orderCart && cart.length > 0 && !orderCart.hidden) {
+      target = orderCart;
+    } else if (orderSection) {
+      target = orderSection;
+    }
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function scrollToOrderCart() {
@@ -268,13 +220,7 @@
       target = orderSection;
     }
     if (!target) return;
-    if (isOrderFullscreenOpen()) {
-      scrollWithinFullscreen(target);
-      return;
-    }
-    if (target.scrollIntoView) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function beginOrderCheckout(opts) {
@@ -284,24 +230,13 @@
       scrollToOrderSection();
       return;
     }
-    openOrderFullscreen();
-    showOrderCheckout(opts);
-  }
-
-  function showOrderCheckout(opts) {
-    showPanel(orderCheckoutEl, 'is-visible');
-    renderCart();
-    scheduleDeliveryAddressUpdate();
-    ensureCheckoutFormDesignerWidget();
-    if (opts.scroll !== false && orderFsBody && orderCheckoutEl) {
-      requestAnimationFrame(function () {
-        scrollWithinFullscreen(orderCheckoutEl);
-      });
+    if (opts.scroll !== false) {
+      requestAnimationFrame(scrollToCheckoutForm);
     }
   }
 
   function resetOrderCheckout() {
-    hidePanel(orderCheckoutEl, 'is-visible');
+    if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = true;
   }
 
   function refreshCheckoutDelivery() {
@@ -312,7 +247,6 @@
     cart = [];
     resetOrderCheckout();
     renderCart();
-    closeOrderFullscreen();
   }
 
   function clearCart() {
@@ -909,12 +843,14 @@
       cartItemsEl.innerHTML = '';
       if (orderCart) orderCart.hidden = true;
       if (orderSelected) orderSelected.hidden = false;
+      if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = true;
       updateCartBadge();
       return;
     }
 
     if (orderCart) orderCart.hidden = false;
     if (orderSelected) orderSelected.hidden = true;
+    if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = false;
 
     cartItemsEl.innerHTML = '';
     cart.forEach(function (item) {
@@ -1117,13 +1053,6 @@
     });
   }
 
-  if (orderFsCloseBtn) {
-    orderFsCloseBtn.addEventListener('click', closeOrderFullscreen);
-  }
-  if (orderFsBackdrop) {
-    orderFsBackdrop.addEventListener('click', closeOrderFullscreen);
-  }
-
   document.querySelectorAll('a[href="#order"]').forEach(function (link) {
     link.addEventListener('click', function (e) {
       e.preventDefault();
@@ -1131,14 +1060,6 @@
       requestAnimationFrame(scrollToOrderCart);
     });
   });
-
-  if (!window.__orderFsEscBound) {
-    window.__orderFsEscBound = true;
-    document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape' || !isOrderFullscreenOpen()) return;
-      closeOrderFullscreen();
-    });
-  }
 
   renderCart();
 })();
