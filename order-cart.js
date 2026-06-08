@@ -12,9 +12,9 @@
   var cartCountEl = document.getElementById('cart-count');
   var cartClearBtn = document.getElementById('cart-clear');
   var FD_CHECKOUT_FORM_ID = '245438';
-  /** Текстовая область заказа в форме 245438 */
-  var FD_CHECKOUT_ORDER_FIELD = 'field3065946';
-  var FD_CHECKOUT_ORDER_FIELD_MAX = 1500;
+  /** Текстовая область «Ваш заказ» в форме 245438 */
+  var FD_CHECKOUT_ORDER_FIELD = 'field3066332';
+  var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
   var checkoutWidgetFillTimer = null;
   var checkoutWidgetFillAttempts = 0;
   var orderCheckoutFdEl = document.getElementById('order-checkout-fd');
@@ -253,19 +253,44 @@
     clearOrderAfterSubmit();
   }
 
+  function formatCartLinesCompactForForm() {
+    return cart
+      .map(function (item, index) {
+        var measure = item.qtyMeasure || 'шт.';
+        var sum =
+          item.qty != null && item.qty > 0
+            ? formatMoney(item.price * item.qty) + ' руб.'
+            : '—';
+        var sizePart = item.size ? ', ' + item.size : '';
+        return (
+          index +
+          1 +
+          '. ' +
+          item.productName +
+          ' — ' +
+          (item.colorRu || item.color) +
+          sizePart +
+          ' — ' +
+          (item.qty != null ? item.qty : '—') +
+          ' ' +
+          measure +
+          ' = ' +
+          sum
+        );
+      })
+      .join('\n');
+  }
+
   function getCheckoutWidgetCartText() {
     var lines = [];
-    lines.push('Состав заказа:');
-    lines.push('');
-    lines.push(formatCartLinesDetailedForForm() || '—');
-    lines.push('');
+    lines.push(formatCartLinesCompactForForm() || '—');
     var clientAddress = getClientDeliveryAddressText();
     if (clientAddress) {
-      lines.push('Адрес доставки: ' + clientAddress);
+      lines.push('Доставка: ' + clientAddress);
     } else {
       lines.push('Доставка: самовывоз');
     }
-    lines.push('Итого (товары): ' + getOrderTotalText());
+    lines.push('Итого: ' + getOrderTotalText());
     var text = lines.join('\n');
     if (text.length > FD_CHECKOUT_ORDER_FIELD_MAX) {
       text = text.slice(0, FD_CHECKOUT_ORDER_FIELD_MAX - 1) + '…';
@@ -291,16 +316,28 @@
   }
 
   function pushCheckoutWidgetFieldData() {
-    if (!window.FD || typeof window.FD.setData !== 'function') {
-      return false;
-    }
-    if (!getCheckoutWidgetIframe()) {
+    var iframe = getCheckoutWidgetIframe();
+    if (!iframe) {
       return false;
     }
     syncCheckoutFormFieldsToOptions();
+    var orderText = getCheckoutWidgetCartText();
     var fields = {};
-    fields[FD_CHECKOUT_ORDER_FIELD] = getCheckoutWidgetCartText();
-    window.FD.setData(FD_CHECKOUT_FORM_ID, { fields: fields });
+    fields[FD_CHECKOUT_ORDER_FIELD] = orderText;
+    var payload = { fields: fields };
+    if (window.FD && typeof window.FD.setData === 'function') {
+      window.FD.setData(FD_CHECKOUT_FORM_ID, payload);
+    }
+    if (iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({ type: 'setdata', data: payload }),
+          'https://formdesigner.ru'
+        );
+      } catch (err) {
+        /* ignore */
+      }
+    }
     return true;
   }
 
