@@ -19,7 +19,7 @@
   var checkoutFormRefreshTimer = null;
   var checkoutIframeMountedWithCart = false;
   var lastCheckoutWidgetText = '';
-  var CHECKOUT_FORM_REFRESH_DELAY_MS = 650;
+  var CHECKOUT_FORM_SRC_FALLBACK_MS = 80;
   var orderCheckoutFdEl = document.getElementById('order-checkout-fd');
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
@@ -111,7 +111,7 @@
   function scheduleDeliveryAddressUpdate() {
     if (!orderAddressEl) return;
     if (addressInputDebounce) clearTimeout(addressInputDebounce);
-    addressInputDebounce = setTimeout(onDeliveryAddressInput, 200);
+    addressInputDebounce = setTimeout(onDeliveryAddressInput, 30);
   }
 
   function getCartProductsTotal() {
@@ -394,17 +394,25 @@
       }
       return;
     }
+
+    try {
+      if (!checkoutIframeMountedWithCart || !getCheckoutWidgetIframe()) {
+        mountCheckoutIframeWithOrderInUrl();
+        lastCheckoutWidgetText = getCheckoutWidgetCartText();
+        return;
+      }
+      pushCheckoutWidgetFieldData();
+    } catch (err) {
+      /* не ломаем корзину */
+    }
+
     if (checkoutFormRefreshTimer) {
       clearTimeout(checkoutFormRefreshTimer);
     }
-    var firstMount = !checkoutIframeMountedWithCart || !getCheckoutWidgetIframe();
-    var delayMs = firstMount ? 150 : CHECKOUT_FORM_REFRESH_DELAY_MS;
     checkoutFormRefreshTimer = setTimeout(function () {
       try {
         var latestText = getCheckoutWidgetCartText();
-        if (!checkoutIframeMountedWithCart || !getCheckoutWidgetIframe()) {
-          mountCheckoutIframeWithOrderInUrl();
-          lastCheckoutWidgetText = latestText;
+        if (!getCheckoutWidgetIframe() || cart.length === 0) {
           return;
         }
         if (latestText === lastCheckoutWidgetText) {
@@ -415,7 +423,7 @@
       } catch (err) {
         /* не ломаем корзину */
       }
-    }, delayMs);
+    }, CHECKOUT_FORM_SRC_FALLBACK_MS);
   }
 
   function getCheckoutWidgetRoot() {
