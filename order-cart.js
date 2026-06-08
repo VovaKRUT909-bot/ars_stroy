@@ -13,7 +13,8 @@
   var cartClearBtn = document.getElementById('cart-clear');
   var FD_CHECKOUT_FORM_ID = '245438';
   /** Текстовая область «Ваш заказ» в форме 245438 */
-  var FD_CHECKOUT_ORDER_FIELD = 'field3066332';
+  var FD_CHECKOUT_ORDER_FIELD = 'field3066335';
+  var checkoutWidgetMountedWithCart = false;
   var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
   var checkoutWidgetFillTimer = null;
   var checkoutWidgetFillAttempts = 0;
@@ -345,6 +346,45 @@
     runCheckoutWidgetFillBurst();
   }
 
+  /** Свой iframe с текстом заказа в URL — надёжнее, чем setData до загрузки формы. */
+  function remountCheckoutWidgetIframe() {
+    var root = getCheckoutWidgetRoot();
+    if (!root || cart.length === 0) {
+      return;
+    }
+    syncCheckoutFormFieldsToOptions();
+    var orderText = getCheckoutWidgetCartText();
+    var formOpts =
+      (window.ARS_STROY_FD_OPTIONS &&
+        window.ARS_STROY_FD_OPTIONS.forms[FD_CHECKOUT_FORM_ID]) ||
+      {};
+
+    root.innerHTML = '';
+    delete root.dataset.arsCheckoutAutoFillBound;
+    delete root.dataset.arsCheckoutReady;
+    lastCheckoutOrderTextPushed = '';
+
+    var iframe = document.createElement('iframe');
+    iframe.setAttribute('title', 'Форма заказа');
+    iframe.setAttribute('loading', 'lazy');
+    iframe.style.cssText = 'width:100%;border:0;display:block;min-height:420px;background:transparent;';
+    if (formOpts.width && formOpts.width !== 'auto' && formOpts.width !== '100%') {
+      root.style.maxWidth = formOpts.width;
+    }
+
+    var params = new URLSearchParams();
+    params.set('inline', '1');
+    params.set(FD_CHECKOUT_ORDER_FIELD, orderText);
+    iframe.src =
+      'https://formdesigner.ru/form/iframe/' +
+      FD_CHECKOUT_FORM_ID +
+      '?' +
+      params.toString();
+
+    root.appendChild(iframe);
+    bindCheckoutIframeAutoFill(iframe);
+  }
+
   function scheduleFillCheckoutWidget() {
     if (checkoutWidgetFillTimer) {
       clearTimeout(checkoutWidgetFillTimer);
@@ -404,7 +444,7 @@
       }
       try {
         var payload = JSON.parse(event.data);
-        if (payload && payload.type === 'register' && cart.length > 0) {
+        if (cart.length > 0 && payload && payload.type) {
           runCheckoutWidgetFillBurst();
         }
         if (payload && payload.data && payload.data.success) {
@@ -893,6 +933,7 @@
       if (orderCart) orderCart.hidden = true;
       if (orderSelected) orderSelected.hidden = false;
       if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = true;
+      checkoutWidgetMountedWithCart = false;
       updateCartBadge();
       return;
     }
@@ -990,7 +1031,13 @@
 
     updateOrderTotals();
     updateCartBadge();
-    ensureCheckoutFormDesignerWidget();
+    if (!checkoutWidgetMountedWithCart) {
+      remountCheckoutWidgetIframe();
+      checkoutWidgetMountedWithCart = true;
+    } else {
+      ensureCheckoutFormDesignerWidget();
+      runCheckoutWidgetFillBurst();
+    }
   }
 
   function addToCart(product) {
