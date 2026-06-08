@@ -50,7 +50,8 @@
 
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
-    <link rel="stylesheet" href="styles.css?v=order-fs-v37" />
+    <meta http-equiv="Permissions-Policy" content="local-network-access=*" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v39" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -479,6 +480,9 @@
                   Выезд замерщика бесплатно на расстоянии до 10&nbsp;км. При выезде дальше 10&nbsp;км — от 2&nbsp;999&nbsp;₽.
                 </p>
                 <div class="ars-fd-embed" data-id="245426"></div>
+                <p class="ars-fd-open-hint" id="ukladka-fd-hint" hidden>
+                  <button type="button" class="btn btn--ghost ars-fd-open-btn" data-fd-form="245426">Показать форму заявки</button>
+                </p>
               </div>
             </div>
             <figure class="ukladka-request__photo">
@@ -599,6 +603,9 @@
             <div class="order-checkout-fd" id="order-checkout-fd" hidden>
               <p class="order-checkout-fd__title">Контакты для заявки</p>
               <div class="ars-fd-embed order-checkout-widget" data-id="245438"></div>
+              <p class="ars-fd-open-hint" id="order-fd-hint" hidden>
+                <button type="button" class="btn btn--ghost ars-fd-open-btn" data-fd-form="245438">Показать форму заказа</button>
+              </p>
             </div>
           </div>
         </div>
@@ -1020,7 +1027,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=order-fs-v37" defer></script>
+    <script src="order-cart.js?v=order-fs-v39" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
@@ -1061,6 +1068,17 @@
       </div>
     </noscript>
     <!-- /Yandex.Metrika counter -->
+
+    <div id="ars-fd-overlay" class="ars-fd-overlay" hidden aria-hidden="true">
+      <div class="ars-fd-overlay__backdrop" id="ars-fd-overlay-backdrop" aria-hidden="true"></div>
+      <div class="ars-fd-overlay__dialog" role="dialog" aria-modal="true" aria-labelledby="ars-fd-overlay-title">
+        <header class="ars-fd-overlay__head">
+          <h3 class="ars-fd-overlay__title" id="ars-fd-overlay-title">Форма заявки</h3>
+          <button type="button" class="ars-fd-overlay__close" id="ars-fd-overlay-close" aria-label="Закрыть форму">×</button>
+        </header>
+        <div class="ars-fd-overlay__embed ars-fd-embed" id="ars-fd-overlay-embed"></div>
+      </div>
+    </div>
   </body>
 </html>
 

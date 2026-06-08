@@ -1631,6 +1631,80 @@ body.order-fs-open{
   border:0;
   background:transparent;
 }
+.ars-fd-open-hint{
+  margin:10px 0 0;
+}
+.ars-fd-open-hint .btn{
+  font-size:14px;
+}
+.ars-fd-overlay{
+  position:fixed;
+  inset:0;
+  z-index:10050;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+}
+.ars-fd-overlay[hidden]{
+  display:none !important;
+}
+.ars-fd-overlay__backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(10, 12, 18, 0.72);
+}
+.ars-fd-overlay__dialog{
+  position:relative;
+  z-index:1;
+  width:min(640px, 100%);
+  max-height:min(92vh, 900px);
+  display:flex;
+  flex-direction:column;
+  border-radius:16px;
+  overflow:hidden;
+  background:var(--card, #fff);
+  box-shadow:0 24px 80px rgba(0, 0, 0, 0.35);
+}
+.ars-fd-overlay__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  border-bottom:1px solid rgba(0, 0, 0, 0.08);
+}
+.ars-fd-overlay__title{
+  margin:0;
+  font-size:16px;
+  font-weight:950;
+}
+.ars-fd-overlay__close{
+  border:none;
+  background:transparent;
+  color:var(--muted2, #666);
+  font-size:28px;
+  line-height:1;
+  cursor:pointer;
+  padding:0 4px;
+}
+.ars-fd-overlay__close:hover{
+  color:var(--text, #111);
+}
+.ars-fd-overlay__embed{
+  margin:0;
+  width:100%;
+  max-width:none;
+  min-height:420px;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.ars-fd-overlay__embed iframe{
+  min-height:420px;
+}
+body.ars-fd-overlay-open{
+  overflow:hidden;
+}
 .ukladka-request__submit:disabled{
   opacity:.7;
   cursor:wait;

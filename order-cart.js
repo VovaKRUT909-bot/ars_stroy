@@ -33,6 +33,13 @@
   var cart = [];
 
   var addressInputDebounce = null;
+  var FD_HEALTH_CHECK_MS = 7000;
+  var FD_HINT_DELAY_MS = 3000;
+  var fdOverlayEl = document.getElementById('ars-fd-overlay');
+  var fdOverlayEmbedEl = document.getElementById('ars-fd-overlay-embed');
+  var fdOverlayTitleEl = document.getElementById('ars-fd-overlay-title');
+  var fdOverlayCloseEl = document.getElementById('ars-fd-overlay-close');
+  var fdOverlayBackdropEl = document.getElementById('ars-fd-overlay-backdrop');
 
   var BLOCK_CONFIG = {
     'prices-b1': {
@@ -347,6 +354,192 @@
     return true;
   }
 
+  function getFormDesignerHintEl(formId) {
+    if (formId === FD_ZAMERSHIK_FORM_ID) {
+      return document.getElementById('ukladka-fd-hint');
+    }
+    if (formId === FD_CHECKOUT_FORM_ID) {
+      return document.getElementById('order-fd-hint');
+    }
+    return null;
+  }
+
+  function showFormDesignerHint(formId) {
+    var hint = getFormDesignerHintEl(formId);
+    if (hint) {
+      hint.hidden = false;
+    }
+  }
+
+  function hideFormDesignerHint(formId) {
+    var hint = getFormDesignerHintEl(formId);
+    if (hint) {
+      hint.hidden = true;
+    }
+  }
+
+  function getCheckoutQueryParts() {
+    var parts = [];
+    getCheckoutOrderFieldIds().forEach(function (id) {
+      parts.push(
+        encodeURIComponent(id) + '=' + encodeURIComponent(getCheckoutWidgetCartText())
+      );
+    });
+    return parts;
+  }
+
+  function getCheckoutFieldsGetter() {
+    return function () {
+      return buildCheckoutOrderFieldsPayload().fields;
+    };
+  }
+
+  function isCheckoutFormDesignerIframe(iframe) {
+    return !!(
+      iframe &&
+      (iframe.closest('.order-checkout-widget') ||
+        (fdOverlayEmbedEl && fdOverlayEmbedEl.contains(iframe) &&
+          fdOverlayEmbedEl.dataset.id === FD_CHECKOUT_FORM_ID))
+    );
+  }
+
+  function closeFormDesignerOverlay() {
+    if (!fdOverlayEl) {
+      return;
+    }
+    fdOverlayEl.hidden = true;
+    fdOverlayEl.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('ars-fd-overlay-open');
+    if (fdOverlayEmbedEl) {
+      fdOverlayEmbedEl.innerHTML = '';
+      fdOverlayEmbedEl.classList.remove('order-checkout-widget');
+      delete fdOverlayEmbedEl.dataset.id;
+    }
+  }
+
+  function openFormDesignerOverlay(formId) {
+    if (!fdOverlayEl || !fdOverlayEmbedEl) {
+      return;
+    }
+    if (formId === FD_CHECKOUT_FORM_ID && cart.length === 0) {
+      return;
+    }
+    if (fdOverlayTitleEl) {
+      fdOverlayTitleEl.textContent =
+        formId === FD_CHECKOUT_FORM_ID ? 'Оформление заказа' : 'Заявка на замер';
+    }
+    fdOverlayEmbedEl.dataset.id = formId;
+    if (formId === FD_CHECKOUT_FORM_ID) {
+      fdOverlayEmbedEl.classList.add('order-checkout-widget');
+      mountFormDesignerIframe(
+        fdOverlayEmbedEl,
+        formId,
+        getCheckoutQueryParts(),
+        getCheckoutFieldsGetter()
+      );
+    } else {
+      fdOverlayEmbedEl.classList.remove('order-checkout-widget');
+      mountFormDesignerIframe(fdOverlayEmbedEl, formId, null, function () {
+        return {};
+      });
+    }
+    fdOverlayEl.hidden = false;
+    fdOverlayEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('ars-fd-overlay-open');
+  }
+
+  function clearFormDesignerTimers(iframe) {
+    if (!iframe) {
+      return;
+    }
+    if (iframe._arsFdHealthTimer) {
+      clearTimeout(iframe._arsFdHealthTimer);
+      iframe._arsFdHealthTimer = null;
+    }
+    if (iframe._arsFdHintTimer) {
+      clearTimeout(iframe._arsFdHintTimer);
+      iframe._arsFdHintTimer = null;
+    }
+  }
+
+  function remountFormDesignerInline(embedRoot, formId) {
+    if (!embedRoot) {
+      return null;
+    }
+    if (formId === FD_CHECKOUT_FORM_ID) {
+      return mountFormDesignerIframe(
+        embedRoot,
+        formId,
+        getCheckoutQueryParts(),
+        getCheckoutFieldsGetter()
+      );
+    }
+    return mountFormDesignerIframe(embedRoot, formId, null, function () {
+      return {};
+    });
+  }
+
+  function handleFormDesignerLoadFailure(embedRoot, formId) {
+    if (!embedRoot || embedRoot.id === 'ars-fd-overlay-embed') {
+      return;
+    }
+    var retries = parseInt(embedRoot.dataset.arsFdRetries || '0', 10);
+    if (retries < 1) {
+      embedRoot.dataset.arsFdRetries = String(retries + 1);
+      remountFormDesignerInline(embedRoot, formId);
+      return;
+    }
+    showFormDesignerHint(formId);
+    openFormDesignerOverlay(formId);
+  }
+
+  function scheduleFormDesignerHealthCheck(embedRoot, formId) {
+    var iframe = embedRoot ? embedRoot.querySelector('iframe') : null;
+    if (!iframe) {
+      return;
+    }
+    clearFormDesignerTimers(iframe);
+    iframe._arsFdHintTimer = setTimeout(function () {
+      if (iframe.dataset.arsFdHeightSet !== '1') {
+        showFormDesignerHint(formId);
+      }
+    }, FD_HINT_DELAY_MS);
+    iframe._arsFdHealthTimer = setTimeout(function () {
+      if (iframe.dataset.arsFdHeightSet === '1') {
+        return;
+      }
+      handleFormDesignerLoadFailure(embedRoot, formId);
+    }, FD_HEALTH_CHECK_MS);
+  }
+
+  function bindFormDesignerOverlayControls() {
+    if (fdOverlayCloseEl && !fdOverlayCloseEl.dataset.arsBound) {
+      fdOverlayCloseEl.dataset.arsBound = '1';
+      fdOverlayCloseEl.addEventListener('click', closeFormDesignerOverlay);
+    }
+    if (fdOverlayBackdropEl && !fdOverlayBackdropEl.dataset.arsBound) {
+      fdOverlayBackdropEl.dataset.arsBound = '1';
+      fdOverlayBackdropEl.addEventListener('click', closeFormDesignerOverlay);
+    }
+    document.querySelectorAll('.ars-fd-open-btn').forEach(function (btn) {
+      if (btn.dataset.arsBound) {
+        return;
+      }
+      btn.dataset.arsBound = '1';
+      btn.addEventListener('click', function () {
+        openFormDesignerOverlay(btn.getAttribute('data-fd-form'));
+      });
+    });
+    if (!document.body.dataset.arsFdEscBound) {
+      document.body.dataset.arsFdEscBound = '1';
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && fdOverlayEl && !fdOverlayEl.hidden) {
+          closeFormDesignerOverlay();
+        }
+      });
+    }
+  }
+
   function readCookie(name) {
     var match = document.cookie.match(
       new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')
@@ -418,10 +611,11 @@
   function createFormDesignerIframeElement(title) {
     var iframe = document.createElement('iframe');
     iframe.setAttribute('title', title);
-    iframe.setAttribute('allow', 'microphone;camera');
+    iframe.setAttribute('allow', 'microphone;camera;local-network-access *');
     iframe.setAttribute('allowtransparency', 'true');
     iframe.setAttribute('scrolling', 'no');
     iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     iframe.style.cssText =
       'width:100%;border:0;display:block;height:' +
       FD_IFRAME_FALLBACK_HEIGHT +
@@ -440,6 +634,7 @@
     bindFormDesignerIframeEvents(iframe, formId, getFields);
     iframe.src = buildFormDesignerIframeSrc(formId, queryParts);
     root.appendChild(iframe);
+    scheduleFormDesignerHealthCheck(root, formId);
     return iframe;
   }
 
@@ -484,19 +679,11 @@
       return;
     }
     syncCheckoutFormFieldsToOptions();
-    var parts = [];
-    getCheckoutOrderFieldIds().forEach(function (id) {
-      parts.push(
-        encodeURIComponent(id) + '=' + encodeURIComponent(getCheckoutWidgetCartText())
-      );
-    });
     var iframe = mountFormDesignerIframe(
       root,
       FD_CHECKOUT_FORM_ID,
-      parts,
-      function () {
-        return buildCheckoutOrderFieldsPayload().fields;
-      }
+      getCheckoutQueryParts(),
+      getCheckoutFieldsGetter()
     );
     if (!iframe) {
       return;
@@ -606,13 +793,17 @@
 
       if (payload.data && payload.data.height) {
         iframe.style.height = payload.data.height + 6 + 'px';
+        iframe.dataset.arsFdHeightSet = '1';
+        clearFormDesignerTimers(iframe);
+        if (isCheckoutFormDesignerIframe(iframe)) {
+          hideFormDesignerHint(FD_CHECKOUT_FORM_ID);
+        } else {
+          hideFormDesignerHint(FD_ZAMERSHIK_FORM_ID);
+        }
       }
 
-      if (
-        payload.data &&
-        payload.data.success &&
-        iframe.closest('.order-checkout-widget')
-      ) {
+      if (payload.data && payload.data.success && isCheckoutFormDesignerIframe(iframe)) {
+        closeFormDesignerOverlay();
         onCheckoutFormDesignerSuccess();
       }
     });
@@ -1279,6 +1470,7 @@
     });
   });
 
+  bindFormDesignerOverlayControls();
   renderCart();
   ensureZamershikFormWidget();
 
