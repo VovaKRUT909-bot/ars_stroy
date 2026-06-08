@@ -50,18 +50,24 @@
 
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
-    <link rel="stylesheet" href="styles.css?v=order-fs-v18" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v36" />
     <script type="text/javascript">
 (function (d, o) {
     var s = d.createElement("script"), g = "getElementsByTagName";
     s.type = "text/javascript"; s.async = true;
-    s.src = "//formdesigner.ru/js/universal/init.js?v=1.0.0";
+    s.src = "https://formdesigner.ru/js/universal/init.js?v=1.0.0";
+    function runFdInit() {
+        if (window.FD && typeof window.FD.init === 'function') {
+            window.FD.init(o);
+        }
+    }
     s.onload = function () {
         if (document.readyState !== 'loading') {
-            FD.init(o);
-        } else document.addEventListener("DOMContentLoaded", function () {
-            FD.init(o);
-        });
+            runFdInit();
+        } else {
+            document.addEventListener("DOMContentLoaded", runFdInit);
+        }
+        window.addEventListener("load", runFdInit);
     };
     var h=d[g]("head")[0] || d[g]("body")[0];
     h.appendChild(s);
@@ -69,12 +75,12 @@
     "host": "formdesigner.ru",
     "forms": {
         "245426": {
-            "width": "600px",
+            "width": "100%",
             "height": "auto",
             "scroll": true
         },
         "245438": {
-            "width": "600px",
+            "width": "100%",
             "height": "auto",
             "scroll": true,
             "callback": function () {
@@ -1055,7 +1061,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=order-fs-v35" defer></script>
+    <script src="order-cart.js?v=order-fs-v36" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

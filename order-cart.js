@@ -11,6 +11,7 @@
   var cartGrandTotal = document.getElementById('cart-grand-total');
   var cartCountEl = document.getElementById('cart-count');
   var cartClearBtn = document.getElementById('cart-clear');
+  var FD_ZAMERSHIK_FORM_ID = '245426';
   var FD_CHECKOUT_FORM_ID = '245438';
   /** Текстовая область «Ваш заказ» в форме 245438 (ID меняется в конструкторе — держим запасные). */
   var FD_CHECKOUT_ORDER_FIELD = 'field3066355';
@@ -348,13 +349,59 @@
     return true;
   }
 
-  function createCheckoutIframeElement() {
+  function createFormDesignerIframeElement(title) {
     var iframe = document.createElement('iframe');
-    iframe.setAttribute('title', 'Форма заказа');
+    iframe.setAttribute('title', title);
     iframe.setAttribute('loading', 'lazy');
+    iframe.setAttribute('allow', 'microphone;camera');
     iframe.style.cssText =
       'width:100%;border:0;display:block;min-height:420px;background:transparent;';
     return iframe;
+  }
+
+  function mountFormDesignerIframe(root, formId, queryParts) {
+    if (!root) {
+      return null;
+    }
+    root.innerHTML = '';
+    var iframe = createFormDesignerIframeElement(
+      formId === FD_ZAMERSHIK_FORM_ID ? 'Заявка на замер' : 'Форма заказа'
+    );
+    var parts = queryParts ? queryParts.slice() : ['inline=1'];
+    if (parts.indexOf('inline=1') === -1) {
+      parts.unshift('inline=1');
+    }
+    iframe.src =
+      'https://formdesigner.ru/form/iframe/' + formId + '?' + parts.join('&');
+    root.appendChild(iframe);
+    return iframe;
+  }
+
+  function getZamershikWidgetRoot() {
+    return document.querySelector(
+      '.ukladka-request__card .formdesigner-widget[data-id="' +
+        FD_ZAMERSHIK_FORM_ID +
+        '"]'
+    );
+  }
+
+  function ensureZamershikFormWidget() {
+    var root = getZamershikWidgetRoot();
+    if (!root) {
+      return;
+    }
+    var iframe = root.querySelector('iframe');
+    if (iframe && iframe.src && iframe.src.indexOf('formdesigner.ru') !== -1) {
+      return;
+    }
+    mountFormDesignerIframe(root, FD_ZAMERSHIK_FORM_ID, ['inline=1']);
+  }
+
+  function ensureAllFormDesignerWidgets() {
+    ensureZamershikFormWidget();
+    if (cart.length > 0) {
+      refreshCheckoutOrderForm();
+    }
   }
 
   /** Первое появление формы в корзине. */
@@ -364,13 +411,19 @@
       return;
     }
     syncCheckoutFormFieldsToOptions();
-    root.innerHTML = '';
-    var iframe = createCheckoutIframeElement();
-    iframe.src = buildCheckoutIframeSrc();
+    var parts = ['inline=1'];
+    getCheckoutOrderFieldIds().forEach(function (id) {
+      parts.push(
+        encodeURIComponent(id) + '=' + encodeURIComponent(getCheckoutWidgetCartText())
+      );
+    });
+    var iframe = mountFormDesignerIframe(root, FD_CHECKOUT_FORM_ID, parts);
+    if (!iframe) {
+      return;
+    }
     iframe.addEventListener('load', function () {
       pushCheckoutWidgetFieldData();
     });
-    root.appendChild(iframe);
     checkoutIframeMountedWithCart = true;
   }
 
@@ -1131,4 +1184,12 @@
   });
 
   renderCart();
+
+  window.addEventListener('load', function () {
+    setTimeout(ensureAllFormDesignerWidgets, 300);
+    setTimeout(ensureAllFormDesignerWidgets, 2000);
+  });
+  window.addEventListener('pageshow', function () {
+    ensureAllFormDesignerWidgets();
+  });
 })();

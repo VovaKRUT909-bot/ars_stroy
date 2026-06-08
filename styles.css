@@ -1622,6 +1622,17 @@ body.order-fs-open{
   margin-top:18px;
   width:100%;
   max-width:600px;
+  min-height:420px;
+}
+.formdesigner-widget iframe,
+.order-checkout-widget iframe,
+.ukladka-request__card .formdesigner-widget iframe{
+  display:block;
+  width:100% !important;
+  max-width:100%;
+  min-height:420px;
+  border:0;
+  background:transparent;
 }
 .ukladka-request__submit:disabled{
   opacity:.7;
