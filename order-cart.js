@@ -18,7 +18,6 @@
   var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
   var checkoutFormRefreshTimer = null;
   var checkoutIframeMountedWithCart = false;
-  var lastCheckoutWidgetText = '';
   var orderCheckoutFdEl = document.getElementById('order-checkout-fd');
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
@@ -382,7 +381,6 @@
   function refreshCheckoutOrderForm() {
     if (cart.length === 0) {
       checkoutIframeMountedWithCart = false;
-      lastCheckoutWidgetText = '';
       return;
     }
     if (checkoutFormRefreshTimer) {
@@ -390,22 +388,16 @@
     }
     checkoutFormRefreshTimer = setTimeout(function () {
       try {
-        var nextText = getCheckoutWidgetCartText();
-        var mustRemount =
-          !checkoutIframeMountedWithCart ||
-          !getCheckoutWidgetIframe() ||
-          nextText !== lastCheckoutWidgetText;
-        if (mustRemount) {
+        if (!checkoutIframeMountedWithCart || !getCheckoutWidgetIframe()) {
           mountCheckoutIframeWithOrderInUrl();
-          lastCheckoutWidgetText = nextText;
         } else {
+          /* Только обновляем поле «Ваш заказ» — без перезагрузки iframe (нет мигания). */
           pushCheckoutWidgetFieldData();
-          scheduleCheckoutWidgetPushDelays();
         }
       } catch (err) {
         /* не ломаем корзину */
       }
-    }, 350);
+    }, 300);
   }
 
   function getCheckoutWidgetRoot() {
@@ -902,7 +894,6 @@
       if (orderSelected) orderSelected.hidden = false;
       if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = true;
       checkoutIframeMountedWithCart = false;
-      lastCheckoutWidgetText = '';
       updateCartBadge();
       return;
     }
@@ -1000,7 +991,6 @@
 
     updateOrderTotals();
     updateCartBadge();
-    refreshCheckoutOrderForm();
   }
 
   function addToCart(product) {
