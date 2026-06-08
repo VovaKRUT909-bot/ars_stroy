@@ -14,8 +14,8 @@
   var FD_CHECKOUT_FORM_ID = '245438';
   /** Текстовая область «Ваш заказ» в форме 245438 */
   var FD_CHECKOUT_ORDER_FIELD = 'field3066335';
-  var checkoutWidgetMountedWithCart = false;
   var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
+  var checkoutFillMsgTimer = null;
   var checkoutWidgetFillTimer = null;
   var checkoutWidgetFillAttempts = 0;
   var orderCheckoutFdEl = document.getElementById('order-checkout-fd');
@@ -346,43 +346,20 @@
     runCheckoutWidgetFillBurst();
   }
 
-  /** Свой iframe с текстом заказа в URL — надёжнее, чем setData до загрузки формы. */
-  function remountCheckoutWidgetIframe() {
-    var root = getCheckoutWidgetRoot();
-    if (!root || cart.length === 0) {
+  function syncCheckoutFormToWidget() {
+    if (cart.length === 0) {
       return;
     }
-    syncCheckoutFormFieldsToOptions();
-    var orderText = getCheckoutWidgetCartText();
-    var formOpts =
-      (window.ARS_STROY_FD_OPTIONS &&
-        window.ARS_STROY_FD_OPTIONS.forms[FD_CHECKOUT_FORM_ID]) ||
-      {};
-
-    root.innerHTML = '';
-    delete root.dataset.arsCheckoutAutoFillBound;
-    delete root.dataset.arsCheckoutReady;
-    lastCheckoutOrderTextPushed = '';
-
-    var iframe = document.createElement('iframe');
-    iframe.setAttribute('title', 'Форма заказа');
-    iframe.setAttribute('loading', 'lazy');
-    iframe.style.cssText = 'width:100%;border:0;display:block;min-height:420px;background:transparent;';
-    if (formOpts.width && formOpts.width !== 'auto' && formOpts.width !== '100%') {
-      root.style.maxWidth = formOpts.width;
+    try {
+      syncCheckoutFormFieldsToOptions();
+      var iframe = getCheckoutWidgetIframe();
+      if (iframe) {
+        bindCheckoutIframeAutoFill(iframe);
+      }
+      runCheckoutWidgetFillBurst();
+    } catch (err) {
+      /* корзина должна работать даже если FormDesigner недоступен */
     }
-
-    var params = new URLSearchParams();
-    params.set('inline', '1');
-    params.set(FD_CHECKOUT_ORDER_FIELD, orderText);
-    iframe.src =
-      'https://formdesigner.ru/form/iframe/' +
-      FD_CHECKOUT_FORM_ID +
-      '?' +
-      params.toString();
-
-    root.appendChild(iframe);
-    bindCheckoutIframeAutoFill(iframe);
   }
 
   function scheduleFillCheckoutWidget() {
@@ -444,8 +421,11 @@
       }
       try {
         var payload = JSON.parse(event.data);
-        if (cart.length > 0 && payload && payload.type) {
-          runCheckoutWidgetFillBurst();
+        if (cart.length > 0) {
+          clearTimeout(checkoutFillMsgTimer);
+          checkoutFillMsgTimer = setTimeout(function () {
+            pushCheckoutWidgetFieldData(true);
+          }, 200);
         }
         if (payload && payload.data && payload.data.success) {
           onCheckoutFormDesignerSuccess();
@@ -491,6 +471,11 @@
     ensureCheckoutFormDesignerWidget();
   }
 
+  window.ARS_STROY_onCheckoutFormReady = function () {
+    if (cart.length > 0) {
+      runCheckoutWidgetFillBurst();
+    }
+  };
   window.ARS_STROY_onCheckoutFormSuccess = onCheckoutFormDesignerSuccess;
   bindCheckoutFormDesignerMessageFallback();
   watchCheckoutWidgetMount();
@@ -933,7 +918,6 @@
       if (orderCart) orderCart.hidden = true;
       if (orderSelected) orderSelected.hidden = false;
       if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = true;
-      checkoutWidgetMountedWithCart = false;
       updateCartBadge();
       return;
     }
@@ -1031,13 +1015,7 @@
 
     updateOrderTotals();
     updateCartBadge();
-    if (!checkoutWidgetMountedWithCart) {
-      remountCheckoutWidgetIframe();
-      checkoutWidgetMountedWithCart = true;
-    } else {
-      ensureCheckoutFormDesignerWidget();
-      runCheckoutWidgetFillBurst();
-    }
+    syncCheckoutFormToWidget();
   }
 
   function addToCart(product) {
@@ -1060,7 +1038,6 @@
   }
 
   function goToOrderAfterAddToCart() {
-    renderCart();
     scrollToOrderSection();
     requestAnimationFrame(scrollToOrderCart);
   }
