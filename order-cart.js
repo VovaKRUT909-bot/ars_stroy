@@ -18,6 +18,8 @@
   var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
   var checkoutFormRefreshTimer = null;
   var checkoutIframeMountedWithCart = false;
+  var lastCheckoutWidgetText = '';
+  var CHECKOUT_FORM_REFRESH_DELAY_MS = 650;
   var orderCheckoutFdEl = document.getElementById('order-checkout-fd');
   var orderAddressEl = document.getElementById('order-address');
   var cartSubtotalEl = document.getElementById('cart-subtotal');
@@ -346,17 +348,16 @@
     return true;
   }
 
-  function scheduleCheckoutWidgetPushDelays() {
-    [500, 1500, 3000].forEach(function (delayMs) {
-      setTimeout(function () {
-        if (cart.length > 0) {
-          pushCheckoutWidgetFieldData();
-        }
-      }, delayMs);
-    });
+  function createCheckoutIframeElement() {
+    var iframe = document.createElement('iframe');
+    iframe.setAttribute('title', 'Форма заказа');
+    iframe.setAttribute('loading', 'lazy');
+    iframe.style.cssText =
+      'width:100%;border:0;display:block;min-height:420px;background:transparent;';
+    return iframe;
   }
 
-  /** Только виджет заказа: iframe с текстом в URL — FormDesigner подставляет при загрузке. */
+  /** Первое появление формы в корзине. */
   function mountCheckoutIframeWithOrderInUrl() {
     var root = getCheckoutWidgetRoot();
     if (!root || cart.length === 0) {
@@ -364,40 +365,57 @@
     }
     syncCheckoutFormFieldsToOptions();
     root.innerHTML = '';
-    var iframe = document.createElement('iframe');
-    iframe.setAttribute('title', 'Форма заказа');
-    iframe.setAttribute('loading', 'lazy');
-    iframe.style.cssText =
-      'width:100%;border:0;display:block;min-height:420px;background:transparent;';
+    var iframe = createCheckoutIframeElement();
     iframe.src = buildCheckoutIframeSrc();
     iframe.addEventListener('load', function () {
       pushCheckoutWidgetFieldData();
-      scheduleCheckoutWidgetPushDelays();
     });
     root.appendChild(iframe);
     checkoutIframeMountedWithCart = true;
   }
 
+  /** Обновить текст заказа через URL — setData на ручном iframe не срабатывает. */
+  function updateCheckoutIframeSrc() {
+    var iframe = getCheckoutWidgetIframe();
+    syncCheckoutFormFieldsToOptions();
+    if (!iframe) {
+      mountCheckoutIframeWithOrderInUrl();
+      return;
+    }
+    iframe.src = buildCheckoutIframeSrc();
+  }
+
   function refreshCheckoutOrderForm() {
     if (cart.length === 0) {
       checkoutIframeMountedWithCart = false;
+      lastCheckoutWidgetText = '';
+      if (checkoutFormRefreshTimer) {
+        clearTimeout(checkoutFormRefreshTimer);
+      }
       return;
     }
     if (checkoutFormRefreshTimer) {
       clearTimeout(checkoutFormRefreshTimer);
     }
+    var firstMount = !checkoutIframeMountedWithCart || !getCheckoutWidgetIframe();
+    var delayMs = firstMount ? 150 : CHECKOUT_FORM_REFRESH_DELAY_MS;
     checkoutFormRefreshTimer = setTimeout(function () {
       try {
+        var latestText = getCheckoutWidgetCartText();
         if (!checkoutIframeMountedWithCart || !getCheckoutWidgetIframe()) {
           mountCheckoutIframeWithOrderInUrl();
-        } else {
-          /* Только обновляем поле «Ваш заказ» — без перезагрузки iframe (нет мигания). */
-          pushCheckoutWidgetFieldData();
+          lastCheckoutWidgetText = latestText;
+          return;
         }
+        if (latestText === lastCheckoutWidgetText) {
+          return;
+        }
+        updateCheckoutIframeSrc();
+        lastCheckoutWidgetText = latestText;
       } catch (err) {
         /* не ломаем корзину */
       }
-    }, 300);
+    }, delayMs);
   }
 
   function getCheckoutWidgetRoot() {
@@ -894,6 +912,7 @@
       if (orderSelected) orderSelected.hidden = false;
       if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = true;
       checkoutIframeMountedWithCart = false;
+      lastCheckoutWidgetText = '';
       updateCartBadge();
       return;
     }
