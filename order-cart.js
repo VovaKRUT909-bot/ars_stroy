@@ -14,7 +14,7 @@
   var FD_CHECKOUT_FORM_ID = '245438';
   /** Текстовая область заказа в форме 245438 */
   var FD_CHECKOUT_ORDER_FIELD = 'field3065946';
-  var FD_CHECKOUT_ORDER_FIELD_MAX = 255;
+  var FD_CHECKOUT_ORDER_FIELD_MAX = 1500;
   var checkoutWidgetFillTimer = null;
   var checkoutWidgetFillAttempts = 0;
   var orderCheckoutFdEl = document.getElementById('order-checkout-fd');
@@ -255,27 +255,13 @@
 
   function getCheckoutWidgetCartText() {
     var lines = [];
-    lines.push('Товары:');
-    cart.forEach(function (item, index) {
-      var measure = item.qtyMeasure || 'шт.';
-      lines.push(
-        (index + 1) +
-          '. ' +
-          item.productName +
-          ' | ' +
-          (item.colorRu || item.color) +
-          ' | ' +
-          (item.qty != null ? item.qty : '—') +
-          ' ' +
-          measure
-      );
-      if (item.qty != null && item.qty > 0) {
-        lines.push('   ' + formatMoney(item.price * item.qty) + ' руб.');
-      }
-    });
+    lines.push('Состав заказа:');
+    lines.push('');
+    lines.push(formatCartLinesDetailedForForm() || '—');
+    lines.push('');
     var clientAddress = getClientDeliveryAddressText();
     if (clientAddress) {
-      lines.push('Доставка: ' + clientAddress);
+      lines.push('Адрес доставки: ' + clientAddress);
     } else {
       lines.push('Доставка: самовывоз');
     }
@@ -287,10 +273,31 @@
     return text;
   }
 
+  function syncCheckoutFormFieldsToOptions() {
+    if (!window.ARS_STROY_FD_OPTIONS) {
+      return;
+    }
+    if (!window.ARS_STROY_FD_OPTIONS.forms) {
+      window.ARS_STROY_FD_OPTIONS.forms = {};
+    }
+    if (!window.ARS_STROY_FD_OPTIONS.forms[FD_CHECKOUT_FORM_ID]) {
+      window.ARS_STROY_FD_OPTIONS.forms[FD_CHECKOUT_FORM_ID] = {};
+    }
+    var formOpts = window.ARS_STROY_FD_OPTIONS.forms[FD_CHECKOUT_FORM_ID];
+    if (!formOpts.fields) {
+      formOpts.fields = {};
+    }
+    formOpts.fields[FD_CHECKOUT_ORDER_FIELD] = getCheckoutWidgetCartText();
+  }
+
   function pushCheckoutWidgetFieldData() {
     if (!window.FD || typeof window.FD.setData !== 'function') {
       return false;
     }
+    if (!getCheckoutWidgetIframe()) {
+      return false;
+    }
+    syncCheckoutFormFieldsToOptions();
     var fields = {};
     fields[FD_CHECKOUT_ORDER_FIELD] = getCheckoutWidgetCartText();
     window.FD.setData(FD_CHECKOUT_FORM_ID, { fields: fields });
@@ -379,6 +386,7 @@
       return;
     }
     if (window.FD && typeof window.FD.init === 'function' && window.ARS_STROY_FD_OPTIONS) {
+      syncCheckoutFormFieldsToOptions();
       window.FD.init(window.ARS_STROY_FD_OPTIONS);
       delete root.dataset.arsCheckoutFillBound;
       scheduleFillCheckoutWidget();
