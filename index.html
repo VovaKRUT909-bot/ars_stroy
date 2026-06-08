@@ -50,48 +50,7 @@
 
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
-    <link rel="stylesheet" href="styles.css?v=order-fs-v36" />
-    <script type="text/javascript">
-(function (d, o) {
-    var s = d.createElement("script"), g = "getElementsByTagName";
-    s.type = "text/javascript"; s.async = true;
-    s.src = "https://formdesigner.ru/js/universal/init.js?v=1.0.0";
-    function runFdInit() {
-        if (window.FD && typeof window.FD.init === 'function') {
-            window.FD.init(o);
-        }
-    }
-    s.onload = function () {
-        if (document.readyState !== 'loading') {
-            runFdInit();
-        } else {
-            document.addEventListener("DOMContentLoaded", runFdInit);
-        }
-        window.addEventListener("load", runFdInit);
-    };
-    var h=d[g]("head")[0] || d[g]("body")[0];
-    h.appendChild(s);
-})(document, (window.ARS_STROY_FD_OPTIONS = {
-    "host": "formdesigner.ru",
-    "forms": {
-        "245426": {
-            "width": "100%",
-            "height": "auto",
-            "scroll": true
-        },
-        "245438": {
-            "width": "100%",
-            "height": "auto",
-            "scroll": true,
-            "callback": function () {
-                if (window.ARS_STROY_onCheckoutFormSuccess) {
-                    window.ARS_STROY_onCheckoutFormSuccess();
-                }
-            }
-        }
-    }
-}));
-</script>
+    <link rel="stylesheet" href="styles.css?v=order-fs-v37" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -519,7 +478,7 @@
                 <p class="ukladka-request__note">
                   Выезд замерщика бесплатно на расстоянии до 10&nbsp;км. При выезде дальше 10&nbsp;км — от 2&nbsp;999&nbsp;₽.
                 </p>
-                <div class="formdesigner-widget" data-id="245426"></div>
+                <div class="ars-fd-embed" data-id="245426"></div>
               </div>
             </div>
             <figure class="ukladka-request__photo">
@@ -639,7 +598,7 @@
             </div>
             <div class="order-checkout-fd" id="order-checkout-fd" hidden>
               <p class="order-checkout-fd__title">Контакты для заявки</p>
-              <div class="formdesigner-widget order-checkout-widget" data-id="245438"></div>
+              <div class="ars-fd-embed order-checkout-widget" data-id="245438"></div>
             </div>
           </div>
         </div>
@@ -1061,7 +1020,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=order-fs-v36" defer></script>
+    <script src="order-cart.js?v=order-fs-v37" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">

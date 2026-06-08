@@ -11,8 +11,14 @@
   var cartGrandTotal = document.getElementById('cart-grand-total');
   var cartCountEl = document.getElementById('cart-count');
   var cartClearBtn = document.getElementById('cart-clear');
+  var FD_HOST = 'formdesigner.ru';
   var FD_ZAMERSHIK_FORM_ID = '245426';
   var FD_CHECKOUT_FORM_ID = '245438';
+  var FD_IFRAME_FALLBACK_HEIGHT = 480;
+  window.ARS_STROY_FD_OPTIONS = window.ARS_STROY_FD_OPTIONS || {
+    host: FD_HOST,
+    forms: {}
+  };
   /** Текстовая область «Ваш заказ» в форме 245438 (ID меняется в конструкторе — держим запасные). */
   var FD_CHECKOUT_ORDER_FIELD = 'field3066355';
   var FD_CHECKOUT_ORDER_FIELD_FALLBACKS = ['field3066335', 'field3066332', 'field3065946'];
@@ -316,16 +322,11 @@
 
   function buildCheckoutIframeSrc() {
     var orderText = getCheckoutWidgetCartText();
-    var parts = ['inline=1'];
+    var parts = [];
     getCheckoutOrderFieldIds().forEach(function (id) {
       parts.push(encodeURIComponent(id) + '=' + encodeURIComponent(orderText));
     });
-    return (
-      'https://formdesigner.ru/form/iframe/' +
-      FD_CHECKOUT_FORM_ID +
-      '?' +
-      parts.join('&')
-    );
+    return buildFormDesignerIframeSrc(FD_CHECKOUT_FORM_ID, parts);
   }
 
   function pushCheckoutWidgetFieldData() {
@@ -335,9 +336,6 @@
     }
     syncCheckoutFormFieldsToOptions();
     var payload = buildCheckoutOrderFieldsPayload();
-    if (window.FD && typeof window.FD.setData === 'function') {
-      window.FD.setData(FD_CHECKOUT_FORM_ID, payload);
-    }
     try {
       iframe.contentWindow.postMessage(
         JSON.stringify({ type: 'setdata', data: payload }),
@@ -349,17 +347,89 @@
     return true;
   }
 
+  function readCookie(name) {
+    var match = document.cookie.match(
+      new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')
+    );
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function postToFormDesignerIframe(iframe, type, data) {
+    if (!iframe || !iframe.contentWindow) {
+      return false;
+    }
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ type: type, data: data }),
+        'https://' + FD_HOST
+      );
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function buildFormDesignerIframeSrc(formId, queryParts) {
+    var parts = ['center=1', 'universal=1', 'inline=1'];
+    if (queryParts && queryParts.length) {
+      queryParts.forEach(function (part) {
+        if (parts.indexOf(part) === -1) {
+          parts.push(part);
+        }
+      });
+    }
+    return (
+      'https://' +
+      FD_HOST +
+      '/form/iframe/' +
+      formId +
+      '?' +
+      parts.join('&')
+    );
+  }
+
+  function bindFormDesignerIframeEvents(iframe, formId, getFields) {
+    if (!iframe || iframe.dataset.arsFdBound === '1') {
+      return;
+    }
+    iframe.dataset.arsFdBound = '1';
+    var frameId = formId + '-' + Math.round(Math.random() * 100000);
+    iframe.id = frameId;
+    iframe.name = frameId;
+
+    iframe.addEventListener('load', function () {
+      iframe.dataset.arsFdLoaded = '1';
+      var fields = typeof getFields === 'function' ? getFields() : {};
+      postToFormDesignerIframe(iframe, 'register', {
+        id: frameId,
+        referrer: document.referrer,
+        url: window.location.href,
+        clientId: null,
+        yaClientId: readCookie('_ym_uid'),
+        cookie: document.cookie,
+        fields: fields || {}
+      });
+      if (fields && Object.keys(fields).length) {
+        postToFormDesignerIframe(iframe, 'setdata', { fields: fields });
+      }
+    });
+  }
+
   function createFormDesignerIframeElement(title) {
     var iframe = document.createElement('iframe');
     iframe.setAttribute('title', title);
-    iframe.setAttribute('loading', 'lazy');
     iframe.setAttribute('allow', 'microphone;camera');
+    iframe.setAttribute('allowtransparency', 'true');
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('frameborder', '0');
     iframe.style.cssText =
-      'width:100%;border:0;display:block;min-height:420px;background:transparent;';
+      'width:100%;border:0;display:block;height:' +
+      FD_IFRAME_FALLBACK_HEIGHT +
+      'px;background:transparent;';
     return iframe;
   }
 
-  function mountFormDesignerIframe(root, formId, queryParts) {
+  function mountFormDesignerIframe(root, formId, queryParts, getFields) {
     if (!root) {
       return null;
     }
@@ -367,39 +437,42 @@
     var iframe = createFormDesignerIframeElement(
       formId === FD_ZAMERSHIK_FORM_ID ? 'Заявка на замер' : 'Форма заказа'
     );
-    var parts = queryParts ? queryParts.slice() : ['inline=1'];
-    if (parts.indexOf('inline=1') === -1) {
-      parts.unshift('inline=1');
-    }
-    iframe.src =
-      'https://formdesigner.ru/form/iframe/' + formId + '?' + parts.join('&');
+    bindFormDesignerIframeEvents(iframe, formId, getFields);
+    iframe.src = buildFormDesignerIframeSrc(formId, queryParts);
     root.appendChild(iframe);
     return iframe;
   }
 
   function getZamershikWidgetRoot() {
     return document.querySelector(
-      '.ukladka-request__card .formdesigner-widget[data-id="' +
+      '.ukladka-request__card .ars-fd-embed[data-id="' +
         FD_ZAMERSHIK_FORM_ID +
         '"]'
     );
   }
 
+  function hasFormDesignerIframe(root) {
+    var iframe = root ? root.querySelector('iframe') : null;
+    return !!(
+      iframe &&
+      iframe.src &&
+      iframe.src.indexOf(FD_HOST) !== -1
+    );
+  }
+
   function ensureZamershikFormWidget() {
     var root = getZamershikWidgetRoot();
-    if (!root) {
+    if (!root || hasFormDesignerIframe(root)) {
       return;
     }
-    var iframe = root.querySelector('iframe');
-    if (iframe && iframe.src && iframe.src.indexOf('formdesigner.ru') !== -1) {
-      return;
-    }
-    mountFormDesignerIframe(root, FD_ZAMERSHIK_FORM_ID, ['inline=1']);
+    mountFormDesignerIframe(root, FD_ZAMERSHIK_FORM_ID, null, function () {
+      return {};
+    });
   }
 
   function ensureAllFormDesignerWidgets() {
     ensureZamershikFormWidget();
-    if (cart.length > 0) {
+    if (cart.length > 0 && orderCheckoutFdEl && !orderCheckoutFdEl.hidden) {
       refreshCheckoutOrderForm();
     }
   }
@@ -411,13 +484,20 @@
       return;
     }
     syncCheckoutFormFieldsToOptions();
-    var parts = ['inline=1'];
+    var parts = [];
     getCheckoutOrderFieldIds().forEach(function (id) {
       parts.push(
         encodeURIComponent(id) + '=' + encodeURIComponent(getCheckoutWidgetCartText())
       );
     });
-    var iframe = mountFormDesignerIframe(root, FD_CHECKOUT_FORM_ID, parts);
+    var iframe = mountFormDesignerIframe(
+      root,
+      FD_CHECKOUT_FORM_ID,
+      parts,
+      function () {
+        return buildCheckoutOrderFieldsPayload().fields;
+      }
+    );
     if (!iframe) {
       return;
     }
@@ -498,26 +578,42 @@
     clearCart();
   }
 
-  function bindCheckoutFormDesignerMessageFallback() {
-    if (window.__arsCheckoutFdMessageBound) {
+  function bindFormDesignerMessageBridge() {
+    if (window.__arsFdMessageBound) {
       return;
     }
-    window.__arsCheckoutFdMessageBound = true;
+    window.__arsFdMessageBound = true;
     window.addEventListener('message', function (event) {
-      var iframe = getCheckoutWidgetIframe();
+      if (!event.origin || event.origin.indexOf(FD_HOST) === -1) {
+        return;
+      }
+      var payload;
+      try {
+        payload = JSON.parse(event.data);
+      } catch (err) {
+        return;
+      }
+      if (!payload || !payload.type) {
+        return;
+      }
+
+      var iframe = document.querySelector(
+        'iframe[id="' + payload.type + '"]'
+      );
       if (!iframe || event.source !== iframe.contentWindow) {
         return;
       }
-      if (!event.origin || event.origin.indexOf('formdesigner.ru') === -1) {
-        return;
+
+      if (payload.data && payload.data.height) {
+        iframe.style.height = payload.data.height + 6 + 'px';
       }
-      try {
-        var payload = JSON.parse(event.data);
-        if (payload && payload.data && payload.data.success) {
-          onCheckoutFormDesignerSuccess();
-        }
-      } catch (err) {
-        /* ignore */
+
+      if (
+        payload.data &&
+        payload.data.success &&
+        iframe.closest('.order-checkout-widget')
+      ) {
+        onCheckoutFormDesignerSuccess();
       }
     });
   }
@@ -531,7 +627,7 @@
   }
 
   window.ARS_STROY_onCheckoutFormSuccess = onCheckoutFormDesignerSuccess;
-  bindCheckoutFormDesignerMessageFallback();
+  bindFormDesignerMessageBridge();
   watchCheckoutWidgetMount();
 
   function slugifyAscii(text) {
@@ -1184,10 +1280,11 @@
   });
 
   renderCart();
+  ensureZamershikFormWidget();
 
   window.addEventListener('load', function () {
-    setTimeout(ensureAllFormDesignerWidgets, 300);
-    setTimeout(ensureAllFormDesignerWidgets, 2000);
+    ensureAllFormDesignerWidgets();
+    setTimeout(ensureAllFormDesignerWidgets, 1500);
   });
   window.addEventListener('pageshow', function () {
     ensureAllFormDesignerWidgets();

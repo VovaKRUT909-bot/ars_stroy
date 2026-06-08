@@ -1410,7 +1410,7 @@ body.order-fs-open{
   font-size:16px;
   color:var(--text);
 }
-.order-page-checkout .order-checkout-widget.formdesigner-widget{
+.order-page-checkout .order-checkout-widget.ars-fd-embed{
   margin-top:0;
 }
 .order-cart__head{
@@ -1617,20 +1617,17 @@ body.order-fs-open{
   width:100%;
   margin-top:12px;
 }
-.order-checkout-widget.formdesigner-widget,
-.ukladka-request__card .formdesigner-widget{
+.order-checkout-widget.ars-fd-embed,
+.ukladka-request__card .ars-fd-embed{
   margin-top:18px;
   width:100%;
   max-width:600px;
-  min-height:420px;
 }
-.formdesigner-widget iframe,
 .order-checkout-widget iframe,
-.ukladka-request__card .formdesigner-widget iframe{
-  display:block;
+.ukladka-request__card .ars-fd-embed iframe{
+  display:block !important;
   width:100% !important;
   max-width:100%;
-  min-height:420px;
   border:0;
   background:transparent;
 }
