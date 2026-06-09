@@ -29,9 +29,50 @@
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.42);
   --radius: 18px;
   --radius2: 26px;
+  --gold-text-gradient: linear-gradient(
+    110deg,
+    #8b6914 0%,
+    #b8860b 14%,
+    #c9a86c 28%,
+    #f0dfa0 42%,
+    #d4af5f 56%,
+    #c9a86c 70%,
+    #e8d4a8 84%,
+    #b8860b 100%
+  );
 }
 
 *{ box-sizing:border-box; }
+
+/* Золотой перелив текста — как на логотипе (манипулятор) */
+.brand__title,
+.hero__title,
+.section__title,
+.footer__title,
+.hero__title-accent{
+  background-image: var(--gold-text-gradient);
+  background-size: 220% auto;
+  background-position: 0% center;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: gold-text-shimmer 7s ease-in-out infinite;
+}
+@keyframes gold-text-shimmer{
+  0%, 100%{ background-position: 0% center; }
+  50%{ background-position: 100% center; }
+}
+@media (prefers-reduced-motion: reduce){
+  .brand__title,
+  .hero__title,
+  .section__title,
+  .footer__title,
+  .hero__title-accent{
+    animation: none;
+    background-position: 42% center;
+  }
+}
 html{
   min-height:100%;
   overflow-x:clip;
@@ -49,7 +90,7 @@ body{
   touch-action:pan-y;
 }
 
-/* Интерактивный fluid-фон (canvas), под оверлеем .page-bg */
+/* Тёмная подложка под .page-bg (без синей анимации шара) */
 #fluid-canvas {
   position: fixed;
   top: 0;
@@ -1759,12 +1800,6 @@ body.ars-fd-overlay-open{
   font-size: clamp(30px, 4vw, 44px);
   line-height:1.12;
   letter-spacing: -0.5px;
-}
-.hero__title-accent{
-  background: linear-gradient(90deg, #e8d4a8, var(--primary), var(--primary2));
-  -webkit-background-clip: text;
-  background-clip:text;
-  color: transparent;
 }
 .hero__lead{
   margin: 0;
