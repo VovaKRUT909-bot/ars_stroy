@@ -1674,6 +1674,53 @@ body.order-fs-open{
   border:0;
   background:transparent;
 }
+.ars-vpn-banner{
+  position:relative;
+  z-index:10040;
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:10px 16px;
+  background:rgba(216, 188, 130, 0.16);
+  border-bottom:1px solid rgba(216, 188, 130, 0.32);
+  color:var(--text);
+  font-size:13px;
+  line-height:1.45;
+}
+.ars-vpn-banner[hidden]{
+  display:none !important;
+}
+.ars-vpn-banner__text{
+  margin:0;
+  flex:1;
+}
+.ars-vpn-banner__text strong{
+  color:var(--gold, #d8bc82);
+  font-weight:900;
+}
+.ars-vpn-banner__close{
+  flex:0 0 auto;
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+  padding:0 2px;
+}
+.ars-vpn-banner__close:hover{
+  color:var(--text);
+}
+.ars-fd-vpn-hint{
+  margin:10px 0 0;
+  padding:10px 12px;
+  border-radius:10px;
+  font-size:13px;
+  line-height:1.45;
+  color:var(--muted);
+  background:rgba(216, 188, 130, 0.08);
+  border:1px solid rgba(216, 188, 130, 0.2);
+}
 .ars-fd-actions{
   display:none;
   flex-wrap:wrap;

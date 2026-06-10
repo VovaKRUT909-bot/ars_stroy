@@ -38,8 +38,11 @@
     window.innerWidth <= 768;
   var FD_HEALTH_CHECK_MS = fdIsMobile ? 2800 : 6000;
   var FD_HINT_DELAY_MS = fdIsMobile ? 900 : 2200;
-  var FD_PROBE_TIMEOUT_MS = 3500;
+  var FD_PROBE_TIMEOUT_MS = 4500;
+  var FD_WATCHDOG_MS = fdIsMobile ? 3500 : 7000;
   var fdReachability = { state: 'pending', value: null };
+  var fdVpnBannerEl = document.getElementById('ars-vpn-banner');
+  var fdVpnBannerCloseEl = document.getElementById('ars-vpn-banner-close');
   var fdOverlayEl = document.getElementById('ars-fd-overlay');
   var fdOverlayEmbedEl = document.getElementById('ars-fd-overlay-embed');
   var fdOverlayTitleEl = document.getElementById('ars-fd-overlay-title');
@@ -375,7 +378,47 @@
     return fdReachability.state === 'done' && fdReachability.value === false;
   }
 
-  function probeFormDesignerReachable() {
+  function showVpnBanner() {
+    if (!fdVpnBannerEl) {
+      return;
+    }
+    try {
+      if (sessionStorage.getItem('arsVpnBannerDismissed') === '1') {
+        return;
+      }
+    } catch (err) {
+      /* ignore */
+    }
+    fdVpnBannerEl.hidden = false;
+  }
+
+  function bindVpnBanner() {
+    if (!fdVpnBannerCloseEl || !fdVpnBannerEl || fdVpnBannerCloseEl.dataset.arsBound) {
+      return;
+    }
+    fdVpnBannerCloseEl.dataset.arsBound = '1';
+    fdVpnBannerCloseEl.addEventListener('click', function () {
+      fdVpnBannerEl.hidden = true;
+      try {
+        sessionStorage.setItem('arsVpnBannerDismissed', '1');
+      } catch (err) {
+        /* ignore */
+      }
+    });
+  }
+
+  function initFormDesignerMobileMode() {
+    if (!fdIsMobile) {
+      return;
+    }
+    document.querySelectorAll('.ars-fd-actions').forEach(function (actions) {
+      actions.classList.add('ars-fd-actions--always');
+      actions.hidden = false;
+    });
+    showVpnBanner();
+  }
+
+  function probeFormDesignerReachableOnce() {
     return new Promise(function (resolve) {
       var settled = false;
       var img = new Image();
@@ -403,18 +446,78 @@
     });
   }
 
+  function probeFormDesignerReachable() {
+    return probeFormDesignerReachableOnce().then(function (ok) {
+      if (ok) {
+        return true;
+      }
+      return new Promise(function (resolve) {
+        setTimeout(function () {
+          probeFormDesignerReachableOnce().then(resolve);
+        }, 700);
+      });
+    });
+  }
+
   function startFormDesignerProbe() {
     probeFormDesignerReachable().then(function (ok) {
       fdReachability.state = 'done';
       fdReachability.value = ok;
       if (!ok) {
+        showVpnBanner();
         showFormDesignerActions(FD_ZAMERSHIK_FORM_ID);
         if (cart.length > 0) {
           showFormDesignerActions(FD_CHECKOUT_FORM_ID);
         }
         ensureAllFormDesignerWidgets();
+      } else if (fdIsMobile) {
+        showFormDesignerActions(FD_ZAMERSHIK_FORM_ID);
+        if (cart.length > 0) {
+          showFormDesignerActions(FD_CHECKOUT_FORM_ID);
+        }
       }
     });
+  }
+
+  function getFormDesignerEmbedRoots() {
+    var roots = [];
+    var zamRoot = getZamershikWidgetRoot();
+    if (zamRoot) {
+      roots.push({ root: zamRoot, formId: FD_ZAMERSHIK_FORM_ID });
+    }
+    var checkoutRoot = getCheckoutWidgetRoot();
+    if (checkoutRoot && cart.length > 0) {
+      roots.push({ root: checkoutRoot, formId: FD_CHECKOUT_FORM_ID });
+    }
+    return roots;
+  }
+
+  function ensureFormDesignerWatchdog() {
+    if (window.__arsFdWatchdog) {
+      return;
+    }
+    window.__arsFdWatchdog = setInterval(function () {
+      getFormDesignerEmbedRoots().forEach(function (entry) {
+        var iframe = entry.root.querySelector('iframe');
+        if (!iframe) {
+          showFormDesignerActions(entry.formId);
+          remountFormDesignerInline(entry.root, entry.formId);
+          return;
+        }
+        if (isFormDesignerIframeReady(iframe)) {
+          entry.root.dataset.arsFdWatchRetries = '0';
+          return;
+        }
+        showFormDesignerActions(entry.formId);
+        if (iframe.dataset.arsFdLoaded === '1') {
+          var retries = parseInt(entry.root.dataset.arsFdWatchRetries || '0', 10);
+          if (retries < 4) {
+            entry.root.dataset.arsFdWatchRetries = String(retries + 1);
+            remountFormDesignerInline(entry.root, entry.formId);
+          }
+        }
+      });
+    }, FD_WATCHDOG_MS);
   }
 
   function buildFormDesignerStandaloneUrl(formId) {
@@ -449,6 +552,9 @@
   }
 
   function hideFormDesignerActions(formId) {
+    if (fdIsMobile) {
+      return;
+    }
     var actions = getFormDesignerActionsEl(formId);
     if (!actions || actions.classList.contains('ars-fd-actions--always')) {
       return;
@@ -596,6 +702,7 @@
       iframe.dataset.arsFdFailed = '1';
     }
     showFormDesignerActions(formId);
+    showVpnBanner();
     if (embedRoot.id === 'ars-fd-overlay-embed') {
       showOverlayExternalFallback(formId);
       return;
@@ -1444,6 +1551,9 @@
     if (orderSelected) orderSelected.hidden = true;
     if (orderCheckoutFdEl) orderCheckoutFdEl.hidden = false;
     syncFormDesignerActionLinks(FD_CHECKOUT_FORM_ID);
+    if (fdIsMobile) {
+      showFormDesignerActions(FD_CHECKOUT_FORM_ID);
+    }
 
     cartItemsEl.innerHTML = '';
     cart.forEach(function (item) {
@@ -1647,17 +1757,28 @@
   });
 
   bindFormDesignerOverlayControls();
+  bindVpnBanner();
+  initFormDesignerMobileMode();
+  showVpnBanner();
   syncFormDesignerActionLinks(FD_ZAMERSHIK_FORM_ID);
   syncFormDesignerActionLinks(FD_CHECKOUT_FORM_ID);
+  showFormDesignerActions(FD_ZAMERSHIK_FORM_ID);
   startFormDesignerProbe();
+  ensureFormDesignerWatchdog();
   renderCart();
   ensureZamershikFormWidget();
 
   window.addEventListener('load', function () {
     ensureAllFormDesignerWidgets();
     setTimeout(ensureAllFormDesignerWidgets, 1500);
+    setTimeout(ensureAllFormDesignerWidgets, 4000);
   });
   window.addEventListener('pageshow', function () {
     ensureAllFormDesignerWidgets();
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) {
+      ensureAllFormDesignerWidgets();
+    }
   });
 })();
