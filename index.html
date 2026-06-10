@@ -51,7 +51,7 @@
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
     <meta http-equiv="Permissions-Policy" content="local-network-access=*" />
-    <link rel="stylesheet" href="styles.css?v=order-fs-v43" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v44" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -480,9 +480,10 @@
                   Выезд замерщика бесплатно на расстоянии до 10&nbsp;км. При выезде дальше 10&nbsp;км — от 2&nbsp;999&nbsp;₽.
                 </p>
                 <div class="ars-fd-embed" data-id="245426"></div>
-                <p class="ars-fd-open-hint" id="ukladka-fd-hint" hidden>
-                  <button type="button" class="btn btn--ghost ars-fd-open-btn" data-fd-form="245426">Показать форму заявки</button>
-                </p>
+                <div class="ars-fd-actions ars-fd-actions--always" id="ukladka-fd-actions" data-fd-form="245426">
+                  <button type="button" class="btn btn--primary ars-fd-open-btn" data-fd-form="245426">Открыть форму заявки</button>
+                  <a class="btn btn--ghost ars-fd-ext-link" data-fd-form="245426" href="#" target="_blank" rel="noopener noreferrer">Открыть в браузере</a>
+                </div>
               </div>
             </div>
             <figure class="ukladka-request__photo">
@@ -603,9 +604,10 @@
             <div class="order-checkout-fd" id="order-checkout-fd" hidden>
               <p class="order-checkout-fd__title">Контакты для заявки</p>
               <div class="ars-fd-embed order-checkout-widget" data-id="245438"></div>
-              <p class="ars-fd-open-hint" id="order-fd-hint" hidden>
-                <button type="button" class="btn btn--ghost ars-fd-open-btn" data-fd-form="245438">Показать форму заказа</button>
-              </p>
+              <div class="ars-fd-actions" id="order-fd-actions" data-fd-form="245438" hidden>
+                <button type="button" class="btn btn--primary ars-fd-open-btn" data-fd-form="245438">Открыть форму заказа</button>
+                <a class="btn btn--ghost ars-fd-ext-link" data-fd-form="245438" href="#" target="_blank" rel="noopener noreferrer">Открыть в браузере</a>
+              </div>
             </div>
           </div>
         </div>
@@ -838,7 +840,7 @@
     })();
     </script>
 
-    <script src="order-cart.js?v=order-fs-v39" defer></script>
+    <script src="order-cart.js?v=order-fs-v44" defer></script>
 
     <!-- Yandex.Metrika counter 108382223 (только mc.yandex.ru, не yandex.ru) -->
     <script type="text/javascript">
@@ -888,6 +890,10 @@
           <button type="button" class="ars-fd-overlay__close" id="ars-fd-overlay-close" aria-label="Закрыть форму">×</button>
         </header>
         <div class="ars-fd-overlay__embed ars-fd-embed" id="ars-fd-overlay-embed"></div>
+        <div class="ars-fd-overlay__fallback" id="ars-fd-overlay-fallback" hidden>
+          <p class="ars-fd-overlay__fallback-text">Если форма не загрузилась (например, при VPN), откройте её в браузере:</p>
+          <a class="btn btn--primary ars-fd-overlay__ext-link" id="ars-fd-overlay-ext-link" href="#" target="_blank" rel="noopener noreferrer">Открыть форму в браузере</a>
+        </div>
       </div>
     </div>
   </body>
