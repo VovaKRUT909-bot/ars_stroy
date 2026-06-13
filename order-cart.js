@@ -564,6 +564,9 @@
   }
 
   function showOverlayExternalFallback(formId) {
+    if (formId === FD_CHECKOUT_FORM_ID) {
+      return;
+    }
     syncFormDesignerActionLinks(formId);
     if (fdOverlayFallbackEl) {
       fdOverlayFallbackEl.hidden = false;
