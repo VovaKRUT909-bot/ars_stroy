@@ -51,8 +51,8 @@
 
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
-    <meta http-equiv="Permissions-Policy" content="local-network-access=*" />
-    <link rel="stylesheet" href="styles.css?v=order-fs-v46" />
+    <meta http-equiv="Permissions-Policy" content="local-network-access=*, geolocation=*" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v49" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -91,6 +91,7 @@
           <a href="#order">Заказ</a>
           <a href="#delivery">Доставка</a>
           <a href="#contacts">Контакты</a>
+          <a href="#directions">Схема проезда</a>
         </nav>
 
         <div class="topbar__cta">
@@ -688,6 +689,105 @@
       </section>
     </main>
 
+    <section class="section section--soft directions" id="directions" aria-labelledby="directions-title">
+      <div class="container">
+        <div class="directions__grid">
+          <div class="directions__info">
+            <h2 class="section__title directions__title" id="directions-title">Как нас найти</h2>
+
+            <ul class="directions__list">
+              <li class="directions__item">
+                <span class="directions__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                    <path fill="currentColor" d="M12 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0-5a8 8 0 0 0-8 8c0 5.25 8 13 8 13s8-7.75 8-13a8 8 0 0 0-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                  </svg>
+                </span>
+                <div class="directions__item-body">
+                  <span class="directions__label">Название</span>
+                  <span class="directions__value">ООО «АРС Строй»</span>
+                </div>
+              </li>
+              <li class="directions__item">
+                <span class="directions__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                    <path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/>
+                  </svg>
+                </span>
+                <div class="directions__item-body">
+                  <span class="directions__label">Адрес</span>
+                  <address class="directions__value directions__address">Московская область, Одинцовский городской округ, М-1 Беларусь, 68-й километр, вл1с3</address>
+                </div>
+              </li>
+              <li class="directions__item">
+                <span class="directions__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                    <path fill="currentColor" d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/>
+                  </svg>
+                </span>
+                <div class="directions__item-body">
+                  <span class="directions__label">Телефон</span>
+                  <a class="directions__value directions__phone" href="tel:+79099995929">+7 (909) 999-59-29</a>
+                </div>
+              </li>
+              <li class="directions__item">
+                <span class="directions__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                    <path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+                  </svg>
+                </span>
+                <div class="directions__item-body">
+                  <span class="directions__label">Время работы</span>
+                  <span class="directions__value">Ежедневно до 19:00</span>
+                </div>
+              </li>
+            </ul>
+
+            <div class="directions__nav">
+              <h3 class="directions__nav-title">Проложить маршрут:</h3>
+              <div class="directions__nav-actions">
+                <a class="directions__nav-btn directions__nav-btn--maps" href="https://yandex.ru/maps/org/ars_stroy/59065735166" target="_blank" rel="noopener noreferrer">
+                  <span class="directions__nav-btn-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                      <path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/>
+                    </svg>
+                  </span>
+                  Яндекс Карты
+                </a>
+                <a class="directions__nav-btn directions__nav-btn--navi" href="https://yandex.ru/navi/org/ars_stroy/59065735166?si=hh648bp3wag8aadk3abaau71ew" target="_blank" rel="noopener noreferrer">
+                  <span class="directions__nav-btn-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                      <path fill="currentColor" d="M12 2 4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2zm0 3.99L17.53 19H6.47L12 5.99z"/>
+                    </svg>
+                  </span>
+                  Навигатор
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="directions__map-wrap">
+            <button type="button" class="directions__geo-btn" id="directions-geo-btn" aria-label="Показать моё местоположение и маршрут до АРС Строй">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"/>
+              </svg>
+              Моё местоположение
+            </button>
+            <iframe
+              class="directions__map"
+              src="https://yandex.ru/map-widget/v1/org/ars_stroy/59065735166/?rtext=~55.556213,36.634123&amp;rtt=auto&amp;si=hh648bp3wag8aadk3abaau71ew"
+              width="100%"
+              height="400"
+              frameborder="0"
+              allowfullscreen="true"
+              allow="geolocation *"
+              title="Карта проезда к производству АРС Строй"
+              loading="lazy"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <footer class="footer">
       <div class="container footer__inner">
         <div class="footer__brand" itemscope itemtype="https://schema.org/Organization">
@@ -710,6 +810,7 @@
           <a href="#order">Заказ</a>
           <a href="#delivery">Доставка</a>
           <a href="#contacts">Контакты</a>
+          <a href="#directions">Схема проезда</a>
         </div>
       </div>
       <div class="container footer__bottom">
@@ -737,6 +838,50 @@
 
     <script>
       document.getElementById('year').textContent = String(new Date().getFullYear());
+
+      (function initDirectionsGeoBtn() {
+        var geoBtn = document.getElementById('directions-geo-btn');
+        if (!geoBtn) return;
+        var destLat = 55.556213;
+        var destLon = 36.634123;
+        var naviOrgUrl =
+          'https://yandex.ru/navi/org/ars_stroy/59065735166?si=hh648bp3wag8aadk3abaau71ew';
+        var mapsRouteUrl =
+          'https://yandex.ru/maps/?rtext=~' + destLat + ',' + destLon + '&rtt=auto';
+
+        function openRoute(fromLat, fromLon) {
+          var url =
+            'https://yandex.ru/navi/?rtext=' +
+            fromLat +
+            ',' +
+            fromLon +
+            '~' +
+            destLat +
+            ',' +
+            destLon +
+            '&rtt=auto';
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        geoBtn.addEventListener('click', function () {
+          if (!navigator.geolocation) {
+            window.open(naviOrgUrl, '_blank', 'noopener,noreferrer');
+            return;
+          }
+          geoBtn.disabled = true;
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              geoBtn.disabled = false;
+              openRoute(pos.coords.latitude, pos.coords.longitude);
+            },
+            function () {
+              geoBtn.disabled = false;
+              window.open(mapsRouteUrl, '_blank', 'noopener,noreferrer');
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+          );
+        });
+      })();
 
       (function initScrollBackground() {
         var pageBg = document.querySelector('.page-bg');
