@@ -682,11 +682,11 @@
           </div>
         </div>
 
-        <div class="contacts-hub__directions section--soft" id="directions" aria-labelledby="directions-title">
+        <div class="contacts-hub__directions section--soft" aria-labelledby="directions">
           <div class="container">
             <div class="directions__grid">
               <div class="directions__info">
-                <h2 class="section__title directions__title" id="directions-title">Как нас найти</h2>
+                <h2 class="section__title directions__title" id="directions">Как нас найти</h2>
 
                 <ul class="directions__list">
                   <li class="directions__item">
@@ -843,6 +843,39 @@
 
     <script>
       document.getElementById('year').textContent = String(new Date().getFullYear());
+
+      (function initDirectionsAnchorScroll() {
+        var target = document.getElementById('directions');
+        if (!target) return;
+
+        function scrollToDirections() {
+          var topbar = document.querySelector('.topbar');
+          var vpnBanner = document.getElementById('ars-vpn-banner');
+          var offset = 12;
+          if (topbar) offset += topbar.offsetHeight;
+          if (vpnBanner && !vpnBanner.hidden) offset += vpnBanner.offsetHeight;
+          var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        }
+
+        document.querySelectorAll('a[href="#directions"]').forEach(function (link) {
+          link.addEventListener('click', function (event) {
+            event.preventDefault();
+            scrollToDirections();
+            if (history.replaceState) {
+              history.replaceState(null, '', '#directions');
+            } else {
+              location.hash = 'directions';
+            }
+          });
+        });
+
+        if (location.hash === '#directions') {
+          requestAnimationFrame(function () {
+            scrollToDirections();
+          });
+        }
+      })();
 
       (function initScrollBackground() {
         var pageBg = document.querySelector('.page-bg');
