@@ -848,14 +848,34 @@
         var target = document.getElementById('directions');
         if (!target) return;
 
-        function scrollToDirections() {
+        function getScrollOffset() {
+          var offset = 8;
           var topbar = document.querySelector('.topbar');
           var vpnBanner = document.getElementById('ars-vpn-banner');
-          var offset = 12;
-          if (topbar) offset += topbar.offsetHeight;
-          if (vpnBanner && !vpnBanner.hidden) offset += vpnBanner.offsetHeight;
+          if (topbar) offset += topbar.getBoundingClientRect().height;
+          if (vpnBanner && !vpnBanner.hidden) offset += vpnBanner.getBoundingClientRect().height;
+          return Math.ceil(offset);
+        }
+
+        function syncScrollOffset() {
+          document.documentElement.style.setProperty('--scroll-offset', getScrollOffset() + 'px');
+        }
+
+        function applyDirectionsScroll(behavior) {
+          syncScrollOffset();
+          var offset = getScrollOffset();
           var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+          window.scrollTo({ top: Math.max(0, top), behavior: behavior || 'auto' });
+        }
+
+        function scrollToDirections() {
+          applyDirectionsScroll('auto');
+          requestAnimationFrame(function () {
+            applyDirectionsScroll('auto');
+            requestAnimationFrame(function () {
+              applyDirectionsScroll('auto');
+            });
+          });
         }
 
         document.querySelectorAll('a[href="#directions"]').forEach(function (link) {
@@ -870,10 +890,12 @@
           });
         });
 
+        syncScrollOffset();
+        window.addEventListener('resize', syncScrollOffset, { passive: true });
+        window.addEventListener('orientationchange', syncScrollOffset, { passive: true });
+
         if (location.hash === '#directions') {
-          requestAnimationFrame(function () {
-            scrollToDirections();
-          });
+          window.setTimeout(scrollToDirections, 50);
         }
       })();
 

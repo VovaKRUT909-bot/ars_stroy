@@ -10,6 +10,7 @@
   --scroll-bg1: rgb(21, 25, 32);
   --scroll-glow1: rgba(201, 168, 108, 0.12);
   --scroll-glow2: rgba(139, 115, 85, 0.1);
+  --scroll-offset: 96px;
 
   --bg0: var(--scroll-bg0);
   --bg1: var(--scroll-bg1);
@@ -77,6 +78,7 @@ html{
   min-height:100%;
   overflow-x:clip;
   max-width:100%;
+  scroll-padding-top: var(--scroll-offset);
 }
 body{
   margin:0;
@@ -2614,7 +2616,7 @@ h3.section__subtitle{
     linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
 }
 #directions{
-  scroll-margin-top: 96px;
+  scroll-margin-top: var(--scroll-offset);
 }
 
 .directions{
@@ -2914,9 +2916,6 @@ h3.section__subtitle{
     margin-top: 24px;
     padding-top: 28px;
     padding-bottom: 36px;
-  }
-  #directions{
-    scroll-margin-top: 180px;
   }
   .subprices__row-main{
     flex-direction:column;
