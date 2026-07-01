@@ -2647,6 +2647,7 @@ h3.section__subtitle{
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
 }
 .directions__nav-btn--navi{
+  display:none;
   background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(201, 168, 108, 0.12));
 }
 .directions__nav-btn--navi:hover{
@@ -2666,35 +2667,6 @@ h3.section__subtitle{
   border:1px solid rgba(255,255,255,.12);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1), var(--shadow);
   background: rgba(0,0,0,.18);
-}
-.directions__geo-btn{
-  position:absolute;
-  z-index:2;
-  left:12px;
-  bottom:12px;
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  min-height:44px;
-  padding:10px 14px;
-  border-radius:14px;
-  border:1px solid var(--accent-border);
-  background:linear-gradient(135deg, rgba(24, 28, 36, 0.92), rgba(14, 16, 20, 0.88));
-  color:#f8f4ec;
-  font-weight:800;
-  font-size:13px;
-  cursor:pointer;
-  box-shadow:0 8px 24px rgba(0,0,0,.35);
-  transition:transform .18s ease, background .2s ease, border-color .2s ease;
-}
-.directions__geo-btn:hover{
-  transform:translateY(-1px);
-  border-color:rgba(216, 188, 130, 0.48);
-  background:linear-gradient(135deg, rgba(32, 36, 46, 0.96), rgba(18, 20, 26, 0.92));
-}
-.directions__geo-btn svg{
-  color:var(--primary-hover);
-  flex:0 0 auto;
 }
 .directions__map{
   display:block;
@@ -2726,11 +2698,8 @@ h3.section__subtitle{
     min-height: 56px;
     font-size: 16px;
   }
-  .directions__geo-btn{
-    left:10px;
-    bottom:10px;
-    min-height:48px;
-    font-size:14px;
+  .directions__nav-btn--navi{
+    display:inline-flex;
   }
   .directions__map-wrap,
   .directions__map{

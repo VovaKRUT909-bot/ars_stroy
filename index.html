@@ -52,7 +52,7 @@
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
     <meta http-equiv="Permissions-Policy" content="local-network-access=*, geolocation=*" />
-    <link rel="stylesheet" href="styles.css?v=order-fs-v49" />
+    <link rel="stylesheet" href="styles.css?v=order-fs-v50" />
   </head>
   <body>
     <div class="page-bg" aria-hidden="true"></div>
@@ -766,12 +766,6 @@
           </div>
 
           <div class="directions__map-wrap">
-            <button type="button" class="directions__geo-btn" id="directions-geo-btn" aria-label="Показать моё местоположение и маршрут до АРС Строй">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-                <path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"/>
-              </svg>
-              Моё местоположение
-            </button>
             <iframe
               class="directions__map"
               src="https://yandex.ru/map-widget/v1/org/ars_stroy/59065735166/?rtext=~55.556213,36.634123&amp;rtt=auto&amp;si=hh648bp3wag8aadk3abaau71ew"
@@ -838,50 +832,6 @@
 
     <script>
       document.getElementById('year').textContent = String(new Date().getFullYear());
-
-      (function initDirectionsGeoBtn() {
-        var geoBtn = document.getElementById('directions-geo-btn');
-        if (!geoBtn) return;
-        var destLat = 55.556213;
-        var destLon = 36.634123;
-        var naviOrgUrl =
-          'https://yandex.ru/navi/org/ars_stroy/59065735166?si=hh648bp3wag8aadk3abaau71ew';
-        var mapsRouteUrl =
-          'https://yandex.ru/maps/?rtext=~' + destLat + ',' + destLon + '&rtt=auto';
-
-        function openRoute(fromLat, fromLon) {
-          var url =
-            'https://yandex.ru/navi/?rtext=' +
-            fromLat +
-            ',' +
-            fromLon +
-            '~' +
-            destLat +
-            ',' +
-            destLon +
-            '&rtt=auto';
-          window.open(url, '_blank', 'noopener,noreferrer');
-        }
-
-        geoBtn.addEventListener('click', function () {
-          if (!navigator.geolocation) {
-            window.open(naviOrgUrl, '_blank', 'noopener,noreferrer');
-            return;
-          }
-          geoBtn.disabled = true;
-          navigator.geolocation.getCurrentPosition(
-            function (pos) {
-              geoBtn.disabled = false;
-              openRoute(pos.coords.latitude, pos.coords.longitude);
-            },
-            function () {
-              geoBtn.disabled = false;
-              window.open(mapsRouteUrl, '_blank', 'noopener,noreferrer');
-            },
-            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-          );
-        });
-      })();
 
       (function initScrollBackground() {
         var pageBg = document.querySelector('.page-bg');
