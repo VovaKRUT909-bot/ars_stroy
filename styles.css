@@ -2528,6 +2528,76 @@ h3.section__subtitle{
   flex-wrap:wrap;
 }
 
+.contacts-hub{
+  padding-bottom: 0;
+}
+.contacts-hub__directions{
+  margin-top: 32px;
+  padding-top: 40px;
+  padding-bottom: 48px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+}
+.contact-route-link{
+  display:inline-flex;
+  align-items:center;
+  margin-top: 12px;
+  color: var(--primary-hover);
+  font-weight:900;
+  font-size: 14px;
+  text-decoration:none;
+  letter-spacing:.01em;
+}
+.contact-route-link:hover{
+  text-decoration:underline;
+}
+.contacts-route-teaser{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 18px;
+  flex-wrap:wrap;
+  border-color: var(--accent-border);
+  background:
+    linear-gradient(135deg, rgba(201, 168, 108, 0.12), rgba(255,255,255,.04));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+.contacts-route-teaser__body{
+  display:flex;
+  align-items:flex-start;
+  gap: 14px;
+  min-width:0;
+  flex:1 1 240px;
+}
+.contacts-route-teaser__icon{
+  flex:0 0 auto;
+  width: 52px;
+  height: 52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius: 16px;
+  color: var(--primary-hover);
+  background: linear-gradient(135deg, rgba(201, 168, 108, 0.22), rgba(139, 115, 85, 0.14));
+  border:1px solid var(--accent-border);
+}
+.contacts-route-teaser__title{
+  margin:0 0 6px;
+  font-weight:950;
+  font-size: 1.05rem;
+}
+.contacts-route-teaser__text{
+  margin:0;
+  color: var(--muted);
+  line-height:1.55;
+  font-size: 14px;
+}
+.contacts-route-teaser__btn{
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+
 .directions{
   padding-top: 48px;
   padding-bottom: 48px;
@@ -2795,6 +2865,19 @@ h3.section__subtitle{
   .ukladka-request__layout{ grid-template-columns: 1fr; }
   .ukladka-request__photo img{ min-height: 220px; }
   .contacts-grid{ grid-template-columns: 1fr; }
+  .contacts-route-teaser{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .contacts-route-teaser__btn{
+    width:100%;
+    text-align:center;
+  }
+  .contacts-hub__directions{
+    margin-top: 24px;
+    padding-top: 28px;
+    padding-bottom: 36px;
+  }
   .subprices__row-main{
     flex-direction:column;
     align-items:stretch;
