@@ -2646,13 +2646,6 @@ h3.section__subtitle{
   border-color: rgba(216, 188, 130, 0.48);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
 }
-.directions__nav-btn--navi{
-  display:none;
-  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(201, 168, 108, 0.12));
-}
-.directions__nav-btn--navi:hover{
-  background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(216, 188, 130, 0.18));
-}
 .directions__nav-btn-icon{
   display:inline-flex;
   align-items:center;
@@ -2697,9 +2690,6 @@ h3.section__subtitle{
     width:100%;
     min-height: 56px;
     font-size: 16px;
-  }
-  .directions__nav-btn--navi{
-    display:inline-flex;
   }
   .directions__map-wrap,
   .directions__map{
